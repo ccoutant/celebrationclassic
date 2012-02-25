@@ -60,7 +60,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 
 <div class="form-section">
 
-<h2>Sponsor</h2>
+<h2>Sponsor/Contact</h2>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
@@ -84,7 +84,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-right form-text">
+<div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_city">City, State, ZIP</label>
 <input type="text" name="city" value="{{ sponsor.city }}" id="entry_4=city" readonly>
@@ -98,7 +98,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-right form-text">
+<div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_fax">Fax</label>
 <input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax" readonly>
@@ -173,7 +173,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-left form-number">
+<div class="form-entry form-number">
 <div class="form-input">
 <label for="entry_index{{ golfer.sequence }}">Index</label>
 <input type="text" name="index{{ golfer.sequence }}" value="{{ golfer.golf_index }}" id="entry_index{{ golfer.sequence }}">
@@ -182,14 +182,14 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-left form-number">
+<div class="form-entry form-number">
 <div class="form-input">
 <label for="entry_ghn{{ golfer.sequence }}">GHN Number</label>
 <input type="text" name="ghn{{ golfer.sequence }}" value="{{ golfer.ghn_number }}" id="entry_ghn{{ golfer.sequence }}">
 </div>
 </div>
 
-<div class="form-entry-left">
+<div class="form-entry">
 <div class="form-input">
 <label for="entry_shirtsize{{ golfer.sequence }}">Shirt size</label>
 <select name="shirtsize{{ golfer.sequence }}" id="entry_shirtsize{{ golfer.sequence }}">
@@ -204,7 +204,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-left">
+<div class="form-entry">
 <div class="form-input">
 <label for="entry_golfer_choice{{ golfer.sequence }}">Dinner Choice</label>
 <select name="golfer_choice{{ golfer.sequence }}" id="entry_golfer_choice{{ golfer.sequence }}">
@@ -242,7 +242,7 @@ change your selections. Just remember to save your changes before you leave.</p>
 </div>
 </div>
 
-<div class="form-entry-left">
+<div class="form-entry">
 <div class="form-input">
 <label for="entry_guest_choice{{ guest.sequence }}">Dinner Choice</label>
 <select name="guest_choice{{ guest.sequence }}" id="entry_guest_choice{{ guest.sequence }}">

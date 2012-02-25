@@ -93,7 +93,7 @@ Prices will be higher for late registration from April 17&ndash;26.</p>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_name">Name</label>
+<label for="entry_name">* Name</label>
 <input type="text" name="name" value="{{ sponsor.name }}" id="entry_name">
 </div>
 </div>
@@ -119,6 +119,13 @@ Prices will be higher for late registration from April 17&ndash;26.</p>
 </div>
 </div>
 
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_email">* Email</label>
+<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email">
+</div>
+</div>
+
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone">Phone</label>
@@ -126,17 +133,10 @@ Prices will be higher for late registration from April 17&ndash;26.</p>
 </div>
 </div>
 
-<div class="form-entry-left form-text">
+<div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_fax">Fax</label>
 <input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax">
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_email">Email</label>
-<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email">
 </div>
 </div>
 

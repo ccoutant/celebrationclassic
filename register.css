@@ -6,7 +6,7 @@ p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 .form-submit-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; }
 
 .form-section h2 { background: none; border: none; margin: 0 0 0.5em 8em; }
-.form-section p.subhead { margin: 0 0 0.5em 8em; text-align: left; }
+.form-section p { margin: 0 0 0.5em 8em; text-align: left; color: #555; }
 
 .form-entry { float: left; width: 100%; overflow: hidden; }
 .form-entry-left { float: left; width: 60%; }
