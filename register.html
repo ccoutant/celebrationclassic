@@ -1,0 +1,443 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; Registration</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="stylesheet" href="register.css" type="text/css">
+	<link rel="icon" href="favicon.png" type="image/png">
+<script type="text/javascript" language="javascript">
+function add_commas(str) {
+    str += '';
+    v = str.split('.');
+    v1 = v[0];
+    v2 = v.length > 1 ? '.' + v[1] : '';
+    var re = /(\d+)(\d{3})/;
+    while (re.test(v1)) {
+        v1 = v1.replace(re, '$1' + ',' + '$2');
+    }
+    return v1 + v2;
+}
+</script>
+</head>
+<body>
+
+<div class="container">
+
+<div id="logo">
+<a href="index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
+</div>
+
+<div id="banner">
+<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
+<p class="subhead">May 6&ndash;7, 2012
+<br>The Golf Club at Boulder Ridge
+<br>San Jose, CA</p>
+</div>
+
+</div> <!-- container -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+	<li><a href="details.html">Tournament Details</a></li>
+	<li>Registration</li>
+	<li><a href="sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="volunteer.html">Volunteer Information</a></li>
+	<li><a href="auction.html">Live Auction</a></li>
+	<li><a href="map.html">Map and Directions</a></li>
+</ul>
+</div>
+
+<div id="content">
+<h2>Registration</h2>
+
+<p>Start your online registration by filling out this form.
+If you would prefer to download and print a registration form to mail in with your payment,
+you can download one of the registration forms listed at the bottom of this page.</p>
+
+<p>You can register online in three easy steps:</p>
+
+<ol>
+
+<li><p>Provide your contact information,
+select a sponsorship level (if desired),
+and enter the number of golfers and dinner guests.</p>
+
+<li><p>Make your payment online through Acceptiva.</p>
+
+<li><p>After paying, you will be returned to this site
+where you will be asked to provide golfer information and
+make your dinner selections.
+After your payment is made, you can complete your registration
+at any time until April 26.</p>
+
+</ol>
+
+<p>Current prices for golf and dinner are good through the regular registration deadline of April 16.
+Prices will be higher for late registration from April 17&ndash;26.</p>
+
+<p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
+
+{% for m in messages %}
+<p class="message">{{ m|escape }}</p>
+{% endfor %}
+
+<form action="/register" method="post">
+
+<div id="register-form" class="form">
+
+<div class="form-section">
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_name">Name</label>
+<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_company">Company</label>
+<input type="text" name="company" value="{{ sponsor.company }}" id="entry_company">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_address">Address</label>
+<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_city">City, State, ZIP</label>
+<input type="text" name="city" value="{{ sponsor.city }}" id="entry_city">
+</div>
+</div>
+
+<div class="form-entry-left form-phone">
+<div class="form-input">
+<label for="entry_phone">Phone</label>
+<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_fax">Fax</label>
+<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_email">Email</label>
+<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-section" id="sponsorships">
+
+<h2>Sponsorships</h2>
+
+<p class="subhead">If you would like to sponsor this event,
+check the sponsorship(s) you are interested in below.
+If you are not interested in a sponsorship, skip this section.</p>
+
+<div class="form-column-container">
+<div class="form-column">
+
+<h3>Premier Sponsors</h3>
+
+{% for sponsorship in premier %}
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
+</div>
+</div>
+{% endfor %}
+
+<h3>Executive Sponsors</h3>
+
+{% for sponsorship in executive %}
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
+</div>
+</div>
+{% endfor %}
+
+</div> <!-- form-column -->
+
+<div class="form-column">
+
+<h3>Pro Sponsors</h3>
+
+{% for sponsorship in pro %}
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
+</div>
+</div>
+{% endfor %}
+
+<h3>Angel Sponsors</h3>
+
+{% for sponsorship in angel %}
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
+</div>
+</div>
+{% endfor %}
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label class="above" for="entry_fax">Other Donation</label>
+$<input type="text" name="other" value="{{ other }}" id="entry_other">
+</div>
+</div>
+
+</div> <!-- form-column -->
+</div> <!-- form-column-container -->
+
+</div> <!-- form-section -->
+
+<div class="form-section">
+
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="agree" value="y" {% if not sponsor.anonymous %} checked {% endif %} id="entry_agree"></div>
+<label class="right" for="entry_agree">I/We agree to be named as a sponsor</label>
+</div>
+</div>
+
+<div class="form-entry form-text">
+<div class="form-input">
+<label class="above" for="entry_printednames">Please enter your name(s) exactly as they should appear:</label>
+<input type="text" name="name" value="{{ sponsor.printed_names }}" id="entry_printednames">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-section">
+
+<p class="subhead"><span id="included_text"></span></p>
+
+<div class="form-entry">
+<div class="form-input">
+<label for="entry_num_golfers"># Golfers</label>
+<select id="entry_num_golfers" name="num_golfers">
+<option label="0" value="0" {% ifequal sponsor.num_golfers 0 %} selected {% endifequal %}>0</option>
+<option label="1" value="1" {% ifequal sponsor.num_golfers 1 %} selected {% endifequal %}>1</option>
+<option label="2" value="2" {% ifequal sponsor.num_golfers 2 %} selected {% endifequal %}>2</option>
+<option label="3" value="3" {% ifequal sponsor.num_golfers 3 %} selected {% endifequal %}>3</option>
+<option label="4" value="4" {% ifequal sponsor.num_golfers 4 %} selected {% endifequal %}>4</option>
+<option label="5" value="5" {% ifequal sponsor.num_golfers 5 %} selected {% endifequal %}>5</option>
+<option label="6" value="6" {% ifequal sponsor.num_golfers 6 %} selected {% endifequal %}>6</option>
+<option label="7" value="7" {% ifequal sponsor.num_golfers 7 %} selected {% endifequal %}>7</option>
+<option label="8" value="8" {% ifequal sponsor.num_golfers 8 %} selected {% endifequal %}>8</option>
+<option label="9" value="9" {% ifequal sponsor.num_golfers 9 %} selected {% endifequal %}>9</option>
+<option label="10" value="10" {% ifequal sponsor.num_golfers 10 %} selected {% endifequal %}>10</option>
+<option label="11" value="11" {% ifequal sponsor.num_golfers 11 %} selected {% endifequal %}>11</option>
+<option label="12" value="12" {% ifequal sponsor.num_golfers 12 %} selected {% endifequal %}>12</option>
+</select>
+<label class="right">($360 each, includes dinner)</label>
+</div>
+</div>
+
+<div class="form-entry">
+<div class="form-input">
+<label for="entry_num_dinners"># Dinner Guests</label>
+<select id="entry_num_dinners" name="num_dinners">
+<option label="0" value="0" {% ifequal sponsor.num_dinners 0 %} selected {% endifequal %}>0</option>
+<option label="1" value="1" {% ifequal sponsor.num_dinners 1 %} selected {% endifequal %}>1</option>
+<option label="2" value="2" {% ifequal sponsor.num_dinners 2 %} selected {% endifequal %}>2</option>
+<option label="3" value="3" {% ifequal sponsor.num_dinners 3 %} selected {% endifequal %}>3</option>
+<option label="4" value="4" {% ifequal sponsor.num_dinners 4 %} selected {% endifequal %}>4</option>
+<option label="5" value="5" {% ifequal sponsor.num_dinners 5 %} selected {% endifequal %}>5</option>
+<option label="6" value="6" {% ifequal sponsor.num_dinners 6 %} selected {% endifequal %}>6</option>
+<option label="7" value="7" {% ifequal sponsor.num_dinners 7 %} selected {% endifequal %}>7</option>
+<option label="8" value="8" {% ifequal sponsor.num_dinners 8 %} selected {% endifequal %}>8</option>
+<option label="9" value="9" {% ifequal sponsor.num_dinners 9 %} selected {% endifequal %}>9</option>
+<option label="10" value="10" {% ifequal sponsor.num_dinners 10 %} selected {% endifequal %}>10</option>
+<option label="11" value="11" {% ifequal sponsor.num_dinners 11 %} selected {% endifequal %}>11</option>
+<option label="12" value="12" {% ifequal sponsor.num_dinners 12 %} selected {% endifequal %}>12</option>
+</select>
+<label class="right" for="entry_num_dinners">(non-golfers only, $75 each)</label>
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-section">
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_payment_due">Payment Due</label>
+$<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="entry_payment_due_c" readonly>
+<input type="hidden" name="payment_due" value="{{ sponsor.payment_due }}" id="entry_payment_due">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-submit-section">
+
+<div class="form-entry form-submit">
+<div class="form-button">
+<input type="submit" name="submit" value="Checkout ->">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+</div> <!-- register_form -->
+
+</form>
+
+<h2>Download Registration Forms</h2>
+
+<ul>
+	<li><a href="http://www.shirhadash.org/celebrationclassic/Single%20Sign%20Up.pdf">Registration form for singles</a></li>
+	<li><a href="http://www.shirhadash.org/celebrationclassic/Twosome%20Signup.pdf">Registration form for twosomes</a></li>
+	<li><a href="http://www.shirhadash.org/celebrationclassic/Foursome%20Sign%20Up.pdf">Registration form for foursomes</a></li>
+</ul>
+
+</div> <!-- content -->
+
+</div> <!-- container -->
+
+<div id="footer">
+<p>All proceeds from the Celebration Classic Dinner and Golf
+Tournament will benefit <a href="http://www.shirhadash.org">Congregation Shir Hadash</a>
+and its community programs, which are aimed at improving the
+lives of many under-served populations in Santa Clara County.
+These include the annual
+<a href="http://www.shirhadash.org/tikkunolam/healthfair.html">Healthy Living Fair</a>,
+which provides a wide array of health
+services and screenings at no charge;
+participation in interfaith Habitat for Humanity;
+non-sectarian support for our community&rsquo;s elderly;
+providing food and supplies to local shelters, and
+school supplies to local children in need;
+the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
+and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
+</div>
+
+<script type="text/javascript" language="javascript">
+function recalculate() {
+	var sponsorships = document.getElementById("sponsorships");
+	var checkboxes = sponsorships.getElementsByTagName("input");
+	var total = 0;
+	var golfers_included = 0;
+	var dinners_included = 0;
+	for (var i = 0; i < checkboxes.length; i++) {
+		if (checkboxes[i].checked) {
+			var triple = checkboxes[i].value.split(":");
+			var price = parseInt(triple[2]);
+			total += price;
+			if (price >= 20000)
+				golfers_included += 12;
+			else if (price >= 15000)
+				golfers_included += 8;
+			else if (price >= 10000)
+				golfers_included += 6;
+			else if (triple[0] == "Angel")
+				golfers_included += 4;
+			else if (price >= 3000)
+				golfers_included += 2;
+			else
+				golfers_included += 1;
+		}
+	var otherbox = document.getElementById("entry_other");
+	var other = 0;
+	if (otherbox.value)
+		other = parseInt(otherbox.value);
+	dinners_included = golfers_included;
+	// If no sponsorship, disable the "agree to publish my name" checkbox.
+	var agreebox = document.getElementById("entry_agree");
+	var printednamesbox = document.getElementById("entry_printednames");
+	agreebox.disabled = (total + other) == 0;
+	printednamesbox.disabled = (total + other) == 0 || !agreebox.checked;
+	// Insert explanation of included golfers and dinners.
+	var includes_span = document.getElementById("included_text");
+	var includes = "";
+	if (golfers_included == 1)
+		includes = "Your sponsorship includes 1 golfer";
+	else if (golfers_included > 1)
+		includes = "Your sponsorship includes " + golfers_included + " golfers";
+	if (dinners_included == 1)
+		includes += " plus 1 additional dinner guest.";
+	else if (dinners_included > 1)
+		includes += " plus " + dinners_included + " additional dinner guests.";
+	if (includes_span)
+		includes_span.innerHTML = includes;
+	// Calculate price for additional golfers and dinners.
+	var golferbox = document.getElementById("entry_num_golfers");
+	var golfers = parseInt(golferbox.value) - golfers_included;
+	if (golfers < 0) {
+		// Transfer unused golfer allowance to dinner allowance.
+		dinners_included -= golfers;
+		golfers = 0;
+		}
+	var gprice = golfers * 360;
+	var dinnerbox = document.getElementById("entry_num_dinners");
+	var dinners = parseInt(dinnerbox.value) - dinners_included;
+	if (dinners < 0)
+		dinners = 0;
+	var dprice = dinners * 75;
+	var totalbox = document.getElementById("entry_payment_due");
+	totalbox.value = total + other + gprice + dprice;
+	var totalbox_c = document.getElementById("entry_payment_due_c");
+	totalbox_c.value = add_commas(total + other + gprice + dprice);
+	}
+}
+function ignore_enter(e) {
+	e = e || event;
+	var key = e.keyCode || event.which || event.charCode;
+	if( key == 13 ) {
+		e.cancelBubble = true;
+		e.returnValue = false;
+		if (e.stopPropagation) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+		this.blur();
+	}
+}
+function install_recalculate_hooks() {
+	var sponsorships = document.getElementById("sponsorships");
+	var checkboxes = sponsorships.getElementsByTagName("input");
+	for (var i = 0; i < checkboxes.length; i++) {
+		checkboxes[i].onclick = recalculate;
+	}
+	var otherbox = document.getElementById("entry_other");
+	otherbox.onchange = recalculate;
+	otherbox.onkeypress = ignore_enter;
+	var agreebox = document.getElementById("entry_agree");
+	agreebox.onclick = recalculate;
+	var printednamesbox = document.getElementById("entry_printednames");
+	printednamesbox.onkeypress = ignore_enter;
+	var selectbox = document.getElementById("entry_num_golfers");
+	selectbox.onchange = recalculate;
+	selectbox = document.getElementById("entry_num_dinners");
+	selectbox.onchange = recalculate;
+}
+install_recalculate_hooks();
+recalculate();
+</script>
+
+</body>
+</html>

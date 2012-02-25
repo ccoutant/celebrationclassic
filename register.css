@@ -1,0 +1,54 @@
+p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
+
+.form { position: relative; overflow: hidden; width: 564px; }
+
+.form-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; background-color: #e7fbe7; }
+.form-submit-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; }
+
+.form-section h2 { background: none; border: none; margin: 0 0 0.5em 8em; }
+.form-section p.subhead { margin: 0 0 0.5em 8em; text-align: left; }
+
+.form-entry { float: left; width: 100%; overflow: hidden; }
+.form-entry-left { float: left; width: 60%; }
+.form-entry-right { float: left; width: 40%; }
+
+.form label { display: block; float: left; width: 8em;
+	text-align: right; margin: 0.2em 0 0 -8.5em;
+	font-size: 90%; line-height: 1.2em; color: #555;
+	}
+.form label.above { float: none; width: auto; text-align: left; margin: 0.5em 0; }
+.form label.right { display: inline; float: none; width: auto;
+	text-align: left; margin: 0.2em 0 0 0;
+	white-space: normal; }
+.form-gender label { float: none; width: auto; text-align: left; margin: 0.5em 0; white-space: nowrap; }
+label.sold { color: #999; }
+
+.form-input, .form-button { margin: 0 0 0.25em 8em; }
+.form-text .form-input input { width: 90%; }
+.form-phone .form-input input { width: 50%; }
+.form-number .form-input input { width: 3em; }
+.form-dollars .form-input input { width: 6em; }
+
+.form ul { display: inline; list-style: none; margin: 0; padding: 0; }
+.form li { display: inline; padding: 0 0.5em; }
+
+.form-gender ul { display: inline; list-style: none; margin: 0; padding: 0; }
+.form-gender li { display: inline; padding: 0 0.25em; }
+
+.form-column-container { margin: 0 0 0 8em; overflow: hidden; }
+.form-column { float: left; margin: 0; width: 50%; }
+.form-column-right { margin-right: 0; }
+.form-column h3 { float: left; width: 100%; margin: 1em 0 0.5em 0; font-style: italic; text-transform: none; letter-spacing: 0; }
+
+.form-checkbox .form-input { margin-left: 10em; }
+.form-column .form-checkbox .form-input { margin-left: 2em; }
+
+.form-checkbox .checkbox-container { float: left; width: 2em; margin: 0.1em 0 0 -2em; }
+.form .form-checkbox label.right { margin: 0; }
+
+.form-column .form-input, .form-column .form-button { margin-left: 0; }
+
+/* IE6 hacks */
+.form-entry, .form-entry-left, .form-entry-right, .form label, .form-column { display: inline; }
+/* * html .row .row { display: inline-block; } */
+/* * html .rightside_1col, .rightside_2col { overflow: hidden; } */

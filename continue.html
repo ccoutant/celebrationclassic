@@ -1,0 +1,354 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; Registration</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="stylesheet" href="register.css" type="text/css">
+	<link rel="icon" href="favicon.png" type="image/png">
+</head>
+<body>
+
+<div class="container">
+
+<div id="logo">
+<a href="index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
+</div>
+
+<div id="banner">
+<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
+<p class="subhead">May 6&ndash;7, 2012
+<br>The Golf Club at Boulder Ridge
+<br>San Jose, CA</p>
+</div>
+
+</div> <!-- container -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+	<li><a href="details.html">Tournament Details</a></li>
+	<li>Registration</li>
+	<li><a href="sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="volunteer.html">Volunteer Information</a></li>
+	<li><a href="auction.html">Live Auction</a></li>
+	<li><a href="map.html">Map and Directions</a></li>
+</ul>
+</div>
+
+<div id="content">
+<h2>Golfer Information and Dinner Choices</h2>
+
+<p>Complete your online registration by providing the golfer information and dinner choices below.</p>
+
+<p><a href="/register?id={{ sponsor.id }}">Bookmark this page!</a>
+You don&rsquo;t need to fill out the form completely now,
+and you may return as often as you wish&mdash;until the registration deadline&mdash;to
+change your selections. Just remember to save your changes before you leave.</p>
+
+<p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
+
+{% for m in messages %}
+<p class="message">{{ m|escape }}</p>
+{% endfor %}
+
+<form action="/continue" method="post">
+
+<div id="continue-form" class="form">
+
+<div class="form-section">
+
+<h2>Sponsor</h2>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_name">Name</label>
+<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name" readonly>
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_company">Company</label>
+<input type="text" name="company" value="{{ sponsor.company }}" id="entry_company" readonly>
+</div>
+</div>
+
+<!--
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_address">Address</label>
+<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address" readonly>
+</div>
+</div>
+
+<div class="form-entry-right form-text">
+<div class="form-input">
+<label for="entry_city">City, State, ZIP</label>
+<input type="text" name="city" value="{{ sponsor.city }}" id="entry_4=city" readonly>
+</div>
+</div>
+
+<div class="form-entry-left form-phone">
+<div class="form-input">
+<label for="entry_phone">Phone</label>
+<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone" readonly>
+</div>
+</div>
+
+<div class="form-entry-right form-text">
+<div class="form-input">
+<label for="entry_fax">Fax</label>
+<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax" readonly>
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_email">Email</label>
+<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email" readonly>
+</div>
+</div>
+-->
+
+<input type="hidden" name="id" value="{{ sponsor.id }}">
+
+</div> <!-- form-section -->
+
+{% for golfer in golfers %}
+<div class="form-section">
+
+<h2>Golfer #{{golfer.sequence}}</h2>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_golfer_name{{ golfer.sequence }}">Name</label>
+<input type="text" name="name{{ golfer.sequence }}" value="{{ golfer.name }}" id="entry_golfer_name{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-right form-gender">
+<div class="form-input">
+<ul>
+<li><label><input type="radio" name="gender{{ golfer.sequence }}" value="M" {% ifequal golfer.gender "M" %}checked{% endifequal %}> M</label></li>
+<li><label><input type="radio" name="gender{{ golfer.sequence }}" value="F" {% ifequal golfer.gender "F" %}checked{% endifequal %}> F</label></li>
+</ul>
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_company{{ golfer.sequence }}">Company</label>
+<input type="text" name="company{{ golfer.sequence }}" value="{{ golfer.company }}" id="entry_company{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_address{{ golfer.sequence }}">Address</label>
+<input type="text" name="address{{ golfer.sequence }}" value="{{ golfer.address }}" id="entry_address{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_city{{ golfer.sequence }}">City, State, ZIP</label>
+<input type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_email{{ golfer.sequence }}">Email</label>
+<input type="text" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-phone">
+<div class="form-input">
+<label for="entry_phone{{ golfer.sequence }}">Phone</label>
+<input type="text" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-number">
+<div class="form-input">
+<label for="entry_index{{ golfer.sequence }}">Index</label>
+<input type="text" name="index{{ golfer.sequence }}" value="{{ golfer.golf_index }}" id="entry_index{{ golfer.sequence }}">
+<label class="right" for="entry_best{{ golfer.sequence }}"><i>OR</i> Best Score</label>
+<input type="text" name="best{{ golfer.sequence }}" value="{{ golfer.best_score }}" id="entry_best{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left form-number">
+<div class="form-input">
+<label for="entry_ghn{{ golfer.sequence }}">GHN Number</label>
+<input type="text" name="ghn{{ golfer.sequence }}" value="{{ golfer.ghn_number }}" id="entry_ghn{{ golfer.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left">
+<div class="form-input">
+<label for="entry_shirtsize{{ golfer.sequence }}">Shirt size</label>
+<select name="shirtsize{{ golfer.sequence }}" id="entry_shirtsize{{ golfer.sequence }}">
+<option value="Select one...">Select one...</option>
+<option value="S" {% ifequal golfer.shirt_size "S" %}selected{% endifequal %}>S</option>
+<option value="M" {% ifequal golfer.shirt_size "M" %}selected{% endifequal %}>M</option>
+<option value="L" {% ifequal golfer.shirt_size "L" %}selected{% endifequal %}>L</option>
+<option value="XL" {% ifequal golfer.shirt_size "XL" %}selected{% endifequal %}>XL</option>
+<option value="XXL" {% ifequal golfer.shirt_size "XXL" %}selected{% endifequal %}>XXL</option>
+<option value="XXXL" {% ifequal golfer.shirt_size "XXXL" %}selected{% endifequal %}>XXXL</option>
+</select>
+</div>
+</div>
+
+<div class="form-entry-left">
+<div class="form-input">
+<label for="entry_golfer_choice{{ golfer.sequence }}">Dinner Choice</label>
+<select name="golfer_choice{{ golfer.sequence }}" id="entry_golfer_choice{{ golfer.sequence }}">
+<option value="Select one...">Select one...</option>
+<option value="Skirt Steak" {% ifequal golfer.dinner_choice "Skirt Steak" %}selected{% endifequal %}>Skirt Steak</option>
+<option value="Fresh Fish" {% ifequal golfer.dinner_choice "Fresh Fish" %}selected{% endifequal %}>Fresh Fish</option>
+<option value="Vegetarian Pasta" {% ifequal golfer.dinner_choice "Vegetarian Pasta" %}selected{% endifequal %}>Vegetarian Pasta</option>
+</select>
+</div>
+</div>
+
+</div> <!-- form-section -->
+{% endfor %}
+
+<div class="form-section">
+
+<div class="form-entry form-text">
+<div class="form-input">
+<label class="above" for="entry_pairing">Pairing preferences:</label>
+<input type="text" name="pairing" value="{{ sponsor.pairing }}" id="entry_pairing">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+{% for guest in dinner_guests %}
+<div class="form-section">
+
+<h2>Dinner Guest #{{guest.sequence}}</h2>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_guest_name{{ guest.sequence }}">Name</label>
+<input type="text" name="guest{{ guest.sequence }}" value="{{ guest.name }}" id="entry_guest_name{{ guest.sequence }}">
+</div>
+</div>
+
+<div class="form-entry-left">
+<div class="form-input">
+<label for="entry_guest_choice{{ guest.sequence }}">Dinner Choice</label>
+<select name="guest_choice{{ guest.sequence }}" id="entry_guest_choice{{ guest.sequence }}">
+<option value="Select one...">Select one...</option>
+<option value="Skirt Steak" {% ifequal guest.dinner_choice "Skirt Steak" %}selected{% endifequal %}>Skirt Steak</option>
+<option value="Fresh Fish" {% ifequal guest.dinner_choice "Fresh Fish" %}selected{% endifequal %}>Fresh Fish</option>
+<option value="Vegetarian Pasta" {% ifequal guest.dinner_choice "Vegetarian Pasta" %}selected{% endifequal %}>Vegetarian Pasta</option>
+</select>
+</div>
+</div>
+
+</div> <!-- form-section -->
+{% endfor %}
+
+<div class="form-section">
+
+<div class="form-entry form-text">
+<div class="form-input">
+<label class="above" for="entry_seating">Seating preferences:</label>
+<input type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-submit-section">
+
+<div class="form-entry form-submit">
+<div class="form-button">
+<input type="submit" name="submit" value="Save Changes">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+</div> <!-- continue-form -->
+
+</form>
+
+</div> <!-- content -->
+
+</div> <!-- container -->
+
+<div id="footer">
+<p>All proceeds from the Celebration Classic Dinner and Golf
+Tournament will benefit <a href="http://www.shirhadash.org">Congregation Shir Hadash</a>
+and its community programs, which are aimed at improving the
+lives of many under-served populations in Santa Clara County.
+These include the annual
+<a href="http://www.shirhadash.org/tikkunolam/healthfair.html">Healthy Living Fair</a>,
+which provides a wide array of health
+services and screenings at no charge;
+participation in interfaith Habitat for Humanity;
+non-sectarian support for our community&rsquo;s elderly;
+providing food and supplies to local shelters, and
+school supplies to local children in need;
+the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
+and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
+</div>
+
+<script type="text/javascript" language="javascript">
+function install_select_handler() {
+	var elem = document.getElementById("entry_0_ul");
+	var inputs = elem.getElementsByTagName("input");
+	var player1 = document.getElementById("player1");
+	var player2 = document.getElementById("player2");
+	var player3 = document.getElementById("player3");
+	var player4 = document.getElementById("player4");
+	var pairing = document.getElementById("pairingrequest");
+	var submit = document.getElementById("submitbutton");
+	for (var i = 0; i < inputs.length; i++)
+		inputs[i].onclick = function () {
+			if (this.value == "Single")
+				n = 1;
+			else if (this.value == "Twosome")
+				n = 2;
+			else
+				n = 4;
+			if (n < 4)
+				pairing.style.display = "block";
+			else
+				pairing.style.display = "none";
+			if (n >= 1)
+				player1.style.display = "block";
+			if (n >= 2)
+				player2.style.display = "block";
+			if (n == 4) {
+				player3.style.display = "block";
+				player4.style.display = "block";
+			}
+			if (n > 0)
+				submit.style.display = "block";
+			else
+				submit.style.display = "none";
+			if (n < 4) {
+				player4.style.display = "none";
+				player3.style.display = "none";
+			}
+			if (n < 2)
+				player2.style.display = "none";
+			if (n < 1)
+				player1.style.display = "none";
+		};
+}
+install_select_handler();
+</script>
+
+</body>
+</html>

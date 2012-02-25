@@ -1,0 +1,23 @@
+application: celebrationclassic
+version: 3
+runtime: python
+api_version: 1
+
+handlers:
+- url: /favicon.png
+  static_files: favicon.png
+  upload: favicon.png
+
+- url: /register.css
+  static_files: register.css
+  upload: register.css
+
+- url: /(register|continue|postpayment|fakeacceptiva)
+  script: register.py
+
+- url: /admin/.*
+  script: admin.py
+  login: admin
+
+- url: /.*
+  script: proxy.py
