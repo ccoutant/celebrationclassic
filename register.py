@@ -4,6 +4,7 @@ import cgi
 import logging
 import random
 import urllib
+import re
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
@@ -39,10 +40,17 @@ def show_continuation_form(response, s, messages):
 	q = Golfer.all().ancestor(s.key())
 	golfers = q.fetch(s.num_golfers)
 	for i in range(len(golfers) + 1, s.num_golfers + 1):
-		golfers.append(Golfer(parent = s, sequence = i, name = '', gender = '', title = '',
-							  company = '', address = '', city = '', phone = '', email = '',
-							  golf_index = '', best_score = '', ghn_number = '',
-							  shirt_size = '', dinner_choice = ''))
+		golfer = Golfer(parent = s, sequence = i, name = '', gender = '', title = '',
+						company = '', address = '', city = '', phone = '', email = '',
+						golf_index = '', best_score = '', ghn_number = '',
+						shirt_size = '', dinner_choice = '')
+		if i == 1:
+			golfer.name = s.name
+			golfer.company = s.company
+			golfer.city = s.city
+			golfer.phone = s.phone
+			golfer.email = s.email
+		golfers.append(golfer)
 	q = DinnerGuest.all().ancestor(s.key())
 	dinner_guests = q.fetch(s.num_dinners)
 	for i in range(len(dinner_guests) + 1, s.num_dinners + 1):
@@ -162,6 +170,20 @@ class Register(webapp.RequestHandler):
 		if caps.can_add_registrations and s.payment_made > 0:
 			self.redirect('/register?id=%s' % s.id)
 			return
+		fname = ''
+		lname = ''
+		names = s.name.split()
+		if len(names) == 2:
+			fname = names[0]
+			lname = names[1]
+		city = ''
+		state = ''
+		zip = ''
+		m = re.match(r'([^,]*)[, ]*([A-Z][A-Z])[, ]*(\d{5,5}(-\d{4,4})?)?', s.city)
+		if m:
+			city = m.group(1)
+			state = m.group(2)
+			zip = m.group(3) or ''
 		parms = [('cst', '60605a'),
 				 ('contactname', s.name),
 				 ('contactemailaddress', s.email),
@@ -169,7 +191,15 @@ class Register(webapp.RequestHandler):
 				 ('numberofgolfers', s.num_golfers),
 				 ('numberofdinnerguests', s.num_dinners),
 				 ('amount_20_20_amt', s.payment_due),
-				 ('idnumberhidden', s.id)]
+				 ('idnumberhidden', s.id),
+				 ('fname', fname),
+				 ('lname', lname),
+				 ('address', s.address),
+				 ('city', city),
+				 ('state', state),
+				 ('zip', zip),
+				 ('phone', s.phone),
+				 ('email', s.email)]
 		acceptiva = 'https://secure.acceptiva.com/' if not debug else '/fakeacceptiva'
 		self.redirect('%s?%s' % (acceptiva, urllib.urlencode(parms)))
 
@@ -265,11 +295,19 @@ class FakeAcceptiva(webapp.RequestHandler):
 		self.response.out.write('<h1>Fake Acceptiva</h1>\n')
 		self.response.out.write('<form action="/postpayment" method="post">\n')
 		self.response.out.write('<p>Name: %s</p>\n' % cgi.escape(name))
+		self.response.out.write('<p>First Name: %s</p>\n' % cgi.escape(self.request.get('fname')))
+		self.response.out.write('<p>Last Name: %s</p>\n' % cgi.escape(self.request.get('lname')))
 		self.response.out.write('<p>Email: %s</p>\n' % cgi.escape(self.request.get('contactemailaddress')))
 		self.response.out.write('<p>Sponsorships: %s</p>\n' % cgi.escape(self.request.get('sponsorshiplevel')))
 		self.response.out.write('<p># Golfers: %s</p>\n' % cgi.escape(self.request.get('numberofgolfers')))
 		self.response.out.write('<p># Dinner Guests: %s</p>\n' % cgi.escape(self.request.get('numberofdinnerguests')))
 		self.response.out.write('<p>Payment Due: %s</p>\n' % cgi.escape(payment_due))
+		self.response.out.write('<p>Address: %s</p>\n' % cgi.escape(self.request.get('address')))
+		self.response.out.write('<p>City: %s</p>\n' % cgi.escape(self.request.get('city')))
+		self.response.out.write('<p>State: %s</p>\n' % cgi.escape(self.request.get('state')))
+		self.response.out.write('<p>ZIP: %s</p>\n' % cgi.escape(self.request.get('zip')))
+		self.response.out.write('<p>Phone: %s</p>\n' % cgi.escape(self.request.get('phone')))
+		self.response.out.write('<p>Email: %s</p>\n' % cgi.escape(self.request.get('email')))
 		self.response.out.write('<p>ID: %s</p>\n' % cgi.escape(id))
 		self.response.out.write('<input type="hidden" name="contactname" value="%s">\n' % cgi.escape(name, True))
 		self.response.out.write('<input type="hidden" name="idnumberhidden" value="%s">\n' % cgi.escape(id))
