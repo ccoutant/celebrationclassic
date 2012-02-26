@@ -95,7 +95,7 @@ class ProxyHandler(webapp.RequestHandler):
 			self.response.set_status(304)
 
 def main():
-	logging.getLogger().setLevel(logging.DEBUG)
+	logging.getLogger().setLevel(logging.INFO)
 	application = webapp.WSGIApplication([('/', MainHandler),
 										  ('/cache', CacheHandler),
 										  ('/clearcache', ClearCacheHandler),

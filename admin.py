@@ -1,29 +1,102 @@
 #!/usr/bin/env python
 
-import os
 import cgi
 import logging
 from google.appengine.ext import webapp
-from google.appengine.ext import db
 from google.appengine.ext.webapp import util
-from google.appengine.ext.webapp import template
+from google.appengine.api import users
+from google.appengine.api import memcache
+
+import capabilities
+import sponsorship
+
+# Logout
+
+class Logout(webapp.RequestHandler):
+	def get(self):
+		self.redirect(users.create_logout_url('/'))
+
+# Users who can update parts of the site.
+
+class ManageUsers(webapp.RequestHandler):
+	# Show the form.
+	def get(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		q = capabilities.Capabilities.all()
+		caps = q.fetch(30)
+		self.response.out.write("""<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head><title>Edit User List</title></head>
+<body>
+<h1>Edit User List</h1>
+<form action="/admin/users" method="post">
+<table border="0" cellspacing="0" cellpadding="5">
+<tr><th>Email</th><th>Name</th><th>Update Sponsorships</th><th>View Registrations</th><th>Add Registrations</th></tr>
+""")
+		seq = 1
+		for u in caps:
+			self.response.out.write('<tr>\n')
+			self.response.out.write('<td>%s<input type="hidden" name="email%d" value="%s"></td>\n' % (cgi.escape(u.email), seq, cgi.escape(u.email)))
+			self.response.out.write('<td>%s</td>\n' % users.User(u.email).nickname())
+			self.response.out.write('<td><input type="checkbox" name="us%d" value="u" %s></td>\n' % (seq, "checked" if u.can_update_sponsorships else ""))
+			self.response.out.write('<td><input type="checkbox" name="vr%d" value="v" %s></td>\n' % (seq, "checked" if u.can_view_registrations else ""))
+			self.response.out.write('<td><input type="checkbox" name="ar%d" value="a" %s></td>\n' % (seq, "checked" if u.can_add_registrations else ""))
+			self.response.out.write('</tr>\n')
+			seq += 1
+		self.response.out.write('<tr>\n')
+		self.response.out.write('<td><input type="text" size="12" name="email" value=""></td>\n')
+		self.response.out.write('<td></td>\n')
+		self.response.out.write('<td><input type="checkbox" name="us" value="u"></td>\n')
+		self.response.out.write('<td><input type="checkbox" name="vr" value="v"></td>\n')
+		self.response.out.write('<td><input type="checkbox" name="ar" value="a"></td>\n')
+		self.response.out.write('</tr>\n')
+		self.response.out.write('</table>\n')
+		self.response.out.write('<input type="hidden" name="count" value="%d">\n' % seq)
+		self.response.out.write('<input type="submit" value="Save">\n')
+		self.response.out.write('</form></body></html>\n')
+
+	# Process the submitted info.
+	def post(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		count = int(self.request.get('count'))
+		for i in range(1, count):
+			email = self.request.get('email%d' % i)
+			q = capabilities.Capabilities.all()
+			q.filter("email = ", email)
+			u = q.get()
+			us = True if self.request.get('us%d' % i) == 'u' else False
+			vr = True if self.request.get('vr%d' % i) == 'v' else False
+			ar = True if self.request.get('ar%d' % i) == 'a' else False
+			if us != u.can_update_sponsorships or vr != u.can_view_registrations or ar != u.can_add_registrations:
+				s.can_update_sponsorships = us
+				s.can_view_registrations = vr
+				s.can_add_registrations = ar
+				s.put()
+		email = self.request.get('email')
+		us = True if self.request.get('us') == 'u' else False
+		vr = True if self.request.get('vr') == 'v' else False
+		ar = True if self.request.get('ar') == 'a' else False
+		if email:
+			u = capabilities.Capabilities(email = email, can_update_sponsorships = us, can_view_registrations = vr, can_add_registrations = ar)
+			u.put()
+		memcache.flush_all()
+		self.redirect('/admin/users')
 
 # Sponsorship information.
-
-class Sponsorship(db.Model):
-	name = db.StringProperty()
-	level = db.StringProperty()
-	sequence = db.IntegerProperty()
-	price = db.IntegerProperty()
-	unique = db.BooleanProperty()
-	sold = db.BooleanProperty()
 
 class Sponsorships(webapp.RequestHandler):
 	# Show the form.
 	def get(self):
-		q = Sponsorship.all()
-		q.order("sequence")
-		sponsorships = q.fetch(30)
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_update_sponsorships:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		sponsorships = sponsorship.get_sponsorships("all")
 		self.response.out.write("""<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 	"http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -74,12 +147,15 @@ class Sponsorships(webapp.RequestHandler):
 
 	# Process the submitted info.
 	def post(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
 		count = int(self.request.get('count'))
 		for i in range(1, count):
 			name = self.request.get('name%d' % i)
-			q = Sponsorship.all()
+			q = sponsorship.Sponsorship.all()
 			q.filter("name = ", name)
-			s = q.fetch(1)[0]
+			s = q.get()
 			if self.request.get('delete%d' % i) == 'd':
 				s.delete()
 			else:
@@ -91,18 +167,21 @@ class Sponsorships(webapp.RequestHandler):
 					s.put()
 		name = self.request.get('name')
 		level = self.request.get('level')
-		sequence = int(self.request.get('seq'))
-		price = int(self.request.get('price'))
+		sequence = self.request.get('seq')
+		price = self.request.get('price')
 		unique = True if self.request.get('unique') == 'u' else False
 		sold = True if self.request.get('sold') == 's' else False
 		if name and sequence and price:
-			s = Sponsorship(name = name, level = level, sequence = sequence, price = price, unique = unique, sold = sold)
+			s = sponsorship.Sponsorship(name = name, level = level, sequence = int(sequence), price = int(price), unique = unique, sold = sold)
 			s.put()
+		memcache.flush_all()
 		self.redirect('/admin/sponsorships')
 
 def main():
 	logging.getLogger().setLevel(logging.INFO)
-	application = webapp.WSGIApplication([('/admin/sponsorships', Sponsorships)],
+	application = webapp.WSGIApplication([('/admin/sponsorships', Sponsorships),
+										  ('/admin/users', ManageUsers),
+										  ('/admin/logout', Logout)],
 										 debug=True)
 	util.run_wsgi_app(application)
 

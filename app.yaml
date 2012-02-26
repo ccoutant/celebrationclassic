@@ -17,7 +17,7 @@ handlers:
 
 - url: /admin/.*
   script: admin.py
-  login: admin
+  login: required
 
 - url: /.*
   script: proxy.py

@@ -81,6 +81,9 @@ Prices will be higher for late registration from April 17&ndash;26.</p>
 
 <p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
 
+<p>If you have questions or feedback about the registration process,
+email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
+
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
@@ -293,11 +296,48 @@ $<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="e
 
 </div> <!-- form-section -->
 
+{% if capabilities.can_add_registrations %}
+<div class="form-section">
+
+<p class="subhead">(Office use only)</p>
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_payment_made">Payment Made</label>
+$<input type="text" name="payment_made" value="" id="entry_payment_made">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_paytype">Payment Type</label>
+<input type="text" name="paytype" value="" id="entry_paytype">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_transcode">Transaction Code</label>
+<input type="text" name="transcode" value="" id="entry_transcode">
+</div>
+</div>
+
+</div> <!-- form-section -->
+{% endif %}
+
+{% if debug %}
+<input type="hidden" name="debug" value="y">
+{% endif %}
+
 <div class="form-submit-section">
 
 <div class="form-entry form-submit">
 <div class="form-button">
+{% if capabilities.can_add_registrations %}
+<input type="submit" name="submit" value="Continue ->">
+{% else %}
 <input type="submit" name="submit" value="Checkout ->">
+{% endif %}
 </div>
 </div>
 
