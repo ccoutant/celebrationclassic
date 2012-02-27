@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; Registrations</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="icon" href="/favicon.png" type="image/png">
+<style type="text/css">
+body.view { width: 100%; }
+body.view #logo { margin-left: 3%; }
+body.view #banner { width: auto; margin-left: 30px; }
+body.view #banner h1 { text-align: left; margin: 0 0 1em 0; }
+body.view #banner p.subhead { text-align: left; margin: 0; }
+body.view #nav { width: 12%; margin-left: 3%; }
+body.view #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+body.view td p { margin: 0; }
+</style>
+</head>
+<body class="view">
+
+<div class="container">
+
+<div id="logo">
+<a href="/index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
+</div>
+
+<div id="banner">
+<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
+<p class="subhead">May 6&ndash;7, 2012
+<br>The Golf Club at Boulder Ridge
+<br>San Jose, CA</p>
+</div>
+
+</div> <!-- container -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+	<li><a href="/details.html">Tournament Details</a></li>
+	<li><a href="/register">Registration</a></li>
+	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="/volunteer.html">Volunteer Information</a></li>
+	<li><a href="/auction.html">Live Auction</a></li>
+	<li><a href="/map.html">Map and Directions</a></li>
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
+	<li><a href="/admin/view/golfers">View Golfers</a></li>
+	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+</ul>
+</div>
+
+<div id="content">
+<h2>Registrations</h2>
+
+{% if sponsors %}
+
+<table border="1" width="100%" cellspacing="0" cellpadding="5">
+	<tr valign="bottom">
+		<th align="left">ID</th>
+		<th align="left">Contact Info</th>
+		<th align="left">Sponsorship</th>
+		<th align="left"># Golfers<br># Dinner Guests</th>
+		<th align="left">Payment</th>
+	</tr>
+
+{% for s in sponsors %}
+	<tr valign="baseline">
+		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
+		<td>
+		<p><b>{{ s.name }}</b></p>
+		{% if s.company %}<p>{{ s.company }}</p>{% endif %}
+		{% if s.address %}<p>{{ s.address }}</p>{% endif %}
+		{% if s.city %}<p>{{ s.city }}</p>{% endif %}
+		{% if s.email %}<p>Email: <a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
+		{% if s.phone %}<p>Phone: {{ s.phone }}</p>{% endif %}
+		{% if s.fax %}<p>Fax: {{ s.fax }}</p>{% endif %}
+		<p>Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
+		</td>
+		<td>
+		{% for ss in s.sponsorships %}
+		<p>{{ ss|get_sponsorship_name }}</p>
+		{% endfor %}
+		</td>
+		<td>{{ s.num_golfers }}<br>{{ s.num_dinners }}</td>
+		<td>
+		<p>Due: ${{ s.payment_due }}</p>
+		<p>Paid: ${{ s.payment_made }}</p>
+		<p>Payment Type: {{ s.payment_type }}</p>
+		<p>Transaction Code: {{ s.transaction_code }}</p>
+		</td>
+	</tr>
+{% endfor %}
+
+</table>
+
+{% else %}
+
+<p>No registrations yet.</p>
+
+{% endif %}
+
+</div> <!-- content -->
+
+</div> <!-- container -->
+
+</body>
+</html>

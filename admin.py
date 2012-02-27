@@ -3,12 +3,14 @@
 import cgi
 import logging
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
-from google.appengine.api import users
-from google.appengine.api import memcache
+from google.appengine.ext.webapp import template, util
+from google.appengine.api import users, memcache
 
 import capabilities
 import sponsorship
+from sponsor import Sponsor, Golfer, DinnerGuest
+
+webapp.template.register_template_library('tags.custom_filters')
 
 # Logout
 
@@ -177,10 +179,31 @@ class Sponsorships(webapp.RequestHandler):
 		memcache.flush_all()
 		self.redirect('/admin/sponsorships')
 
+class ViewRegistrations(webapp.RequestHandler):
+	def get(self, what):
+		logging.info('View %s' % what)
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		q = Sponsor.all()
+		q.order("timestamp")
+		sponsors = q.fetch(20)
+		if what == "sponsors":
+			template_values = {
+				'sponsors': sponsors,
+			}
+			self.response.out.write(template.render('viewsponsors.html', template_values))
+		elif what == "golfers":
+			pass
+		elif what == "guests":
+			pass
+
 def main():
 	logging.getLogger().setLevel(logging.INFO)
 	application = webapp.WSGIApplication([('/admin/sponsorships', Sponsorships),
 										  ('/admin/users', ManageUsers),
+										  ('/admin/view/(.*)', ViewRegistrations),
 										  ('/admin/logout', Logout)],
 										 debug=True)
 	util.run_wsgi_app(application)
