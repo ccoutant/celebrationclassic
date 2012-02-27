@@ -2,11 +2,9 @@
 
 import logging
 import datetime
-from google.appengine.ext import webapp
-from google.appengine.ext import db
+from google.appengine.ext import webapp, db
 from google.appengine.ext.webapp import util
-from google.appengine.api import users
-from google.appengine.api import urlfetch
+from google.appengine.api import users, urlfetch
 
 HTTP_DATE_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -86,9 +84,12 @@ class ProxyHandler(webapp.RequestHandler):
 		self.response.headers['Cache-Control'] = 'public, max-age=900;'
 		modified = True
 		if 'If-Modified-Since' in self.request.headers:
-			last_seen = datetime.datetime.strptime(self.request.headers['If-Modified-Since'], HTTP_DATE_FMT)
-			if last_seen >= cached.last_modified.replace(microsecond=0):
-				modified = False
+			try:
+				last_seen = datetime.datetime.strptime(self.request.headers['If-Modified-Since'].strip(), HTTP_DATE_FMT)
+				if last_seen >= cached.last_modified.replace(microsecond=0):
+					modified = False
+			except ValueError:
+				pass
 		if modified:
 			self.response.out.write(content)
 		else:
