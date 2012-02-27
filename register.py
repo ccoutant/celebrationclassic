@@ -76,12 +76,17 @@ class Register(webapp.RequestHandler):
 			id = self.request.get('id')
 			q = Sponsor.all()
 			q.filter('id = ', int(id))
-			results = q.fetch(2)
-			if results:
-				show_continuation_form(self.response, results[0], [])
-				return
-			else:
-				messages.append('Sorry, we could not find a registration for ID %s' % id)
+			s = q.get()
+			if s:
+				if s.payment_made > 0:
+					show_continuation_form(self.response, s, messages)
+					return
+				else:
+					messages.append('We do not have a record of your payment. ' +
+									'If you have paid, please contact us at the email address above.')
+					show_registration_form(self.response, s, 0, messages, caps, debug)
+					return
+			messages.append('Sorry, we could not find a registration for ID %s' % id)
 		s = Sponsor(name = '', company = '', address = '', city = '', phone = '',
 					fax = '', email = '', anonymous = False, printed_names = '',
 					num_golfers = 0, num_dinners = 0, payment_due = 0)
@@ -90,7 +95,18 @@ class Register(webapp.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		caps = capabilities.get_current_user_caps()
-		s = Sponsor()
+		id = int(self.request.get('id'))
+		if id:
+			q = Sponsor.all()
+			q.filter('id = ', id)
+			s = q.get()
+		else:
+			s = Sponsor()
+			s.payment_made = 0
+			s.payment_type = ''
+			s.transaction_code = ''
+			s.pairing = ''
+			s.dinner_seating = ''
 		s.name = self.request.get('name')
 		s.company = self.request.get('company')
 		s.address = self.request.get('address')
@@ -104,9 +120,6 @@ class Register(webapp.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
-		s.payment_made = 0
-		s.pairing = ''
-		s.dinner_seating = ''
 		debug = True if self.request.get('debug') == 'y' else False
 		form_payment_due = int(self.request.get('payment_due'))
 		selected = self.request.get_all('sponsorships')
@@ -152,20 +165,22 @@ class Register(webapp.RequestHandler):
 		if messages:
 			show_registration_form(self.response, s, other, messages, caps, debug)
 			return
-		while True:
-			s.id = random.randrange(100000,999999)
-			q = Sponsor.all()
-			q.filter('id = ', int(s.id))
-			results = q.fetch(1)
-			if not results: break
+		if s.id == 0:
+			if debug:
+				s.id = random.randrange(1000,9999)
+			else:
+				while True:
+					s.id = random.randrange(100000,999999)
+					q = Sponsor.all()
+					q.filter('id = ', s.id)
+					result = q.get()
+					if not result: break
 		if caps.can_add_registrations:
 			payment_made = self.request.get('payment_made')
-			paytype = self.request.get('paytype')
-			transcode = self.request.get('transcode')
 			if payment_made:
 				s.payment_made = int(payment_made)
-				s.payment_type = paytype
-				s.transaction_code = transcode
+				s.payment_type = self.request.get('paytype')
+				s.transaction_code = self.request.get('transcode')
 		s.put()
 		if caps.can_add_registrations and s.payment_made > 0:
 			self.redirect('/register?id=%s' % s.id)
@@ -179,7 +194,7 @@ class Register(webapp.RequestHandler):
 		city = ''
 		state = ''
 		zip = ''
-		m = re.match(r'([^,]*)[, ]*([A-Z][A-Z])[, ]*(\d{5,5}(-\d{4,4})?)?', s.city)
+		m = re.match(r'([^,]*)[, ]*([A-Z][A-Z])[, ]*(\d{5,5}(-\d{4,4})?)?$', s.city)
 		if m:
 			city = m.group(1)
 			state = m.group(2)
@@ -213,14 +228,14 @@ class Continue(webapp.RequestHandler):
 		id = self.request.get('id')
 		q = Sponsor.all()
 		q.filter('id = ', int(id))
-		results = q.fetch(2)
-		if not results:
+		s = q.get()
+		if not s:
 			messages = ['Sorry, we could not find a registration for ID %s' % id]
 			s = Sponsor(name = '', company = '', address = '', city = '', phone = '',
 						fax = '', email = '', anonymous = False, printed_names = '',
 						num_golfers = 0, num_dinners = 0, payment_due = 0)
 			show_registration_form(self.response, s, 0, messages, caps, debug)
-		s = results[0]
+			return
 		q = Golfer.all().ancestor(s.key())
 		golfers = q.fetch(s.num_golfers)
 		for i in range(1, s.num_golfers + 1):
@@ -270,13 +285,10 @@ class PostPayment(webapp.RequestHandler):
 		transcode = self.request.get('transcode')
 		q = Sponsor.all()
 		q.filter('id = ', int(id))
-		results = q.fetch(2)
-		if not results:
+		s = q.get()
+		if not s:
 			self.response.set_status(204, 'ID Not Found')
-		elif len(results) > 1:
-			self.response.set_status(204, 'Multiple Matches Found')
 		else:
-			s = results[0]
 			s.payment_type = paytype
 			s.transaction_code = transcode
 			s.payment_made = int(payment_made)
@@ -312,11 +324,11 @@ class FakeAcceptiva(webapp.RequestHandler):
 		self.response.out.write('<input type="hidden" name="contactname" value="%s">\n' % cgi.escape(name, True))
 		self.response.out.write('<input type="hidden" name="idnumberhidden" value="%s">\n' % cgi.escape(id))
 		self.response.out.write('<input type="hidden" name="amount_20_20_amt" value="%s">\n' % cgi.escape(payment_due))
-		self.response.out.write('<p>Payment Type: <input type="text" name="paytype" value="cc"></p>\n')
+		self.response.out.write('<p>Payment Type: fake<input type="hidden" name="paytype" value="fake"></p>\n')
 		self.response.out.write('<p>Transaction Code: <input type="text" name="transcode" value="1234"></p>\n')
 		self.response.out.write('<p><input type="submit" value="Pay"></p>\n')
 		self.response.out.write('</form>\n')
-		self.response.out.write('<p><a href="/register?id=%s">Continue registration...</a></p>\n' % id)
+		self.response.out.write('<p><a href="/register?id=%s&debug=y">Continue registration...</a></p>\n' % id)
 		self.response.out.write('</body></html>\n')
 
 def main():

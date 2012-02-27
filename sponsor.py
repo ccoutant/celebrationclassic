@@ -1,7 +1,7 @@
 from google.appengine.ext import db
 
 class Sponsor(db.Model):
-	id = db.IntegerProperty()
+	id = db.IntegerProperty(default = 0)
 	name = db.StringProperty()
 	company = db.StringProperty()
 	address = db.StringProperty()
