@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Registrations</title>
+	<title>Celebration Classic&trade; Dinners</title>
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
@@ -50,51 +50,32 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 	<li><a href="/volunteer.html">Volunteer Information</a></li>
 	<li><a href="/auction.html">Live Auction</a></li>
 	<li><a href="/map.html">Map and Directions</a></li>
-	<li>View Registrations</li>
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
 	<li><a href="/admin/view/golfers">View Golfers</a></li>
-	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+	<li>View Dinner Guests</li>
 </ul>
 </div>
 
 <div id="content">
-<h2>Registrations</h2>
+<h2>Golfers and Dinner Guests</h2>
 
-{% if sponsors %}
+{% if dinners %}
 
 <table>
 	<tr valign="bottom">
-		<th>ID</th>
-		<th>Sponsor/Contact</th>
-		<th>Sponsorship</th>
-		<th># Golfers<br># Dinner Guests</th>
-		<th>Payment</th>
+		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer/Dinner Guest</th>
+		<th>Dinner Choice</th>
 	</tr>
 
-{% for s in sponsors %}
+{% for d in dinners %}
+	{% ifequal d.sequence 1 %}
 	<tr valign="baseline">
-		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
-		<td>
-		<p><b>{{ s.name }}</b></p>
-		{% if s.company %}<p class="details">{{ s.company }}</p>{% endif %}
-		{% if s.address %}<p class="details">{{ s.address }}</p>{% endif %}
-		{% if s.city %}<p class="details">{{ s.city }}</p>{% endif %}
-		{% if s.email %}<p class="details">Email: <a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
-		{% if s.phone %}<p class="details">Phone: {{ s.phone }}</p>{% endif %}
-		{% if s.fax %}<p class="details">Fax: {{ s.fax }}</p>{% endif %}
-		<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
-		</td>
-		<td>
-		{% for ss in s.sponsorships %}
-		<p>{{ ss|get_sponsorship_name }}</p>
-		{% endfor %}
-		</td>
-		<td>{{ s.num_golfers }}<br>{{ s.num_dinners }}</td>
-		<td>
-		<p>Due: ${{ s.payment_due }}</p>
-		<p>Paid: ${{ s.payment_made }}</p>
-		<p>Payment Type: {{ s.payment_type }}</p>
-		<p>Transaction Code: {{ s.transaction_code }}</p>
-		</td>
+	<td class="sponsor" colspan="2"><a href="/register?id={{ d.sponsor_id }}">{{ d.sponsor_name }}</a></td>
+	</tr>
+	{% endifequal %}
+	<tr valign="baseline">
+		<td class="firstcol">{{ d.count }}.&ensp;{{ d.name|default:"N/A" }}</td>
+		<td>{{ d.dinner_choice }}</td>
 	</tr>
 {% endfor %}
 
@@ -102,7 +83,7 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 
 {% else %}
 
-<p>No registrations yet.</p>
+<p>No dinner registrations yet.</p>
 
 {% endif %}
 

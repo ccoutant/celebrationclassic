@@ -179,9 +179,24 @@ class Sponsorships(webapp.RequestHandler):
 		memcache.flush_all()
 		self.redirect('/admin/sponsorships')
 
+class ViewGolfer(object):
+	def __init__(self, s, g, count):
+		self.sponsor_id = s.id
+		self.sponsor_name = s.name
+		self.golfer = g
+		self.count = count
+
+class ViewDinner(object):
+	def __init__(self, s, name, choice, sequence, count):
+		self.sponsor_id = s.id
+		self.sponsor_name = s.name
+		self.name = name
+		self.dinner_choice = choice
+		self.sequence = sequence
+		self.count = count
+
 class ViewRegistrations(webapp.RequestHandler):
 	def get(self, what):
-		logging.info('View %s' % what)
 		user = capabilities.get_current_user_caps()
 		if user is None or not user.can_view_registrations:
 			self.redirect(users.create_login_url(self.request.uri))
@@ -190,17 +205,48 @@ class ViewRegistrations(webapp.RequestHandler):
 		q.order("timestamp")
 		sponsors = q.fetch(20)
 		if what == "sponsors":
-			template_values = {
-				'sponsors': sponsors,
-			}
-			self.response.out.write(template.render('viewsponsors.html', template_values))
+			self.response.out.write(template.render('viewsponsors.html', {'sponsors': sponsors}))
 		elif what == "golfers":
-			pass
+			all_golfers = []
+			counter = 1
+			for s in sponsors:
+				q = Golfer.all().ancestor(s.key())
+				golfers = q.fetch(s.num_golfers)
+				for g in golfers:
+					all_golfers.append(ViewGolfer(s, g, counter))
+					counter += 1
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					g = Golfer(parent = s, sequence = i, name = '', gender = '', title = '',
+							   company = '', address = '', city = '', phone = '', email = '',
+							   golf_index = '', best_score = '', ghn_number = '',
+							   shirt_size = '', dinner_choice = '')
+					all_golfers.append(ViewGolfer(s, g, counter))
+					counter += 1
+			self.response.out.write(template.render('viewgolfers.html', {'golfers': all_golfers}))
 		elif what == "guests":
-			pass
+			all_dinners = []
+			counter = 1
+			for s in sponsors:
+				q = Golfer.all().ancestor(s.key())
+				golfers = q.fetch(s.num_golfers)
+				for g in golfers:
+					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence, counter))
+					counter += 1
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					all_dinners.append(ViewDinner(s, '', '', i, counter))
+					counter += 1
+				q = DinnerGuest.all().ancestor(s.key())
+				guests = q.fetch(s.num_dinners)
+				for g in guests:
+					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence + s.num_golfers, counter))
+					counter += 1
+				for i in range(len(guests) + 1, s.num_dinners + 1):
+					all_dinners.append(ViewDinner(s, '', '', i + s.num_golfers, counter))
+					counter += 1
+			self.response.out.write(template.render('viewguests.html', {'dinners': all_dinners}))
 
 def main():
-	logging.getLogger().setLevel(logging.INFO)
+	logging.getLogger().setLevel(logging.DEBUG)
 	application = webapp.WSGIApplication([('/admin/sponsorships', Sponsorships),
 										  ('/admin/users', ManageUsers),
 										  ('/admin/view/(.*)', ViewRegistrations),

@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Registrations</title>
+	<title>Celebration Classic&trade; Golfers</title>
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
@@ -50,51 +50,46 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 	<li><a href="/volunteer.html">Volunteer Information</a></li>
 	<li><a href="/auction.html">Live Auction</a></li>
 	<li><a href="/map.html">Map and Directions</a></li>
-	<li>View Registrations</li>
-	<li><a href="/admin/view/golfers">View Golfers</a></li>
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
+	<li>View Golfers</li>
 	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
 </ul>
 </div>
 
 <div id="content">
-<h2>Registrations</h2>
+<h2>Golfers</h2>
 
-{% if sponsors %}
+{% if golfers %}
 
 <table>
 	<tr valign="bottom">
-		<th>ID</th>
-		<th>Sponsor/Contact</th>
-		<th>Sponsorship</th>
-		<th># Golfers<br># Dinner Guests</th>
-		<th>Payment</th>
+		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer</th>
+		<th>Index/<br>Best Score</th>
+		<th>Shirt Size</th>
 	</tr>
 
-{% for s in sponsors %}
+{% for g in golfers %}
+	{% ifequal g.golfer.sequence 1 %}
 	<tr valign="baseline">
-		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
-		<td>
-		<p><b>{{ s.name }}</b></p>
-		{% if s.company %}<p class="details">{{ s.company }}</p>{% endif %}
-		{% if s.address %}<p class="details">{{ s.address }}</p>{% endif %}
-		{% if s.city %}<p class="details">{{ s.city }}</p>{% endif %}
-		{% if s.email %}<p class="details">Email: <a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
-		{% if s.phone %}<p class="details">Phone: {{ s.phone }}</p>{% endif %}
-		{% if s.fax %}<p class="details">Fax: {{ s.fax }}</p>{% endif %}
-		<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
+	<td class="sponsor" colspan="3"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
+	</tr>
+	{% endifequal %}
+	<tr valign="baseline">
+		<td class="firstcol">
+		<p>{{ g.count }}.&ensp;{{ g.golfer.name|default:"N/A" }}</p>
+		{% if g.golfer.company %}<p class="details">{{ g.golfer.company }}</p>{% endif %}
+		{% if g.golfer.address %}<p class="details">{{ g.golfer.address }}</p>{% endif %}
+		{% if g.golfer.city %}<p class="details">{{ g.golfer.city }}</p>{% endif %}
+		{% if g.golfer.email %}<p class="details">Email: <a href="mailto:{{ g.golfer.email }}">{{ g.golfer.email }}</a></p>{% endif %}
+		{% if g.golfer.phone %}<p class="details">Phone: {{ g.golfer.phone }}</p>{% endif %}
+		{% if g.golfer.fax %}<p class="details">Fax: {{ g.golfer.fax }}</p>{% endif %}
 		</td>
 		<td>
-		{% for ss in s.sponsorships %}
-		<p>{{ ss|get_sponsorship_name }}</p>
-		{% endfor %}
+		{% if g.golfer.golf_index %}<p>Index: {{ g.golfer.golf_index }}</p>{% endif %}
+		{% if g.golfer.best_score %}<p>Best Score: {{ g.golfer.best_score }}</p>{% endif %}
+		{% if g.golfer.ghn_number %}<p>GHN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
 		</td>
-		<td>{{ s.num_golfers }}<br>{{ s.num_dinners }}</td>
-		<td>
-		<p>Due: ${{ s.payment_due }}</p>
-		<p>Paid: ${{ s.payment_made }}</p>
-		<p>Payment Type: {{ s.payment_type }}</p>
-		<p>Transaction Code: {{ s.transaction_code }}</p>
-		</td>
+		<td>{{ g.golfer.shirt_size }}</td>
 	</tr>
 {% endfor %}
 
@@ -102,7 +97,7 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 
 {% else %}
 
-<p>No registrations yet.</p>
+<p>No golfers yet.</p>
 
 {% endif %}
 

@@ -246,7 +246,6 @@ class Continue(webapp.RequestHandler):
 			golfer = golfers[i-1]
 			golfer.name = self.request.get('name%d' % i)
 			golfer.gender = self.request.get('gender%d' % i)
-			golfer.title = self.request.get('name%d' % i)
 			golfer.company = self.request.get('company%d' % i)
 			golfer.address = self.request.get('address%d' % i)
 			golfer.city = self.request.get('city%d' % i)
