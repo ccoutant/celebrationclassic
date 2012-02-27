@@ -49,6 +49,15 @@ label.sold { color: #999; }
 .form-column .form-input, .form-column .form-button { margin-left: 0; }
 
 /* IE6 hacks */
-.form-entry, .form-entry-left, .form-entry-right, .form label, .form-column { display: inline; }
-/* * html .row .row { display: inline-block; } */
-/* * html .rightside_1col, .rightside_2col { overflow: hidden; } */
+* html .form-section,
+* html .form-entry,
+* html .form-entry-left,
+* html .form-entry-right,
+* html .form label,
+* html .form-column { display: inline-block; }
+* html .form-column .form-checkbox label.right { display: inline; float: none; }
+* html .form-input { overflow: hidden; }
+* html .checkbox-container .form-input { display: inline-block; }
+* html .form-checkbox .checkbox-container { float: none; display: inline; }
+* html .form-input label.above { display: block; }
+* html .form-checkbox label.right { display: inline; float: none; margin: 0; }
