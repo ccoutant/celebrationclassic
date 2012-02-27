@@ -6,8 +6,7 @@ import random
 import urllib
 import re
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
-from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp import util, template
 
 import capabilities
 import sponsorship
