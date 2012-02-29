@@ -7,23 +7,27 @@
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
-body.view { width: 100%; }
-body.view #logo { margin-left: 3%; }
-body.view #banner { width: auto; margin-left: 30px; }
-body.view #banner h1 { text-align: left; margin: 0 0 1em 0; }
-body.view #banner p.subhead { text-align: left; margin: 0; }
-body.view #nav { width: 12%; margin-left: 3%; }
-body.view #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
-body.view table { width: 100%; }
-body.view th { color: #6061ab; padding: 0.5em; text-align: left; }
-body.view td { background-color: #e7fbe7; padding: 0.5em; }
-body.view td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
-body.view td.firstcol { padding-left: 2em; }
-body.view td p { margin: 0; }
-body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#viewguests { width: 100%; }
+#viewguests #logo { margin-left: 3%; }
+#viewguests #banner { width: auto; margin-left: 30px; }
+#viewguests #banner h1 { text-align: left; margin: 0 0 1em 0; }
+#viewguests #banner p.subhead { text-align: left; margin: 0; }
+#viewguests #nav { width: 12%; margin-left: 3%; }
+#viewguests #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+#viewguests table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#viewguests thead tr { border-bottom: 2px solid #c4e5c4; }
+#viewguests tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
+#viewguests tbody tr.guest:hover { background-color: #e7fbe7; }
+#viewguests th { color: #6061ab; padding: 0.5em; text-align: left; }
+#viewguests td { padding: 0.5em; }
+#viewguests tr.sponsor td { font-weight: bold; padding-top: 1em; }
+#viewguests td.firstcol { padding-left: 2em; }
+#viewguests td p { margin: 0; }
+#viewguests td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#viewguests tr.seating p { font-size: 80%; font-style: italic; color: #555; }
 </style>
 </head>
-<body class="view">
+<body id="viewguests">
 
 <div class="container">
 
@@ -62,23 +66,30 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 {% if dinners %}
 
 <table>
+<thead>
 	<tr valign="bottom">
 		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer/Dinner Guest</th>
 		<th>Dinner Choice</th>
 	</tr>
-
+</thead>
+<tbody>
 {% for d in dinners %}
 	{% ifequal d.sequence 1 %}
-	<tr valign="baseline">
-	<td class="sponsor" colspan="2"><a href="/register?id={{ d.sponsor_id }}">{{ d.sponsor_name }}</a></td>
+	<tr class="sponsor" valign="baseline">
+	<td colspan="2"><a href="/register?id={{ d.sponsor_id }}">{{ d.sponsor_name }}</a></td>
 	</tr>
 	{% endifequal %}
-	<tr valign="baseline">
+	<tr class="guest" valign="baseline">
 		<td class="firstcol">{{ d.count }}.&ensp;{{ d.name|default:"N/A" }}</td>
 		<td>{{ d.dinner_choice }}</td>
 	</tr>
+	{% if d.seating %}
+	<tr class="seating" valign="baseline">
+		<td class="firstcol" colspan="2"><p>Seating preference: {{ d.seating }}</p></td>
+	</tr>
+	{% endif %}
 {% endfor %}
-
+</tbody>
 </table>
 
 {% else %}
@@ -86,6 +97,13 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 <p>No dinner registrations yet.</p>
 
 {% endif %}
+
+<p>Total dinners:</p>
+<ul>
+{% for key, value in dinner_choices.items %}
+	<li>{{ key }}: {{ value }}</li>
+{% endfor %}
+</ul>
 
 </div> <!-- content -->
 

@@ -7,23 +7,27 @@
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
-body.view { width: 100%; }
-body.view #logo { margin-left: 3%; }
-body.view #banner { width: auto; margin-left: 30px; }
-body.view #banner h1 { text-align: left; margin: 0 0 1em 0; }
-body.view #banner p.subhead { text-align: left; margin: 0; }
-body.view #nav { width: 12%; margin-left: 3%; }
-body.view #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
-body.view table { width: 100%; }
-body.view th { color: #6061ab; padding: 0.5em; text-align: left; }
-body.view td { background-color: #e7fbe7; padding: 0.5em; }
-body.view td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
-body.view td.firstcol { padding-left: 2em; }
-body.view td p { margin: 0; }
-body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#viewgolfers { width: 100%; }
+#viewgolfers #logo { margin-left: 3%; }
+#viewgolfers #banner { width: auto; margin-left: 30px; }
+#viewgolfers #banner h1 { text-align: left; margin: 0 0 1em 0; }
+#viewgolfers #banner p.subhead { text-align: left; margin: 0; }
+#viewgolfers #nav { width: 12%; margin-left: 3%; }
+#viewgolfers #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+#viewgolfers table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#viewgolfers thead tr { border-bottom: 2px solid #c4e5c4; }
+#viewgolfers tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
+#viewgolfers tbody tr.golfer:hover { background-color: #e7fbe7; }
+#viewgolfers th { color: #6061ab; padding: 0.5em; text-align: left; }
+#viewgolfers td { padding: 0.5em; }
+#viewgolfers tr.sponsor td { font-weight: bold; padding-top: 1em; }
+#viewgolfers td.firstcol { padding-left: 2em; }
+#viewgolfers td p { margin: 0; }
+#viewgolfers td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#viewgolfers tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
 </style>
 </head>
-<body class="view">
+<body id="viewgolfers">
 
 <div class="container">
 
@@ -62,19 +66,21 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 {% if golfers %}
 
 <table>
+<thead>
 	<tr valign="bottom">
 		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer</th>
-		<th>Index/<br>Best Score</th>
+		<th>Index<br>Best Score<br>GHN Number</th>
 		<th>Shirt Size</th>
 	</tr>
-
+</thead>
+<tbody>
 {% for g in golfers %}
 	{% ifequal g.golfer.sequence 1 %}
-	<tr valign="baseline">
-	<td class="sponsor" colspan="3"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
+	<tr class="sponsor" valign="baseline">
+	<td colspan="3"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
 	</tr>
 	{% endifequal %}
-	<tr valign="baseline">
+	<tr class="golfer" valign="baseline">
 		<td class="firstcol">
 		<p>{{ g.count }}.&ensp;{{ g.golfer.name|default:"N/A" }}</p>
 		{% if g.golfer.company %}<p class="details">{{ g.golfer.company }}</p>{% endif %}
@@ -91,8 +97,13 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 		</td>
 		<td>{{ g.golfer.shirt_size }}</td>
 	</tr>
+	{% if g.pairing %}
+	<tr class="pairing" valign="baseline">
+	<td class="firstcol" colspan="3"><p>Pairing preference: {{ g.pairing }}</p></td>
+	</tr>
+	{% endif %}
 {% endfor %}
-
+</tbody>
 </table>
 
 {% else %}
@@ -100,6 +111,13 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 <p>No golfers yet.</p>
 
 {% endif %}
+
+<p>Total shirts by size:</p>
+<ul>
+{% for key, value in shirt_sizes.items %}
+	<li>{{ key }}: {{ value }}</li>
+{% endfor %}
+</ul>
 
 </div> <!-- content -->
 

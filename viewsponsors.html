@@ -7,23 +7,26 @@
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
-body.view { width: 100%; }
-body.view #logo { margin-left: 3%; }
-body.view #banner { width: auto; margin-left: 30px; }
-body.view #banner h1 { text-align: left; margin: 0 0 1em 0; }
-body.view #banner p.subhead { text-align: left; margin: 0; }
-body.view #nav { width: 12%; margin-left: 3%; }
-body.view #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
-body.view table { width: 100%; }
-body.view th { color: #6061ab; padding: 0.5em; text-align: left; }
-body.view td { background-color: #e7fbe7; padding: 0.5em; }
-body.view td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
-body.view td.firstcol { padding-left: 2em; }
-body.view td p { margin: 0; }
-body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#view { width: 100%; }
+#view #logo { margin-left: 3%; }
+#view #banner { width: auto; margin-left: 30px; }
+#view #banner h1 { text-align: left; margin: 0 0 1em 0; }
+#view #banner p.subhead { text-align: left; margin: 0; }
+#view #nav { width: 12%; margin-left: 3%; }
+#view #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+#view table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; }
+#view thead tr { border: none; border-bottom: 2px solid #c4e5c4; }
+#view tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
+#view tbody tr:hover { background-color: #e7fbe7; }
+#view th { color: #6061ab; padding: 0.5em; text-align: left; }
+#view td { padding: 0.5em; }
+#view td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
+#view td.firstcol { padding-left: 2em; }
+#view td p { margin: 0; }
+#view td p.details { margin-left: 1em; font-size: 80%; color: #555; }
 </style>
 </head>
-<body class="view">
+<body id="view">
 
 <div class="container">
 
@@ -62,6 +65,7 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 {% if sponsors %}
 
 <table>
+<thead>
 	<tr valign="bottom">
 		<th>ID</th>
 		<th>Sponsor/Contact</th>
@@ -69,7 +73,8 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 		<th># Golfers<br># Dinner Guests</th>
 		<th>Payment</th>
 	</tr>
-
+</thead>
+<tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
 		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
@@ -88,16 +93,19 @@ body.view td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 		<p>{{ ss|get_sponsorship_name }}</p>
 		{% endfor %}
 		</td>
-		<td>{{ s.num_golfers }}<br>{{ s.num_dinners }}</td>
+		<td>
+		<p>{{ s.num_golfers }} golfer{{ s.num_golfers|pluralize }}</p>
+		<p>{{ s.num_dinners }} dinner guest{{ s.num_dinners|pluralize }}</p>
+		</td>
 		<td>
 		<p>Due: ${{ s.payment_due }}</p>
 		<p>Paid: ${{ s.payment_made }}</p>
-		<p>Payment Type: {{ s.payment_type }}</p>
-		<p>Transaction Code: {{ s.transaction_code }}</p>
+		<p class="details">Payment Type: {{ s.payment_type }}</p>
+		<p class="details">Transaction Code: {{ s.transaction_code }}</p>
 		</td>
 	</tr>
 {% endfor %}
-
+</tbody>
 </table>
 
 {% else %}

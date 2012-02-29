@@ -35,7 +35,7 @@ def show_registration_form(response, s, other, messages, caps, debug):
 
 # Show the continuation form.
 
-def show_continuation_form(response, s, messages):
+def show_continuation_form(response, s, messages, caps, debug):
 	q = Golfer.all().ancestor(s.key())
 	golfers = q.fetch(s.num_golfers)
 	for i in range(len(golfers) + 1, s.num_golfers + 1):
@@ -58,7 +58,9 @@ def show_continuation_form(response, s, messages):
 		'sponsor': s,
 		'golfers': golfers,
 		'dinner_guests': dinner_guests,
-		'messages' : messages
+		'messages' : messages,
+		'capabilities' : caps,
+		'debug' : debug
 	}
 	response.out.write(template.render('continue.html', template_values))
 
@@ -78,7 +80,7 @@ class Register(webapp.RequestHandler):
 			s = q.get()
 			if s:
 				if s.payment_made > 0:
-					show_continuation_form(self.response, s, messages)
+					show_continuation_form(self.response, s, messages, caps, debug)
 					return
 				else:
 					messages.append('We do not have a record of your payment. ' +
@@ -269,7 +271,11 @@ class Continue(webapp.RequestHandler):
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
 		s.put()
-		self.response.out.write(template.render('ack.html', {'sponsor': s}))
+		template_values = {
+			'sponsor': s,
+			'capabilities': caps
+		}
+		self.response.out.write(template.render('ack.html', template_values))
 
 # Process the POST request from Acceptiva confirming payment.
 
@@ -289,7 +295,7 @@ class PostPayment(webapp.RequestHandler):
 		else:
 			s.payment_type = paytype
 			s.transaction_code = transcode
-			s.payment_made = int(payment_made)
+			s.payment_made = int(payment_made) // 100
 			s.put()
 			self.response.set_status(204, 'Payment Posted')
 
@@ -321,7 +327,7 @@ class FakeAcceptiva(webapp.RequestHandler):
 		self.response.out.write('<p>ID: %s</p>\n' % cgi.escape(id))
 		self.response.out.write('<input type="hidden" name="contactname" value="%s">\n' % cgi.escape(name, True))
 		self.response.out.write('<input type="hidden" name="idnumberhidden" value="%s">\n' % cgi.escape(id))
-		self.response.out.write('<input type="hidden" name="amount_20_20_amt" value="%s">\n' % cgi.escape(payment_due))
+		self.response.out.write('<input type="hidden" name="amount_20_20_amt" value="%d">\n' % (int(payment_due) * 100))
 		self.response.out.write('<p>Payment Type: fake<input type="hidden" name="paytype" value="fake"></p>\n')
 		self.response.out.write('<p>Transaction Code: <input type="text" name="transcode" value="1234"></p>\n')
 		self.response.out.write('<p><input type="submit" value="Pay"></p>\n')

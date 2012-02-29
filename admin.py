@@ -185,6 +185,7 @@ class ViewGolfer(object):
 		self.sponsor_name = s.name
 		self.golfer = g
 		self.count = count
+		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
 
 class ViewDinner(object):
 	def __init__(self, s, name, choice, sequence, count):
@@ -194,6 +195,7 @@ class ViewDinner(object):
 		self.dinner_choice = choice
 		self.sequence = sequence
 		self.count = count
+		self.seating = s.dinner_seating if sequence == s.num_golfers + s.num_dinners else ''
 
 class ViewRegistrations(webapp.RequestHandler):
 	def get(self, what):
@@ -203,7 +205,7 @@ class ViewRegistrations(webapp.RequestHandler):
 			return
 		q = Sponsor.all()
 		q.order("timestamp")
-		sponsors = q.fetch(20)
+		sponsors = q.fetch(50)
 		if what == "sponsors":
 			self.response.out.write(template.render('viewsponsors.html', {'sponsors': sponsors}))
 		elif what == "golfers":
@@ -222,7 +224,17 @@ class ViewRegistrations(webapp.RequestHandler):
 							   shirt_size = '', dinner_choice = '')
 					all_golfers.append(ViewGolfer(s, g, counter))
 					counter += 1
-			self.response.out.write(template.render('viewgolfers.html', {'golfers': all_golfers}))
+			shirt_sizes = { }
+			for g in all_golfers:
+				key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
+				if not key in shirt_sizes:
+					shirt_sizes[key] = 0
+				shirt_sizes[key] += 1
+			template_values = {
+				'golfers': all_golfers,
+				'shirt_sizes': shirt_sizes
+				}
+			self.response.out.write(template.render('viewgolfers.html', template_values))
 		elif what == "guests":
 			all_dinners = []
 			counter = 1
@@ -243,7 +255,17 @@ class ViewRegistrations(webapp.RequestHandler):
 				for i in range(len(guests) + 1, s.num_dinners + 1):
 					all_dinners.append(ViewDinner(s, '', '', i + s.num_golfers, counter))
 					counter += 1
-			self.response.out.write(template.render('viewguests.html', {'dinners': all_dinners}))
+			dinner_choices = { }
+			for d in all_dinners:
+				key = d.dinner_choice if d.dinner_choice else 'unspecified'
+				if not key in dinner_choices:
+					dinner_choices[key] = 0
+				dinner_choices[key] += 1
+			template_values = {
+				'dinners': all_dinners,
+				'dinner_choices': dinner_choices
+				}
+			self.response.out.write(template.render('viewguests.html', template_values))
 
 def main():
 	logging.getLogger().setLevel(logging.DEBUG)
