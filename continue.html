@@ -2,11 +2,11 @@
 	"http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Registration</title>
-	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
-	<link rel="stylesheet" href="register.css" type="text/css">
-	<link rel="icon" href="favicon.png" type="image/png">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Celebration Classic&trade; Registration</title>
+<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+<link rel="stylesheet" href="css/register.css" type="text/css">
+<link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
 
@@ -310,53 +310,6 @@ school supplies to local children in need;
 the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
 and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
 </div>
-
-<script type="text/javascript" language="javascript">
-function install_select_handler() {
-	var elem = document.getElementById("entry_0_ul");
-	var inputs = elem.getElementsByTagName("input");
-	var player1 = document.getElementById("player1");
-	var player2 = document.getElementById("player2");
-	var player3 = document.getElementById("player3");
-	var player4 = document.getElementById("player4");
-	var pairing = document.getElementById("pairingrequest");
-	var submit = document.getElementById("submitbutton");
-	for (var i = 0; i < inputs.length; i++)
-		inputs[i].onclick = function () {
-			if (this.value == "Single")
-				n = 1;
-			else if (this.value == "Twosome")
-				n = 2;
-			else
-				n = 4;
-			if (n < 4)
-				pairing.style.display = "block";
-			else
-				pairing.style.display = "none";
-			if (n >= 1)
-				player1.style.display = "block";
-			if (n >= 2)
-				player2.style.display = "block";
-			if (n == 4) {
-				player3.style.display = "block";
-				player4.style.display = "block";
-			}
-			if (n > 0)
-				submit.style.display = "block";
-			else
-				submit.style.display = "none";
-			if (n < 4) {
-				player4.style.display = "none";
-				player3.style.display = "none";
-			}
-			if (n < 2)
-				player2.style.display = "none";
-			if (n < 1)
-				player1.style.display = "none";
-		};
-}
-install_select_handler();
-</script>
 
 </body>
 </html>

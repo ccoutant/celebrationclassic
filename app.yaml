@@ -8,9 +8,11 @@ handlers:
   static_files: favicon.png
   upload: favicon.png
 
-- url: /register.css
-  static_files: register.css
-  upload: register.css
+- url: /css
+  static_dir: css
+
+- url: /js
+  static_dir: js
 
 - url: /(register|continue|postpayment|fakeacceptiva)
   script: register.py

@@ -2,23 +2,17 @@
 	"http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Registration</title>
-	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
-	<link rel="stylesheet" href="register.css" type="text/css">
-	<link rel="icon" href="favicon.png" type="image/png">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Celebration Classic&trade; Registration</title>
+<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+<link rel="stylesheet" href="css/register.css" type="text/css">
+<link rel="icon" href="favicon.png" type="image/png">
+<script src="js/register.js" type="text/javascript" language="javascript"></script>
 <script type="text/javascript" language="javascript">
-function add_commas(str) {
-    str += '';
-    v = str.split('.');
-    v1 = v[0];
-    v2 = v.length > 1 ? '.' + v[1] : '';
-    var re = /(\d+)(\d{3})/;
-    while (re.test(v1)) {
-        v1 = v1.replace(re, '$1' + ',' + '$2');
-    }
-    return v1 + v2;
-}
+window.onload = function() {
+	install_recalculate_hooks();
+	recalculate();
+};
 </script>
 </head>
 <body>
@@ -200,17 +194,6 @@ If you are not interested in a sponsorship, skip this section.</p>
 </div>
 {% endfor %}
 
-<h3>Angel Sponsors</h3>
-
-{% for sponsorship in angel %}
-<div class="form-entry form-checkbox">
-<div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
-<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
-</div>
-</div>
-{% endfor %}
-
 <div class="form-entry form-dollars">
 <div class="form-input">
 <label class="above" for="entry_fax">Other Donation</label>
@@ -220,24 +203,6 @@ $<input type="text" name="other" value="{{ other }}" id="entry_other">
 
 </div> <!-- form-column -->
 </div> <!-- form-column-container -->
-
-</div> <!-- form-section -->
-
-<div class="form-section">
-
-<div class="form-entry form-checkbox">
-<div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="agree" value="y" {% if not sponsor.anonymous %} checked {% endif %} id="entry_agree"></div>
-<label class="right" for="entry_agree">I/We agree to be named as a sponsor</label>
-</div>
-</div>
-
-<div class="form-entry form-text">
-<div class="form-input">
-<label class="above" for="entry_printednames">Please enter your name(s) exactly as they should appear:</label>
-<input type="text" name="name" value="{{ sponsor.printed_names }}" id="entry_printednames">
-</div>
-</div>
 
 </div> <!-- form-section -->
 
@@ -289,6 +254,36 @@ $<input type="text" name="other" value="{{ other }}" id="entry_other">
 </div>
 </div>
 
+<div id="angel" class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel_31" value="Angel:31:3000"></div>
+<label class="right" for="checkbox_Angel_31">Want to be an angel
+and get some good PR for your organization at the same time?
+Check this box to become an Angel sponsor for your foursome.
+For $3,000, your Angel sponsorship includes four golfers, eight banquet dinners,
+and the PR benefits of being an Angel sponsor!
+And you know that you are doing something very special for Congregation Shir Hadash!</label>
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-section">
+
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="agree" value="y" {% if not sponsor.anonymous %} checked {% endif %} id="entry_agree"></div>
+<label class="right" for="entry_agree">I/We agree to be named as a sponsor</label>
+</div>
+</div>
+
+<div class="form-entry form-text">
+<div class="form-input">
+<label class="above" for="entry_printednames">Please enter your name(s) exactly as they should appear:</label>
+<input type="text" name="printed_names" value="{{ sponsor.printed_names }}" id="entry_printednames">
+</div>
+</div>
+
 </div> <!-- form-section -->
 
 <div class="form-section">
@@ -311,21 +306,21 @@ $<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="e
 <div class="form-entry form-dollars">
 <div class="form-input">
 <label for="entry_payment_made">Payment Made</label>
-$<input type="text" name="payment_made" value="" id="entry_payment_made">
+$<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_paytype">Payment Type</label>
-<input type="text" name="paytype" value="" id="entry_paytype">
+<input type="text" name="paytype" value="{{ sponsor.payment_type|default:'' }}" id="entry_paytype">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_transcode">Transaction Code</label>
-<input type="text" name="transcode" value="" id="entry_transcode">
+<input type="text" name="transcode" value="{{ sponsor.transaction_code|default:'' }}" id="entry_transcode">
 </div>
 </div>
 
@@ -358,7 +353,7 @@ $<input type="text" name="payment_made" value="" id="entry_payment_made">
 
 <ul>
 	<li><a href="http://www.shirhadash.org/celebrationclassic/Single%20Sign%20Up.pdf">Registration form for singles</a></li>
-	<li><a href="http://www.shirhadash.org/celebrationclassic/Twosome%20Signup.pdf">Registration form for twosomes</a></li>
+	<li><a href="http://www.shirhadash.org/celebrationclassic/Twosome%20Sign%20Up.pdf">Registration form for twosomes</a></li>
 	<li><a href="http://www.shirhadash.org/celebrationclassic/Foursome%20Sign%20Up.pdf">Registration form for foursomes</a></li>
 </ul>
 
@@ -382,109 +377,6 @@ school supplies to local children in need;
 the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
 and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
 </div>
-
-<script type="text/javascript" language="javascript">
-function recalculate() {
-	var sponsorships = document.getElementById("sponsorships");
-	var checkboxes = sponsorships.getElementsByTagName("input");
-	var total = 0;
-	var golfers_included = 0;
-	var dinners_included = 0;
-	for (var i = 0; i < checkboxes.length; i++) {
-		if (checkboxes[i].checked) {
-			var triple = checkboxes[i].value.split(":");
-			var price = parseInt(triple[2]);
-			total += price;
-			if (price >= 20000)
-				golfers_included += 12;
-			else if (price >= 15000)
-				golfers_included += 8;
-			else if (price >= 10000)
-				golfers_included += 6;
-			else if (triple[0] == "Angel")
-				golfers_included += 4;
-			else if (price >= 3000)
-				golfers_included += 2;
-			else
-				golfers_included += 1;
-		}
-	var otherbox = document.getElementById("entry_other");
-	var other = 0;
-	if (otherbox.value)
-		other = parseInt(otherbox.value);
-	dinners_included = golfers_included;
-	// If no sponsorship, disable the "agree to publish my name" checkbox.
-	var agreebox = document.getElementById("entry_agree");
-	var printednamesbox = document.getElementById("entry_printednames");
-	agreebox.disabled = (total + other) == 0;
-	printednamesbox.disabled = (total + other) == 0 || !agreebox.checked;
-	// Insert explanation of included golfers and dinners.
-	var includes_span = document.getElementById("included_text");
-	var includes = "";
-	if (golfers_included == 1)
-		includes = "Your sponsorship includes 1 golfer";
-	else if (golfers_included > 1)
-		includes = "Your sponsorship includes " + golfers_included + " golfers";
-	if (dinners_included == 1)
-		includes += " plus 1 additional dinner guest.";
-	else if (dinners_included > 1)
-		includes += " plus " + dinners_included + " additional dinner guests.";
-	if (includes_span)
-		includes_span.innerHTML = includes;
-	// Calculate price for additional golfers and dinners.
-	var golferbox = document.getElementById("entry_num_golfers");
-	var golfers = parseInt(golferbox.value) - golfers_included;
-	if (golfers < 0) {
-		// Transfer unused golfer allowance to dinner allowance.
-		dinners_included -= golfers;
-		golfers = 0;
-		}
-	var gprice = golfers * 360;
-	var dinnerbox = document.getElementById("entry_num_dinners");
-	var dinners = parseInt(dinnerbox.value) - dinners_included;
-	if (dinners < 0)
-		dinners = 0;
-	var dprice = dinners * 75;
-	var totalbox = document.getElementById("entry_payment_due");
-	totalbox.value = total + other + gprice + dprice;
-	var totalbox_c = document.getElementById("entry_payment_due_c");
-	totalbox_c.value = add_commas(total + other + gprice + dprice);
-	}
-}
-function ignore_enter(e) {
-	e = e || event;
-	var key = e.keyCode || event.which || event.charCode;
-	if( key == 13 ) {
-		e.cancelBubble = true;
-		e.returnValue = false;
-		if (e.stopPropagation) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		this.blur();
-	}
-}
-function install_recalculate_hooks() {
-	var sponsorships = document.getElementById("sponsorships");
-	var checkboxes = sponsorships.getElementsByTagName("input");
-	for (var i = 0; i < checkboxes.length; i++) {
-		checkboxes[i].onclick = recalculate;
-	}
-	var otherbox = document.getElementById("entry_other");
-	otherbox.onchange = recalculate;
-	otherbox.onkeypress = ignore_enter;
-	var agreebox = document.getElementById("entry_agree");
-	agreebox.onclick = recalculate;
-	var printednamesbox = document.getElementById("entry_printednames");
-	printednamesbox.onkeypress = ignore_enter;
-	var selectbox = document.getElementById("entry_num_golfers");
-	selectbox.onchange = recalculate;
-	selectbox = document.getElementById("entry_num_dinners");
-	selectbox.onchange = recalculate;
-}
-install_recalculate_hooks();
-recalculate();
-</script>
 
 </body>
 </html>

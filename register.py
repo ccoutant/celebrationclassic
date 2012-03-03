@@ -79,6 +79,9 @@ class Register(webapp.RequestHandler):
 			q.filter('id = ', int(id))
 			s = q.get()
 			if s:
+				if self.request.get('page') == '1':
+					show_registration_form(self.response, s, 0, messages, caps, debug)
+					return
 				if s.payment_made > 0:
 					show_continuation_form(self.response, s, messages, caps, debug)
 					return
