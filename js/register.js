@@ -46,8 +46,11 @@ function recalculate() {
 		}
 	}
 	dinners_included = golfers_included;
-	if (otherbox.value)
-		total += parseInt(otherbox.value);
+	if (otherbox.value) {
+		var otherval = parseInt(otherbox.value);
+		if (!isNaN(otherval))
+			total += parseInt(otherbox.value);
+	}
 
 	// Insert explanation of included golfers and dinners.
 	var includes = "";

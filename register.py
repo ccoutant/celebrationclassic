@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import cgi
 import logging
 import random
@@ -14,7 +15,7 @@ from sponsor import Sponsor, Golfer, DinnerGuest
 
 # Show the initial registration form.
 
-def show_registration_form(response, s, other, messages, caps, debug):
+def show_registration_form(response, s, messages, caps, debug):
 	premier = sponsorship.get_sponsorships("Premier")
 	executive = sponsorship.get_sponsorships("Executive")
 	pro = sponsorship.get_sponsorships("Pro")
@@ -26,7 +27,6 @@ def show_registration_form(response, s, other, messages, caps, debug):
 		'pro': pro,
 		'angel': angel,
 		'selected': [],
-		'other' : other,
 		'messages' : messages,
 		'capabilities' : caps,
 		'debug' : debug
@@ -39,10 +39,7 @@ def show_continuation_form(response, s, messages, caps, debug):
 	q = Golfer.all().ancestor(s.key())
 	golfers = q.fetch(s.num_golfers)
 	for i in range(len(golfers) + 1, s.num_golfers + 1):
-		golfer = Golfer(parent = s, sequence = i, name = '', gender = '', title = '',
-						company = '', address = '', city = '', phone = '', email = '',
-						golf_index = '', best_score = '', ghn_number = '',
-						shirt_size = '', dinner_choice = '')
+		golfer = Golfer(parent = s, sequence = i)
 		if i == 1:
 			golfer.name = s.name
 			golfer.company = s.company
@@ -53,7 +50,7 @@ def show_continuation_form(response, s, messages, caps, debug):
 	q = DinnerGuest.all().ancestor(s.key())
 	dinner_guests = q.fetch(s.num_dinners)
 	for i in range(len(dinner_guests) + 1, s.num_dinners + 1):
-		dinner_guests.append(DinnerGuest(parent = s, sequence = i, name = '', dinner_choice = ''))
+		dinner_guests.append(DinnerGuest(parent = s, sequence = i))
 	template_values = {
 		'sponsor': s,
 		'golfers': golfers,
@@ -80,7 +77,7 @@ class Register(webapp.RequestHandler):
 			s = q.get()
 			if s:
 				if self.request.get('page') == '1':
-					show_registration_form(self.response, s, 0, messages, caps, debug)
+					show_registration_form(self.response, s, messages, caps, debug)
 					return
 				if s.payment_made > 0:
 					show_continuation_form(self.response, s, messages, caps, debug)
@@ -88,16 +85,15 @@ class Register(webapp.RequestHandler):
 				else:
 					messages.append('We do not have a record of your payment. ' +
 									'If you have paid, please contact us at the email address above.')
-					show_registration_form(self.response, s, 0, messages, caps, debug)
+					show_registration_form(self.response, s, messages, caps, debug)
 					return
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
-		s = Sponsor(name = '', company = '', address = '', city = '', phone = '',
-					fax = '', email = '', anonymous = False, printed_names = '',
-					num_golfers = 0, num_dinners = 0, payment_due = 0)
-		show_registration_form(self.response, s, 0, messages, caps, debug)
+		s = Sponsor(sponsorships = [])
+		show_registration_form(self.response, s, messages, caps, debug)
 
 	# Process the submitted info.
 	def post(self):
+		messages = []
 		caps = capabilities.get_current_user_caps()
 		id = int(self.request.get('id'))
 		if id:
@@ -106,11 +102,6 @@ class Register(webapp.RequestHandler):
 			s = q.get()
 		else:
 			s = Sponsor()
-			s.payment_made = 0
-			s.payment_type = ''
-			s.transaction_code = ''
-			s.pairing = ''
-			s.dinner_seating = ''
 		s.name = self.request.get('name')
 		s.company = self.request.get('company')
 		s.address = self.request.get('address')
@@ -124,10 +115,24 @@ class Register(webapp.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
+
 		debug = True if self.request.get('debug') == 'y' else False
+		if os.environ.get('SERVER_SOFTWARE').startswith('Development'):
+			debug = True
+
+		if s.name == '':
+			messages.append('Please enter your name.')
+		if s.email == '':
+			messages.append('Please enter your email address.')
+
 		form_payment_due = int(self.request.get('payment_due'))
+		try:
+			s.additional_donation = int(self.request.get('other'))
+		except ValueError:
+			s.additional_donation = 0
+			messages.append('You entered an invalid value in the "Other Donation" field.')
+
 		selected = self.request.get_all('sponsorships')
-		other = int(self.request.get('other'))
 		sponsorships = sponsorship.get_sponsorships("all")
 		sponsorship_names = []
 		golfers_included = 0
@@ -157,18 +162,27 @@ class Register(webapp.RequestHandler):
 			dinners_included += golfers_included - s.num_golfers
 		if s.num_dinners > dinners_included:
 			s.payment_due += 75 * (s.num_dinners - dinners_included)
-		messages = []
-		if s.name == '':
-			messages.append('Please enter your name.')
-		if s.email == '':
-			messages.append('Please enter your email address.')
+		s.payment_due += s.additional_donation
 		if s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
 		if s.payment_due != form_payment_due:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
+
+		if caps.can_add_registrations:
+			payment_made = self.request.get('payment_made')
+			if payment_made:
+				try:
+					s.payment_made = int(payment_made)
+				except ValueError:
+					s.payment_made = 0
+					messages.append('You entered an invalid value in the "Payment Made" field.')
+				s.payment_type = self.request.get('paytype')
+				s.transaction_code = self.request.get('transcode')
+
 		if messages:
-			show_registration_form(self.response, s, other, messages, caps, debug)
+			show_registration_form(self.response, s, messages, caps, debug)
 			return
+
 		if s.id == 0:
 			if debug:
 				s.id = random.randrange(1000,9999)
@@ -179,16 +193,12 @@ class Register(webapp.RequestHandler):
 					q.filter('id = ', s.id)
 					result = q.get()
 					if not result: break
-		if caps.can_add_registrations:
-			payment_made = self.request.get('payment_made')
-			if payment_made:
-				s.payment_made = int(payment_made)
-				s.payment_type = self.request.get('paytype')
-				s.transaction_code = self.request.get('transcode')
 		s.put()
-		if caps.can_add_registrations and s.payment_made > 0:
+
+		if s.payment_made > 0:
 			self.redirect('/register?id=%s' % s.id)
 			return
+
 		fname = ''
 		lname = ''
 		names = s.name.split()
@@ -235,19 +245,14 @@ class Continue(webapp.RequestHandler):
 		s = q.get()
 		if not s:
 			messages = ['Sorry, we could not find a registration for ID %s' % id]
-			s = Sponsor(name = '', company = '', address = '', city = '', phone = '',
-						fax = '', email = '', anonymous = False, printed_names = '',
-						num_golfers = 0, num_dinners = 0, payment_due = 0)
-			show_registration_form(self.response, s, 0, messages, caps, debug)
+			s = Sponsor(sponsorships = [])
+			show_registration_form(self.response, s, messages, caps, debug)
 			return
 		q = Golfer.all().ancestor(s.key())
 		golfers = q.fetch(s.num_golfers)
 		for i in range(1, s.num_golfers + 1):
 			if len(golfers) < i:
-				golfers.append(Golfer(parent = s, sequence = i, name = '', gender = '', title = '',
-									  company = '', address = '', city = '', phone = '', email = '',
-									  golf_index = '', best_score = '', ghn_number = '',
-									  shirt_size = '', dinner_choice = ''))
+				golfers.append(Golfer(parent = s, sequence = i))
 			golfer = golfers[i-1]
 			golfer.name = self.request.get('name%d' % i)
 			golfer.gender = self.request.get('gender%d' % i)
@@ -266,7 +271,7 @@ class Continue(webapp.RequestHandler):
 		dinner_guests = q.fetch(s.num_dinners)
 		for i in range(1, s.num_dinners + 1):
 			if len(dinner_guests) < i:
-				dinner_guests.append(DinnerGuest(parent = s, sequence = i, name = '', dinner_choice = ''))
+				dinner_guests.append(DinnerGuest(parent = s, sequence = i))
 			guest = dinner_guests[i-1]
 			guest.name = self.request.get('guest%d' % i)
 			guest.dinner_choice = self.request.get('guest_choice%d' % i)
@@ -298,7 +303,10 @@ class PostPayment(webapp.RequestHandler):
 		else:
 			s.payment_type = paytype
 			s.transaction_code = transcode
-			s.payment_made = int(payment_made) // 100
+			try:
+				s.payment_made = int(payment_made) // 100
+			except ValueError:
+				s.payment_made = 0
 			s.put()
 			self.response.set_status(204, 'Payment Posted')
 
