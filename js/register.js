@@ -11,18 +11,29 @@ function add_commas(str) {
 }
 
 function recalculate() {
-	var sponsorships = document.getElementById("sponsorships");
-	var checkboxes = sponsorships.getElementsByTagName("input");
+	var sponsorship_choices = document.getElementById("sponsorship_choices");
+	var checkboxes = sponsorship_choices.getElementsByTagName("input");
+	var show_sponsorships_box = document.getElementById("checkbox_show_sponsorships");
 	var angel = document.getElementById("angel");
 	var angelbox = angel.getElementsByTagName("input")[0];
 	var otherbox = document.getElementById("entry_other");
 	var golferbox = document.getElementById("entry_num_golfers");
 	var dinnerbox = document.getElementById("entry_num_dinners");
 	var includes_span = document.getElementById("included_text");
+	var sponsor_agree_div = document.getElementById("sponsor_agree");
 	var agreebox = document.getElementById("entry_agree");
 	var printednamesbox = document.getElementById("entry_printednames");
 	var totalbox = document.getElementById("entry_payment_due");
 	var totalbox_c = document.getElementById("entry_payment_due_c");
+
+	// Show or hide the sponsorship checkboxes.
+	if (show_sponsorships_box.checked)
+		sponsorship_choices.style.display = "block";
+	else {
+		sponsorship_choices.style.display = "none";
+		for (var i = 0; i < checkboxes.length; i++)
+			checkboxes[i].checked = false;
+	}
 
 	// Calculate total cost of sponsorships and number of golfers/dinners included.
 	var total = 0;
@@ -46,11 +57,6 @@ function recalculate() {
 		}
 	}
 	dinners_included = golfers_included;
-	if (otherbox.value) {
-		var otherval = parseInt(otherbox.value);
-		if (!isNaN(otherval))
-			total += parseInt(otherbox.value);
-	}
 
 	// Insert explanation of included golfers and dinners.
 	var includes = "";
@@ -83,9 +89,11 @@ function recalculate() {
 		dinners_included += 4;
 	}
 
-	// If no sponsorship, disable the "agree to publish my name" checkbox.
-	agreebox.disabled = total == 0;
-	printednamesbox.disabled = total == 0 || !agreebox.checked;
+	// If no sponsorship, hide the "agree to publish my name" checkbox.
+	if (total > 0)
+		sponsor_agree_div.style.display = "block";
+	else
+		sponsor_agree_div.style.display = "none";
 
 	// Calculate price for additional golfers and dinners.
 	golfers -= golfers_included;
@@ -99,6 +107,13 @@ function recalculate() {
 	if (dinners < 0)
 		dinners = 0;
 	total += dinners * 75;
+
+	if (otherbox.value) {
+		var otherval = parseInt(otherbox.value);
+		if (!isNaN(otherval))
+			total += parseInt(otherbox.value);
+	}
+
 	totalbox.value = total;
 	totalbox_c.value = add_commas(total);
 }

@@ -13,7 +13,7 @@ p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 .form-entry-right { float: left; width: 40%; }
 
 .form label { display: block; float: left; width: 8em;
-	text-align: right; margin: 0.2em 0 0 -8.5em;
+	text-align: right; margin: 0.2em 0 0.5em -8.5em;
 	font-size: 90%; line-height: 1.2em; color: #555;
 	}
 .form label.above { float: none; width: auto; text-align: left; margin: 0.5em 0; }
@@ -35,7 +35,7 @@ label.sold { color: #999; }
 .form-gender ul { display: inline; list-style: none; margin: 0; padding: 0; }
 .form-gender li { display: inline; padding: 0 0.25em; }
 
-.form-column-container { margin: 0 0 0 8em; overflow: hidden; }
+.form-column-container { margin: 0 0 0 8em; clear: both; overflow: hidden; }
 .form-column { float: left; margin: 0; width: 50%; }
 .form-column-right { margin-right: 0; }
 .form-column h3 { float: left; width: 100%; margin: 1em 0 0.5em 0; font-style: italic; text-transform: none; letter-spacing: 0; }

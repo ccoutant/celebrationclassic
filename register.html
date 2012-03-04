@@ -148,13 +148,16 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-section" id="sponsorships">
 
-<h2>Sponsorships</h2>
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y"></div>
+<label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
+Premier, Executive, or Pro sponsor for this event.
+<a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
+</div>
+</div>
 
-<p class="subhead">If you would like to sponsor this event,
-check the sponsorship(s) you are interested in below.
-If you are not interested in a sponsorship, skip this section.</p>
-
-<div class="form-column-container">
+<div id="sponsorship_choices" class="form-column-container">
 <div class="form-column">
 
 <h3>Premier Sponsors</h3>
@@ -194,13 +197,6 @@ If you are not interested in a sponsorship, skip this section.</p>
 </div>
 {% endfor %}
 
-<div class="form-entry form-dollars">
-<div class="form-input">
-<label class="above" for="entry_fax">Other Donation</label>
-$<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="entry_other">
-</div>
-</div>
-
 </div> <!-- form-column -->
 </div> <!-- form-column-container -->
 
@@ -228,7 +224,7 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 <option label="11" value="11" {% ifequal sponsor.num_golfers 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_golfers 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right">($360 each, includes dinner)</label>
+<label class="right">&emsp;$360 each (includes dinner)</label>
 </div>
 </div>
 
@@ -250,7 +246,7 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 <option label="11" value="11" {% ifequal sponsor.num_dinners 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_dinners 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right" for="entry_num_dinners">(non-golfers only, $75 each)</label>
+<label class="right" for="entry_num_dinners">&emsp;$75 each (non-golfers only)</label>
 </div>
 </div>
 
@@ -259,16 +255,23 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 <div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel_31" value="Angel:31:3000"></div>
 <label class="right" for="checkbox_Angel_31">Want to be an angel
 and get some good PR for your organization at the same time?
-Check this box to become an Angel sponsor for your foursome.
+Check here to become an Angel sponsor for your foursome.
 For $3,000, your Angel sponsorship includes four golfers, eight banquet dinners,
 and the PR benefits of being an Angel sponsor!
 And you know that you are doing something very special for Congregation Shir Hadash!</label>
 </div>
 </div>
 
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_fax">Additional Donation</label>
+$<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="entry_other">
+</div>
+</div>
+
 </div> <!-- form-section -->
 
-<div class="form-section">
+<div id="sponsor_agree" class="form-section">
 
 <div class="form-entry form-checkbox">
 <div class="form-input">
