@@ -225,8 +225,8 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 </div>
 
 </div> <!-- form-section -->
-{% endfor %}
 
+{% if forloop.last %}
 <div class="form-section">
 
 <div class="form-entry form-text">
@@ -237,6 +237,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 </div>
 
 </div> <!-- form-section -->
+{% endif %}
+
+{% endfor %}
 
 {% for guest in dinner_guests %}
 <div class="form-section">
@@ -269,7 +272,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-text">
 <div class="form-input">
-<label class="above" for="entry_seating">Seating preferences:</label>
+<label class="above" for="entry_seating">Dinner seating preferences:</label>
 <input type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating">
 </div>
 </div>
