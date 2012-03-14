@@ -49,7 +49,7 @@ class ManageUsers(webapp.RequestHandler):
 			self.response.out.write('</tr>\n')
 			seq += 1
 		self.response.out.write('<tr>\n')
-		self.response.out.write('<td><input type="text" size="12" name="email" value=""></td>\n')
+		self.response.out.write('<td><input type="text" size="30" name="email" value=""></td>\n')
 		self.response.out.write('<td></td>\n')
 		self.response.out.write('<td><input type="checkbox" name="us" value="u"></td>\n')
 		self.response.out.write('<td><input type="checkbox" name="vr" value="v"></td>\n')
