@@ -77,7 +77,7 @@
 <tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
-		<td><a href="/register?id={{ s.id }}&page=1">{{ s.id }}</a></td>
+		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
 		<td>
 		<p><b>{{ s.name }}</b></p>
 		{% if s.company %}<p class="details">{{ s.company }}</p>{% endif %}

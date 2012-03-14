@@ -48,14 +48,19 @@
 
 <p>Complete your online registration by providing the golfer information and dinner choices below.</p>
 
-<p><a href="/register?id={{ sponsor.id }}">Bookmark this page!</a>
-You don&rsquo;t need to fill out the form completely now,
-and you may return as often as you wish&mdash;until the registration deadline&mdash;to
-change your selections. Just remember to save your changes before you leave.</p>
+<p>If you don&rsquo;t have all the information you need yet
+(or you can&rsquo;t make up your mind about what to have for dinner),
+don&rsquo;t panic&mdash;just <b><a href="/register?id={{ sponsor.id }}">bookmark this page!</a></b>
+You can proceed to the checkout step and pay through Acceptiva even if you
+haven&rsquo;t completed this form.
+After you&rsquo;ve paid, you can return to this page at any time,
+as often as you wish&mdash;until the registration deadline&mdash;to change your selections.
+Just remember to save your changes each time.
+Your registration receipt from Acceptiva will also contain a link back to this page.</p>
 
 <p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
 
-<p>If you have questions or feedback about the registration process,
+<p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
 
 {% for m in messages %}
@@ -83,43 +88,6 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <input type="text" name="company" value="{{ sponsor.company }}" id="entry_company" readonly>
 </div>
 </div>
-
-<!--
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_address">Address</label>
-<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address" readonly>
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_city">City, State, ZIP</label>
-<input type="text" name="city" value="{{ sponsor.city }}" id="entry_4=city" readonly>
-</div>
-</div>
-
-<div class="form-entry-left form-phone">
-<div class="form-input">
-<label for="entry_phone">Phone</label>
-<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone" readonly>
-</div>
-</div>
-
-<div class="form-entry-left form-phone">
-<div class="form-input">
-<label for="entry_fax">Fax</label>
-<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax" readonly>
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_email">Email</label>
-<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email" readonly>
-</div>
-</div>
--->
 
 <input type="hidden" name="id" value="{{ sponsor.id }}">
 
@@ -279,11 +247,40 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 </div> <!-- form-section -->
 
+{% if capabilities.can_add_registrations %}
+<div class="form-section">
+
+<p class="subhead">(Office use only)</p>
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_payment_made">Payment Made</label>
+$<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_paytype">Payment Type</label>
+<input type="text" name="paytype" value="{{ sponsor.payment_type|default:'' }}" id="entry_paytype">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_transcode">Transaction Code</label>
+<input type="text" name="transcode" value="{{ sponsor.transaction_code|default:'' }}" id="entry_transcode">
+</div>
+</div>
+
+</div> <!-- form-section -->
+{% endif %}
+
 <div class="form-submit-section">
 
 <div class="form-entry form-submit">
 <div class="form-button">
-<input type="submit" name="submit" value="Save Changes">
+<input type="submit" name="submit" value="{{ submit_button }}">
 </div>
 </div>
 

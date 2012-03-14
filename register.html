@@ -65,22 +65,27 @@ you can download one of the registration forms listed at the bottom of this page
 select a sponsorship level (if desired),
 and enter the number of golfers and dinner guests.</p>
 
+<li><p>Enter information for each golfer,
+and make your dinner selections.</p>
+
 <li><p>Make your payment online through Acceptiva.</p>
 
-<li><p>After paying, you will be returned to this site
-where you will be asked to provide golfer information and
-make your dinner selections.
-After your payment is made, you can complete your registration
-at any time until April 26.</p>
-
 </ol>
+
+<p>If you don't have all the information for the golfers in your group,
+don't worry&mdash;you can still register now and
+return to this site as often as you need to complete your registration
+(through April 26).
+When you pay through Acceptiva, you will receive an email receipt
+that contains a link that you can use to complete your registration
+or modify your choices.</p>
 
 <p>Current prices for golf and dinner are good through the regular registration deadline of April 16.
 Prices will be higher for late registration from April 17&ndash;26.</p>
 
 <p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
 
-<p>If you have questions or feedback about the registration process,
+<p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
 
 {% for m in messages %}
@@ -95,8 +100,8 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_name">* Name</label>
-<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name">
+<label for="entry_name">Name</label>
+<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name"> *
 </div>
 </div>
 
@@ -110,28 +115,28 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_address">Address</label>
-<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address">
+<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address"> *
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_city">City, State, ZIP</label>
-<input type="text" name="city" value="{{ sponsor.city }}" id="entry_city">
+<input type="text" name="city" value="{{ sponsor.city }}" id="entry_city"> *
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_email">* Email</label>
-<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email">
+<label for="entry_email">Email</label>
+<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email"> *
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone">Phone</label>
-<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone">
+<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone"> *
 </div>
 </div>
 
@@ -150,7 +155,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y"></div>
+<div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
 Premier, Executive, or Pro sponsor for this event.
 <a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
@@ -165,7 +170,7 @@ Premier, Executive, or Pro sponsor for this event.
 {% for sponsorship in premier %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -176,7 +181,7 @@ Premier, Executive, or Pro sponsor for this event.
 {% for sponsorship in executive %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -191,7 +196,7 @@ Premier, Executive, or Pro sponsor for this event.
 {% for sponsorship in pro %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -252,8 +257,8 @@ Premier, Executive, or Pro sponsor for this event.
 
 <div id="angel" class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel_31" value="Angel:31:3000"></div>
-<label class="right" for="checkbox_Angel_31">Want to be an angel
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel" value="{{ angel.level }}:{{ angel.sequence }}:{{ angel.price }}" {% if angel.sequence in selected %}checked{% endif %}></div>
+<label class="right" for="checkbox_Angel">Want to be an angel
 and get some good PR for your organization at the same time?
 Check here to become an Angel sponsor for your foursome.
 For $3,000, your Angel sponsorship includes four golfers, eight banquet dinners,
@@ -301,35 +306,6 @@ $<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="e
 
 </div> <!-- form-section -->
 
-{% if capabilities.can_add_registrations %}
-<div class="form-section">
-
-<p class="subhead">(Office use only)</p>
-
-<div class="form-entry form-dollars">
-<div class="form-input">
-<label for="entry_payment_made">Payment Made</label>
-$<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_paytype">Payment Type</label>
-<input type="text" name="paytype" value="{{ sponsor.payment_type|default:'' }}" id="entry_paytype">
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_transcode">Transaction Code</label>
-<input type="text" name="transcode" value="{{ sponsor.transaction_code|default:'' }}" id="entry_transcode">
-</div>
-</div>
-
-</div> <!-- form-section -->
-{% endif %}
-
 {% if debug %}
 <input type="hidden" name="debug" value="y">
 {% endif %}
@@ -338,11 +314,7 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 
 <div class="form-entry form-submit">
 <div class="form-button">
-{% if capabilities.can_add_registrations %}
 <input type="submit" name="submit" value="Continue ->">
-{% else %}
-<input type="submit" name="submit" value="Checkout ->">
-{% endif %}
 </div>
 </div>
 

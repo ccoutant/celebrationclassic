@@ -6,12 +6,15 @@ import logging
 import random
 import urllib
 import re
-from google.appengine.ext import webapp
+from google.appengine.ext import db, webapp
 from google.appengine.ext.webapp import util, template
 
 import capabilities
 import sponsorship
 from sponsor import Sponsor, Golfer, DinnerGuest
+
+server_software = os.environ.get('SERVER_SOFTWARE')
+dev_server = True if server_software and server_software.startswith("Development") else False
 
 # Show the initial registration form.
 
@@ -20,13 +23,18 @@ def show_registration_form(response, s, messages, caps, debug):
 	executive = sponsorship.get_sponsorships("Executive")
 	pro = sponsorship.get_sponsorships("Pro")
 	angel = sponsorship.get_sponsorships("Angel")
+	selected_sponsorships = []
+	for sskey in s.sponsorships:
+		ss = db.get(sskey)
+		if ss:
+			selected_sponsorships.append(ss.sequence)
 	template_values = {
 		'sponsor': s,
 		'premier': premier,
 		'executive': executive,
 		'pro': pro,
-		'angel': angel,
-		'selected': [],
+		'angel': angel[0],
+		'selected': selected_sponsorships,
 		'messages' : messages,
 		'capabilities' : caps,
 		'debug' : debug
@@ -56,6 +64,7 @@ def show_continuation_form(response, s, messages, caps, debug):
 		'golfers': golfers,
 		'dinner_guests': dinner_guests,
 		'messages' : messages,
+		'submit_button' : 'Checkout ->' if s.payment_made == 0 else 'Save Changes',
 		'capabilities' : caps,
 		'debug' : debug
 	}
@@ -69,7 +78,6 @@ class Register(webapp.RequestHandler):
 	def get(self):
 		caps = capabilities.get_current_user_caps()
 		messages = []
-		debug = True if self.request.get('debug') == 'y' else False
 		if self.request.get('id'):
 			id = self.request.get('id')
 			q = Sponsor.all()
@@ -77,19 +85,13 @@ class Register(webapp.RequestHandler):
 			s = q.get()
 			if s:
 				if self.request.get('page') == '1':
-					show_registration_form(self.response, s, messages, caps, debug)
-					return
-				if s.payment_made > 0:
-					show_continuation_form(self.response, s, messages, caps, debug)
-					return
+					show_registration_form(self.response, s, messages, caps, dev_server)
 				else:
-					messages.append('We do not have a record of your payment. ' +
-									'If you have paid, please contact us at the email address above.')
-					show_registration_form(self.response, s, messages, caps, debug)
-					return
+					show_continuation_form(self.response, s, messages, caps, dev_server)
+				return
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 		s = Sponsor(sponsorships = [])
-		show_registration_form(self.response, s, messages, caps, debug)
+		show_registration_form(self.response, s, messages, caps, dev_server)
 
 	# Process the submitted info.
 	def post(self):
@@ -116,14 +118,16 @@ class Register(webapp.RequestHandler):
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
 
-		debug = True if self.request.get('debug') == 'y' else False
-		if os.environ.get('SERVER_SOFTWARE').startswith('Development'):
-			debug = True
-
 		if s.name == '':
 			messages.append('Please enter your name.')
+		if s.address == '':
+			messages.append('Please enter your mailing address.')
+		if s.city == '':
+			messages.append('Please enter your city, state, and ZIP code.')
 		if s.email == '':
 			messages.append('Please enter your email address.')
+		if s.phone == '':
+			messages.append('Please enter your phone number.')
 
 		form_payment_due = int(self.request.get('payment_due'))
 		try:
@@ -168,6 +172,69 @@ class Register(webapp.RequestHandler):
 		if s.payment_due != form_payment_due:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
 
+		if messages:
+			show_registration_form(self.response, s, messages, caps, dev_server)
+			return
+
+		if s.id == 0:
+			while True:
+				s.id = random.randrange(100000,999999)
+				q = Sponsor.all()
+				q.filter('id = ', s.id)
+				result = q.get()
+				if not result: break
+		s.put()
+		self.redirect('/register?id=%d' % s.id)
+
+# Registration Step 2.
+
+class Continue(webapp.RequestHandler):
+	# Process the submitted info.
+	def post(self):
+		messages = []
+		caps = capabilities.get_current_user_caps()
+		id = self.request.get('id')
+		q = Sponsor.all()
+		q.filter('id = ', int(id))
+		s = q.get()
+		if not s:
+			messages.append('Sorry, we could not find a registration for ID %s' % id)
+			s = Sponsor(sponsorships = [])
+			show_registration_form(self.response, s, messages, caps, dev_server)
+			return
+
+		q = Golfer.all().ancestor(s.key())
+		golfers = q.fetch(s.num_golfers)
+		for i in range(1, s.num_golfers + 1):
+			if len(golfers) < i:
+				golfers.append(Golfer(parent = s, sequence = i))
+			golfer = golfers[i-1]
+			golfer.name = self.request.get('name%d' % i)
+			golfer.gender = self.request.get('gender%d' % i)
+			golfer.company = self.request.get('company%d' % i)
+			golfer.address = self.request.get('address%d' % i)
+			golfer.city = self.request.get('city%d' % i)
+			golfer.phone = self.request.get('phone%d' % i)
+			golfer.email = self.request.get('email%d' % i)
+			golfer.golf_index = self.request.get('index%d' % i)
+			golfer.best_score = self.request.get('best%d' % i)
+			golfer.ghn_number = self.request.get('ghn%d' % i)
+			golfer.shirt_size = self.request.get('shirtsize%d' % i)
+			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
+			golfer.put()
+
+		q = DinnerGuest.all().ancestor(s.key())
+		dinner_guests = q.fetch(s.num_dinners)
+		for i in range(1, s.num_dinners + 1):
+			if len(dinner_guests) < i:
+				dinner_guests.append(DinnerGuest(parent = s, sequence = i))
+			guest = dinner_guests[i-1]
+			guest.name = self.request.get('guest%d' % i)
+			guest.dinner_choice = self.request.get('guest_choice%d' % i)
+			guest.put()
+		s.pairing = self.request.get('pairing')
+		s.dinner_seating = self.request.get('dinner_seating')
+
 		if caps.can_add_registrations:
 			payment_made = self.request.get('payment_made')
 			if payment_made:
@@ -179,26 +246,20 @@ class Register(webapp.RequestHandler):
 				s.payment_type = self.request.get('paytype')
 				s.transaction_code = self.request.get('transcode')
 
-		if messages:
-			show_registration_form(self.response, s, messages, caps, debug)
-			return
-
-		if s.id == 0:
-			if debug:
-				s.id = random.randrange(1000,9999)
-			else:
-				while True:
-					s.id = random.randrange(100000,999999)
-					q = Sponsor.all()
-					q.filter('id = ', s.id)
-					result = q.get()
-					if not result: break
 		s.put()
-
 		if s.payment_made > 0:
-			self.redirect('/register?id=%s' % s.id)
+			template_values = {
+				'sponsor': s,
+				'capabilities': caps
+			}
+			self.response.out.write(template.render('ack.html', template_values))
 			return
 
+		sponsorship_names = []
+		for sskey in s.sponsorships:
+			ss = db.get(sskey)
+			if ss:
+				sponsorship_names.append(ss.name)
 		fname = ''
 		lname = ''
 		names = s.name.split()
@@ -229,61 +290,8 @@ class Register(webapp.RequestHandler):
 				 ('zip', zip),
 				 ('phone', s.phone),
 				 ('email', s.email)]
-		acceptiva = 'https://secure.acceptiva.com/' if not debug else '/fakeacceptiva'
+		acceptiva = 'https://secure.acceptiva.com/' if not dev_server else '/fakeacceptiva'
 		self.redirect('%s?%s' % (acceptiva, urllib.urlencode(parms)))
-
-# Registration Step 2.
-
-class Continue(webapp.RequestHandler):
-	# Process the submitted info.
-	def post(self):
-		caps = capabilities.get_current_user_caps()
-		debug = True if self.request.get('debug') == 'y' else False
-		id = self.request.get('id')
-		q = Sponsor.all()
-		q.filter('id = ', int(id))
-		s = q.get()
-		if not s:
-			messages = ['Sorry, we could not find a registration for ID %s' % id]
-			s = Sponsor(sponsorships = [])
-			show_registration_form(self.response, s, messages, caps, debug)
-			return
-		q = Golfer.all().ancestor(s.key())
-		golfers = q.fetch(s.num_golfers)
-		for i in range(1, s.num_golfers + 1):
-			if len(golfers) < i:
-				golfers.append(Golfer(parent = s, sequence = i))
-			golfer = golfers[i-1]
-			golfer.name = self.request.get('name%d' % i)
-			golfer.gender = self.request.get('gender%d' % i)
-			golfer.company = self.request.get('company%d' % i)
-			golfer.address = self.request.get('address%d' % i)
-			golfer.city = self.request.get('city%d' % i)
-			golfer.phone = self.request.get('phone%d' % i)
-			golfer.email = self.request.get('email%d' % i)
-			golfer.golf_index = self.request.get('index%d' % i)
-			golfer.best_score = self.request.get('best%d' % i)
-			golfer.ghn_number = self.request.get('ghn%d' % i)
-			golfer.shirt_size = self.request.get('shirtsize%d' % i)
-			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
-			golfer.put()
-		q = DinnerGuest.all().ancestor(s.key())
-		dinner_guests = q.fetch(s.num_dinners)
-		for i in range(1, s.num_dinners + 1):
-			if len(dinner_guests) < i:
-				dinner_guests.append(DinnerGuest(parent = s, sequence = i))
-			guest = dinner_guests[i-1]
-			guest.name = self.request.get('guest%d' % i)
-			guest.dinner_choice = self.request.get('guest_choice%d' % i)
-			guest.put()
-		s.pairing = self.request.get('pairing')
-		s.dinner_seating = self.request.get('dinner_seating')
-		s.put()
-		template_values = {
-			'sponsor': s,
-			'capabilities': caps
-		}
-		self.response.out.write(template.render('ack.html', template_values))
 
 # Process the POST request from Acceptiva confirming payment.
 
@@ -343,7 +351,7 @@ class FakeAcceptiva(webapp.RequestHandler):
 		self.response.out.write('<p>Transaction Code: <input type="text" name="transcode" value="1234"></p>\n')
 		self.response.out.write('<p><input type="submit" value="Pay"></p>\n')
 		self.response.out.write('</form>\n')
-		self.response.out.write('<p><a href="/register?id=%s&debug=y">Continue registration...</a></p>\n' % id)
+		self.response.out.write('<p><a href="/register?id=%s">Continue registration...</a></p>\n' % id)
 		self.response.out.write('</body></html>\n')
 
 def main():
