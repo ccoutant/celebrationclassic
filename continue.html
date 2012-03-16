@@ -254,6 +254,13 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-dollars">
 <div class="form-input">
+<label for="entry_payment_due">Payment Due</label>
+$<input type="text" name="payment_due" value="{% if sponsor.payment_due %}{{ sponsor.payment_due }}{% endif %}" id="entry_payment_due" readonly>
+</div>
+</div>
+
+<div class="form-entry form-dollars">
+<div class="form-input">
 <label for="entry_payment_made">Payment Made</label>
 $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
 </div>
