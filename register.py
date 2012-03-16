@@ -35,9 +35,9 @@ def show_registration_form(response, s, messages, caps, debug):
 		'pro': pro,
 		'angel': angel[0],
 		'selected': selected_sponsorships,
-		'messages' : messages,
-		'capabilities' : caps,
-		'debug' : debug
+		'messages': messages,
+		'capabilities': caps,
+		'debug': debug
 	}
 	response.out.write(template.render('register.html', template_values))
 
@@ -51,6 +51,7 @@ def show_continuation_form(response, s, messages, caps, debug):
 		if i == 1:
 			golfer.name = s.name
 			golfer.company = s.company
+			golfer.address = s.address
 			golfer.city = s.city
 			golfer.phone = s.phone
 			golfer.email = s.email
@@ -58,15 +59,18 @@ def show_continuation_form(response, s, messages, caps, debug):
 	q = DinnerGuest.all().ancestor(s.key())
 	dinner_guests = q.fetch(s.num_dinners)
 	for i in range(len(dinner_guests) + 1, s.num_dinners + 1):
-		dinner_guests.append(DinnerGuest(parent = s, sequence = i))
+		guest = DinnerGuest(parent = s, sequence = i)
+		if s.num_golfers + i == 1:
+			guest.name = s.name
+		dinner_guests.append(guest)
 	template_values = {
 		'sponsor': s,
 		'golfers': golfers,
 		'dinner_guests': dinner_guests,
-		'messages' : messages,
-		'submit_button' : 'Checkout ->' if s.payment_made == 0 else 'Save Changes',
-		'capabilities' : caps,
-		'debug' : debug
+		'messages': messages,
+		'submit_button': 'Checkout ->' if s.payment_made == 0 else 'Save Changes',
+		'capabilities': caps,
+		'debug': debug
 	}
 	response.out.write(template.render('continue.html', template_values))
 
@@ -183,6 +187,7 @@ class Register(webapp.RequestHandler):
 				q.filter('id = ', s.id)
 				result = q.get()
 				if not result: break
+				logging.info('ID collision for %d; retrying...' % s.id)
 		s.put()
 		self.redirect('/register?id=%d' % s.id)
 
@@ -360,7 +365,7 @@ def main():
 										  ('/continue', Continue),
 										  ('/postpayment', PostPayment),
 										  ('/fakeacceptiva', FakeAcceptiva)],
-										 debug=True)
+										 debug=dev_server)
 	util.run_wsgi_app(application)
 
 if __name__ == '__main__':
