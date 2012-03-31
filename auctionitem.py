@@ -1,11 +1,16 @@
 from google.appengine.ext import db, blobstore
 from google.appengine.api import memcache
 
+class Thumbnail(db.Model):
+	image = db.BlobProperty()
+
 class AuctionItem(db.Model):
 	sequence = db.IntegerProperty(default = 0)
-	photo_blob = blobstore.BlobReferenceProperty()
-	photo_url = db.LinkProperty()
 	description = db.TextProperty(default = "")
+	photo_blob = blobstore.BlobReferenceProperty()
+	thumbnail_id = db.IntegerProperty()
+	thumbnail_width = db.IntegerProperty()
+	thumbnail_height = db.IntegerProperty()
 
 def get_auction_items():
 	auction_items = memcache.get("auction_items")

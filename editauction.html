@@ -52,15 +52,15 @@ p.description { margin-bottom: 0.5em; }
 
 <form action="{{ upload_url }}" method="post" enctype="multipart/form-data" accept-charset="utf-8">
 
-{% if item.photo_url %}
-<img src="{{ item.photo_url }}" alt="">
+{% if item.thumbnail_id %}
+<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
 {% endif %}
 
-<p>Upload {% if item.photo_url %}new {% endif %}photo: <input type="file" name="file"></p>
+<p>{% if item.thumbnail_id %}Replace{% else %}Upload{% endif %} photo: <input type="file" name="file"></p>
 
 <p class="description">Item Description:</p>
 
-<textarea rows="20" cols="60" name="description">{{ item.description }}</textarea>
+<textarea rows="12" cols="60" name="description">{{ item.description }}</textarea>
 
 <div class="hints">
 <p>Formatting hints:</p>

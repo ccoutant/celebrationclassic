@@ -327,13 +327,23 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 		else:
 			item = auctionitem.AuctionItem()
 		item.description = self.request.get('description')
+		item.description = item.description.replace('\r\n', '\n')
 		item.sequence = int(self.request.get('sequence'))
 		upload_files = self.get_uploads('file')
 		if upload_files:
 			if item.photo_blob:
 				blobstore.delete(item.photo_blob.key())
+			if item.thumbnail_id:
+				auctionitem.Thumbnail.get_by_id(item.thumbnail_id).delete()
 			item.photo_blob = upload_files[0].key()
-			item.photo_url = images.get_serving_url(item.photo_blob, size = 200)
+			img = images.Image(blob_key = item.photo_blob)
+			img.resize(width = 200)
+			thumbnail = auctionitem.Thumbnail()
+			thumbnail.image = img.execute_transforms(output_encoding = images.JPEG)
+			thumbnail.put()
+			item.thumbnail_id = thumbnail.key().id()
+			item.thumbnail_width = img.width
+			item.thumbnail_height = img.height
 		item.put()
 		memcache.delete("auction_items")
 		self.redirect("/admin/auction")

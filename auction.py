@@ -3,6 +3,7 @@ import cgi
 import logging
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template, util
+from google.appengine.api import images
 
 import auctionitem
 
@@ -19,9 +20,20 @@ class Auction(webapp.RequestHandler):
 			}
 		self.response.out.write(template.render('auction.html', template_values))
 
+class ServeThumbnail(webapp.RequestHandler):
+	def get(self, id):
+		thumb = auctionitem.Thumbnail.get_by_id(long(id))
+		if thumb:
+			self.response.headers['Content-Type'] = 'image/jpeg'
+			self.response.headers['Cache-Control'] = 'public, max-age=86400;'
+			self.response.out.write(thumb.image)
+		else:
+			self.error(404)
+
 def main():
 	logging.getLogger().setLevel(logging.INFO)
-	application = webapp.WSGIApplication([('/auction.html', Auction)],
+	application = webapp.WSGIApplication([('/auction.html', Auction),
+										  ('/img/(.*)', ServeThumbnail)],
 										 debug=dev_server)
 	util.run_wsgi_app(application)
 

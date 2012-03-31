@@ -11,10 +11,12 @@
 #auctionitems tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
 #auctionitems td.photo { padding: 1em 0; width: 200px; }
 #auctionitems td.photo img { margin: 0; }
+#auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
 #auctionitems td.description { padding: 1em 0 1em 2em; }
 #auctionitems td p { margin: 0 0 0.5em 0; }
-#auctionitems td p.edit { text-align: right; }
+#auctionitems td p.edit { text-align: center; }
 #content { margin-bottom: 3em; }
+#newbutton { text-align: center; }
 </style>
 </head>
 <body>
@@ -60,8 +62,8 @@
 {% for item in auction_items %}
 	<tr valign="top">
 		<td class="photo">
-		{% if item.photo_url %}
-		<img src="{{ item.photo_url|safe }}" alt="">
+		{% if item.thumbnail_id %}
+		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}
@@ -81,7 +83,7 @@
 
 {% endif %}
 
-<a href="/admin/auction?new=y"><input type="button" name="add" value="Add a New Item"></a>
+<p id="newbutton"><a href="/admin/auction?new=y"><input type="button" name="add" value="Add a New Item"></a></p>
 
 </div> <!-- content -->
 

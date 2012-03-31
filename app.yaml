@@ -27,5 +27,8 @@ handlers:
 - url: /auction.html
   script: auction.py
 
+- url: /img/.*
+  script: auction.py
+
 - url: /.*
   script: proxy.py

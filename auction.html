@@ -12,6 +12,7 @@
 #auctionitems tbody tr { border: none; border-top: 1px solid #c4e5c4; }
 #auctionitems td.photo { padding: 1em 0; width: 200px; }
 #auctionitems td.photo img { margin: 0; }
+#auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
 #auctionitems td.description { padding: 1em 0 1em 2em; }
 #auctionitems td p { margin: 0 0 0.5em 0; }
 </style>
@@ -62,8 +63,8 @@ Here is just a smattering of what you can expect&hellip;</p>
 {% for item in auction_items %}
 	<tr valign="top">
 		<td class="photo">
-		{% if item.photo_url %}
-		<img src="{{ item.photo_url|safe }}" alt="">
+		{% if item.thumbnail_id %}
+		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}
