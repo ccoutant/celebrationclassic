@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 
+import os
 import cgi
 import logging
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template, util
-from google.appengine.api import users, memcache
+from google.appengine.ext import webapp, blobstore
+from google.appengine.ext.webapp import template, util, blobstore_handlers
+from google.appengine.api import users, memcache, images
 
 import capabilities
 import sponsorship
+import auctionitem
 from sponsor import Sponsor, Golfer, DinnerGuest
 
 webapp.template.register_template_library('tags.custom_filters')
+
+server_software = os.environ.get('SERVER_SOFTWARE')
+dev_server = True if server_software and server_software.startswith("Development") else False
 
 # Logout
 
@@ -36,7 +41,7 @@ class ManageUsers(webapp.RequestHandler):
 <h1>Edit User List</h1>
 <form action="/admin/users" method="post">
 <table border="0" cellspacing="0" cellpadding="5">
-<tr><th>Email</th><th>Name</th><th>Update Sponsorships</th><th>View Registrations</th><th>Add Registrations</th></tr>
+<tr><th>Email</th><th>Name</th><th>Update Sponsorships</th><th>View Registrations</th><th>Add Registrations</th><th>Update Auction</th></tr>
 """)
 		seq = 1
 		for u in caps:
@@ -46,6 +51,7 @@ class ManageUsers(webapp.RequestHandler):
 			self.response.out.write('<td><input type="checkbox" name="us%d" value="u" %s></td>\n' % (seq, "checked" if u.can_update_sponsorships else ""))
 			self.response.out.write('<td><input type="checkbox" name="vr%d" value="v" %s></td>\n' % (seq, "checked" if u.can_view_registrations else ""))
 			self.response.out.write('<td><input type="checkbox" name="ar%d" value="a" %s></td>\n' % (seq, "checked" if u.can_add_registrations else ""))
+			self.response.out.write('<td><input type="checkbox" name="ua%d" value="u" %s></td>\n' % (seq, "checked" if u.can_update_auction else ""))
 			self.response.out.write('</tr>\n')
 			seq += 1
 		self.response.out.write('<tr>\n')
@@ -54,6 +60,7 @@ class ManageUsers(webapp.RequestHandler):
 		self.response.out.write('<td><input type="checkbox" name="us" value="u"></td>\n')
 		self.response.out.write('<td><input type="checkbox" name="vr" value="v"></td>\n')
 		self.response.out.write('<td><input type="checkbox" name="ar" value="a"></td>\n')
+		self.response.out.write('<td><input type="checkbox" name="ua" value="u"></td>\n')
 		self.response.out.write('</tr>\n')
 		self.response.out.write('</table>\n')
 		self.response.out.write('<input type="hidden" name="count" value="%d">\n' % seq)
@@ -74,17 +81,20 @@ class ManageUsers(webapp.RequestHandler):
 			us = True if self.request.get('us%d' % i) == 'u' else False
 			vr = True if self.request.get('vr%d' % i) == 'v' else False
 			ar = True if self.request.get('ar%d' % i) == 'a' else False
-			if us != u.can_update_sponsorships or vr != u.can_view_registrations or ar != u.can_add_registrations:
+			ua = True if self.request.get('ua%d' % i) == 'u' else False
+			if us != u.can_update_sponsorships or vr != u.can_view_registrations or ar != u.can_add_registrations or ua != u.can_update_auction:
 				s.can_update_sponsorships = us
 				s.can_view_registrations = vr
 				s.can_add_registrations = ar
+				s.can_update_auction = ua
 				s.put()
 		email = self.request.get('email')
 		us = True if self.request.get('us') == 'u' else False
 		vr = True if self.request.get('vr') == 'v' else False
 		ar = True if self.request.get('ar') == 'a' else False
+		ua = True if self.request.get('ua') == 'u' else False
 		if email:
-			u = capabilities.Capabilities(email = email, can_update_sponsorships = us, can_view_registrations = vr, can_add_registrations = ar)
+			u = capabilities.Capabilities(email = email, can_update_sponsorships = us, can_view_registrations = vr, can_add_registrations = ar, can_update_auction = ua)
 			u.put()
 		memcache.flush_all()
 		self.redirect('/admin/users')
@@ -267,13 +277,76 @@ class ViewRegistrations(webapp.RequestHandler):
 				}
 			self.response.out.write(template.render('viewguests.html', template_values))
 
+# Auction Items
+
+class ManageAuction(webapp.RequestHandler):
+	# Show the form.
+	def get(self):
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_update_auction:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		if self.request.get('key'):
+			key = self.request.get('key')
+			item = auctionitem.AuctionItem.get(key)
+			template_values = {
+				'item': item,
+				'key': key,
+				'upload_url': blobstore.create_upload_url('/admin/upload-auction')
+				}
+			self.response.out.write(template.render('editauction.html', template_values))
+		elif self.request.get('new'):
+			auction_items = auctionitem.get_auction_items()
+			if auction_items:
+				seq = auction_items[-1].sequence + 1
+			else:
+				seq = 1
+			item = auctionitem.AuctionItem(sequence = seq)
+			template_values = {
+				'item': item,
+				'key': '',
+				'upload_url': blobstore.create_upload_url('/admin/upload-auction')
+				}
+			self.response.out.write(template.render('editauction.html', template_values))
+		else:
+			auction_items = auctionitem.get_auction_items()
+			template_values = {
+				'auction_items': auction_items
+				}
+			self.response.out.write(template.render('adminauction.html', template_values))
+
+class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
+	# Process the submitted info.
+	def post(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		key = self.request.get('key')
+		if key:
+			item = auctionitem.AuctionItem.get(key)
+		else:
+			item = auctionitem.AuctionItem()
+		item.description = self.request.get('description')
+		item.sequence = int(self.request.get('sequence'))
+		upload_files = self.get_uploads('file')
+		if upload_files:
+			if item.photo_blob:
+				blobstore.delete(item.photo_blob.key())
+			item.photo_blob = upload_files[0].key()
+			item.photo_url = images.get_serving_url(item.photo_blob, size = 200)
+		item.put()
+		memcache.delete("auction_items")
+		self.redirect("/admin/auction")
+
 def main():
-	logging.getLogger().setLevel(logging.DEBUG)
+	logging.getLogger().setLevel(logging.INFO)
 	application = webapp.WSGIApplication([('/admin/sponsorships', Sponsorships),
 										  ('/admin/users', ManageUsers),
+										  ('/admin/auction', ManageAuction),
+										  ('/admin/upload-auction', UploadAuctionItem),
 										  ('/admin/view/(.*)', ViewRegistrations),
 										  ('/admin/logout', Logout)],
-										 debug=True)
+										 debug=dev_server)
 	util.run_wsgi_app(application)
 
 if __name__ == '__main__':

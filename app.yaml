@@ -1,5 +1,5 @@
 application: celebrationclassic
-version: 4
+version: 5
 runtime: python
 api_version: 1
 
@@ -23,6 +23,9 @@ handlers:
 - url: /admin/.*
   script: admin.py
   login: required
+
+- url: /auction.html
+  script: auction.py
 
 - url: /.*
   script: proxy.py

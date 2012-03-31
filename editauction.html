@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; {% if key %}Edit{% else %}New{% endif %} Auction Item</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="icon" href="/favicon.png" type="image/png">
+<style type="text/css">
+p.description { margin-bottom: 0.5em; }
+.hints { font-size: 80%; color: #484848; }
+.hints p { margin-bottom: 0; }
+.hints ul { margin: 0 0 1.5em 0; padding: 0 0 0 1.5em; }
+.hints code { color: #157d15; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="logo">
+<a href="/index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
+</div>
+
+<div id="banner">
+<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
+<p class="subhead">May 6&ndash;7, 2012
+<br>The Golf Club at Boulder Ridge
+<br>San Jose, CA</p>
+</div>
+
+</div> <!-- container -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+	<li><a href="/details.html">Tournament Details</a></li>
+	<li><a href="/register">Registration</a></li>
+	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="/volunteer.html">Volunteer Information</a></li>
+	<li><a href="/auction.html">Live Auction</a></li>
+	<li><a href="/map.html">Map and Directions</a></li>
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
+	<li><a href="/admin/view/golfers">View Golfers</a></li>
+	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+</ul>
+</div>
+
+<div id="content">
+<h2>{% if key %}Edit{% else %}New{% endif %} Auction Item</h2>
+
+<form action="{{ upload_url }}" method="post" enctype="multipart/form-data" accept-charset="utf-8">
+
+{% if item.photo_url %}
+<img src="{{ item.photo_url }}" alt="">
+{% endif %}
+
+<p>Upload {% if item.photo_url %}new {% endif %}photo: <input type="file" name="file"></p>
+
+<p class="description">Item Description:</p>
+
+<textarea rows="20" cols="60" name="description">{{ item.description }}</textarea>
+
+<div class="hints">
+<p>Formatting hints:</p>
+<ul>
+	<li>For a new paragraph, type a blank line</li>
+	<li>For a forced line break, type two spaces at the end of a line</li>
+	<li>For a bullet list, type a blank line, then use <code>*</code> and a space at the beginning of each line</li>
+	<li>For <i>italics</i>, type <code>_italics_</code></li>
+	<li>For <b>bold</b>, type <code>**bold**</code></li>
+	<li>For hyperlinks, type <code>[text of link](http://example.com/index.html)</code></li>
+	<li><a href="http://daringfireball.net/projects/markdown/basics" target="_blank">Full Markdown documentation...</a></li>
+</ul>
+</div>
+
+<p>Sequence # <input type="text" name="sequence" value="{{ item.sequence }}" size="5">
+<span class="hints">(Use this to control the order of the auction items.)</span></p>
+
+<input type="hidden" name="key" value="{{ key }}">
+
+<p><input type="submit" name="save" value="Save"></p>
+
+</form>
+
+</div> <!-- content -->
+
+</div> <!-- container -->
+
+</body>
+</html>

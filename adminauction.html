@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; Auction Item Administration</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="icon" href="/favicon.png" type="image/png">
+<style type="text/css">
+#auctionitems { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 1em; }
+#auctionitems tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
+#auctionitems td.photo { padding: 1em 0; width: 200px; }
+#auctionitems td.photo img { margin: 0; }
+#auctionitems td.description { padding: 1em 0 1em 2em; }
+#auctionitems td p { margin: 0 0 0.5em 0; }
+#auctionitems td p.edit { text-align: right; }
+#content { margin-bottom: 3em; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="logo">
+<a href="/index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
+</div>
+
+<div id="banner">
+<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
+<p class="subhead">May 6&ndash;7, 2012
+<br>The Golf Club at Boulder Ridge
+<br>San Jose, CA</p>
+</div>
+
+</div> <!-- container -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+	<li><a href="/details.html">Tournament Details</a></li>
+	<li><a href="/register">Registration</a></li>
+	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="/volunteer.html">Volunteer Information</a></li>
+	<li><a href="/auction.html">Live Auction</a></li>
+	<li><a href="/map.html">Map and Directions</a></li>
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
+	<li><a href="/admin/view/golfers">View Golfers</a></li>
+	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+</ul>
+</div>
+
+<div id="content">
+<h2>Auction Items</h2>
+
+{% if auction_items %}
+
+<table id="auctionitems">
+<tbody>
+{% for item in auction_items %}
+	<tr valign="top">
+		<td class="photo">
+		{% if item.photo_url %}
+		<img src="{{ item.photo_url|safe }}" alt="">
+		{% else %}
+		<p>(No photo available)</p>
+		{% endif %}
+		</td>
+		<td class="description">
+		{{ item.description|markdown }}
+		<p class="edit"><a href="/admin/auction?key={{ item.key }}"><input type="button" name="edit" value="Edit"></a></p>
+		</td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% else %}
+
+<p>No auction items yet.</p>
+
+{% endif %}
+
+<a href="/admin/auction?new=y"><input type="button" name="add" value="Add a New Item"></a>
+
+</div> <!-- content -->
+
+</div> <!-- container -->
+
+</body>
+</html>
