@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import quopri
 import cgi
 import logging
 from google.appengine.ext import webapp, blobstore
@@ -83,11 +84,11 @@ class ManageUsers(webapp.RequestHandler):
 			ar = True if self.request.get('ar%d' % i) == 'a' else False
 			ua = True if self.request.get('ua%d' % i) == 'u' else False
 			if us != u.can_update_sponsorships or vr != u.can_view_registrations or ar != u.can_add_registrations or ua != u.can_update_auction:
-				s.can_update_sponsorships = us
-				s.can_view_registrations = vr
-				s.can_add_registrations = ar
-				s.can_update_auction = ua
-				s.put()
+				u.can_update_sponsorships = us
+				u.can_view_registrations = vr
+				u.can_add_registrations = ar
+				u.can_update_auction = ua
+				u.put()
 		email = self.request.get('email')
 		us = True if self.request.get('us') == 'u' else False
 		vr = True if self.request.get('vr') == 'v' else False
@@ -326,9 +327,10 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 			item = auctionitem.AuctionItem.get(key)
 		else:
 			item = auctionitem.AuctionItem()
-		item.description = self.request.get('description')
-		item.description = item.description.replace('\r\n', '\n')
 		item.sequence = int(self.request.get('sequence'))
+		desc = self.request.get('description')
+		desc = desc.replace('\r\n', '\n')
+		item.description = desc
 		upload_files = self.get_uploads('file')
 		if upload_files:
 			if item.photo_blob:
