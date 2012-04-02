@@ -71,7 +71,7 @@ class ManageUsers(webapp.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url(self.request.uri))
+			self.redirect(users.create_login_url('/admin/users'))
 			return
 		count = int(self.request.get('count'))
 		for i in range(1, count):
@@ -160,8 +160,9 @@ class Sponsorships(webapp.RequestHandler):
 
 	# Process the submitted info.
 	def post(self):
-		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url(self.request.uri))
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_update_sponsorships:
+			self.redirect(users.create_login_url('/admin/sponsorships'))
 			return
 		count = int(self.request.get('count'))
 		for i in range(1, count):
@@ -319,8 +320,9 @@ class ManageAuction(webapp.RequestHandler):
 class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 	# Process the submitted info.
 	def post(self):
-		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url(self.request.uri))
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_update_auction:
+			self.redirect(users.create_login_url('/admin/auction'))
 			return
 		key = self.request.get('key')
 		if key:
