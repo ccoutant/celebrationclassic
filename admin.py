@@ -334,13 +334,14 @@ class DownloadCSV(webapp.RequestHandler):
 								 'sponsorships', 'num_golfers', 'num_dinners', 'payment_due',
 								 'payment_paid', 'payment_type', 'trans_code']))
 			for s in q:
-				sponsorships = ''
+				sponsorships = []
 				for sskey in s.sponsorships:
 					ss = db.get(sskey)
-					sponsorships += ss.name
+					sponsorships.append(ss.name)
 				csv.append(','.join([csv_encode(x) for x in [s.id, s.name, s.company, s.address,
-									 s.city, s.email, s.phone, sponsorships, s.num_golfers,
-									 s.num_golfers + s.num_dinners, s.payment_due, s.payment_made,
+									 s.city, s.email, s.phone, ','.join(sponsorships),
+									 s.num_golfers, s.num_golfers + s.num_dinners,
+									 s.payment_due, s.payment_made,
 									 s.payment_type, s.transaction_code]]))
 			self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 			self.response.headers['Content-Disposition'] = 'attachment;filename=sponsors.csv'
