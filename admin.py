@@ -215,15 +215,39 @@ class ViewRegistrations(webapp.RequestHandler):
 		if user is None or not user.can_view_registrations:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
-		q = Sponsor.all()
-		q.order("timestamp")
-		sponsors = q.fetch(50)
 		if what == "sponsors":
-			self.response.out.write(template.render('viewsponsors.html', {'sponsors': sponsors}))
+			if self.request.get('start'):
+				start = int(self.request.get('start'))
+			else:
+				start = 0
+			lim = 5
+			q = Sponsor.all()
+			q.order("timestamp")
+			sponsors = q.fetch(lim, offset = start)
+			count = q.count()
+			nav = []
+			i = 0
+			while i < count:
+				if i == start:
+					nav.append('<b>%d-%d</b>' % (i+1, min(count, i+lim)))
+				else:
+					nav.append('<a href="%s?start=%d">%d-%d</a>' % (self.request.path, i, i+1, min(count, i+lim)))
+				i += lim
+			template_values = {
+				'sponsors': sponsors,
+				'nav': nav
+				}
+			self.response.out.write(template.render('viewsponsors.html', template_values))
 		elif what == "golfers":
+			html = memcache.get('/admin/view/golfers')
+			if html:
+				self.response.out.write(html)
+				return
 			all_golfers = []
 			counter = 1
-			for s in sponsors:
+			q = Sponsor.all()
+			q.order("timestamp")
+			for s in q:
 				q = Golfer.all().ancestor(s.key())
 				golfers = q.fetch(s.num_golfers)
 				for g in golfers:
@@ -246,11 +270,19 @@ class ViewRegistrations(webapp.RequestHandler):
 				'golfers': all_golfers,
 				'shirt_sizes': shirt_sizes
 				}
-			self.response.out.write(template.render('viewgolfers.html', template_values))
+			html = template.render('viewgolfers.html', template_values)
+			memcache.add('/admin/view/golfers', html, 60*60*24)
+			self.response.out.write(html)
 		elif what == "guests":
+			html = memcache.get('/admin/view/guests')
+			if html:
+				self.response.out.write(html)
+				return
 			all_dinners = []
 			counter = 1
-			for s in sponsors:
+			q = Sponsor.all()
+			q.order("timestamp")
+			for s in q:
 				q = Golfer.all().ancestor(s.key())
 				golfers = q.fetch(s.num_golfers)
 				for g in golfers:
@@ -277,7 +309,9 @@ class ViewRegistrations(webapp.RequestHandler):
 				'dinners': all_dinners,
 				'dinner_choices': dinner_choices
 				}
-			self.response.out.write(template.render('viewguests.html', template_values))
+			html = template.render('viewguests.html', template_values)
+			memcache.add('/admin/view/guests', html, 60*60*24)
+			self.response.out.write(html)
 
 # Auction Items
 

@@ -124,14 +124,15 @@ class Register(webapp.RequestHandler):
 
 		if s.name == '':
 			messages.append('Please enter your name.')
-		if s.address == '':
-			messages.append('Please enter your mailing address.')
-		if s.city == '':
-			messages.append('Please enter your city, state, and ZIP code.')
-		if s.email == '':
-			messages.append('Please enter your email address.')
-		if s.phone == '':
-			messages.append('Please enter your phone number.')
+		if not caps.can_add_registrations:
+			if s.address == '':
+				messages.append('Please enter your mailing address.')
+			if s.city == '':
+				messages.append('Please enter your city, state, and ZIP code.')
+			if s.email == '':
+				messages.append('Please enter your email address.')
+			if s.phone == '':
+				messages.append('Please enter your phone number.')
 
 		form_payment_due = int(self.request.get('payment_due'))
 		try:
@@ -175,6 +176,7 @@ class Register(webapp.RequestHandler):
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
 		if s.payment_due != form_payment_due:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
+			logging.info('Payment Due from form was %d, calculated %d instead' % (form_payment_due, s.payment_due))
 
 		if messages:
 			show_registration_form(self.response, s, messages, caps, dev_server)
@@ -252,6 +254,9 @@ class Continue(webapp.RequestHandler):
 				s.transaction_code = self.request.get('transcode')
 
 		s.put()
+		memcache.delete('/admin/view/golfers')
+		memcache.delete('/admin/view/guests')
+
 		if s.payment_made > 0:
 			template_values = {
 				'sponsor': s,

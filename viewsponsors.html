@@ -24,6 +24,8 @@
 #view td.firstcol { padding-left: 2em; }
 #view td p { margin: 0; }
 #view td p.details { margin-left: 1em; font-size: 80%; color: #555; }
+ul.pages { list-style: none; margin: 0; padding: 0; text-align: right; }
+ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 </style>
 </head>
 <body id="view">
@@ -63,6 +65,12 @@
 <h2>Registrations</h2>
 
 {% if sponsors %}
+
+<ul class="pages">
+{% for n in nav %}
+	<li>{{ n|safe }}</li>
+{% endfor %}
+</ul>
 
 <table>
 <thead>
