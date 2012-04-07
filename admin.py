@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import os
+import re
 import quopri
 import cgi
 import logging
-from google.appengine.ext import webapp, blobstore
+from google.appengine.ext import db, webapp, blobstore
 from google.appengine.ext.webapp import template, util, blobstore_handlers
 from google.appengine.api import users, memcache, images
 
@@ -220,7 +221,7 @@ class ViewRegistrations(webapp.RequestHandler):
 				start = int(self.request.get('start'))
 			else:
 				start = 0
-			lim = 5
+			lim = 20
 			q = Sponsor.all()
 			q.order("timestamp")
 			sponsors = q.fetch(lim, offset = start)
@@ -312,6 +313,40 @@ class ViewRegistrations(webapp.RequestHandler):
 			html = template.render('viewguests.html', template_values)
 			memcache.add('/admin/view/guests', html, 60*60*24)
 			self.response.out.write(html)
+		else:
+			self.error(404)
+
+def csv_encode(val):
+	val = re.sub(r'"', '""', str(val or ''))
+	return '"%s"' % val
+
+class DownloadCSV(webapp.RequestHandler):
+	def get(self, what):
+		user = capabilities.get_current_user_caps()
+		if user is None or not user.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		if what == "sponsors":
+			q = Sponsor.all()
+			q.order("timestamp")
+			csv = []
+			csv.append(','.join(['ID', 'contact', 'company', 'address', 'city', 'email', 'phone',
+								 'sponsorships', 'num_golfers', 'num_dinners', 'payment_due',
+								 'payment_paid', 'payment_type', 'trans_code']))
+			for s in q:
+				sponsorships = ''
+				for sskey in s.sponsorships:
+					ss = db.get(sskey)
+					sponsorships += ss.name
+				csv.append(','.join([csv_encode(x) for x in [s.id, s.name, s.company, s.address,
+									 s.city, s.email, s.phone, sponsorships, s.num_golfers,
+									 s.num_golfers + s.num_dinners, s.payment_due, s.payment_made,
+									 s.payment_type, s.transaction_code]]))
+			self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+			self.response.headers['Content-Disposition'] = 'attachment;filename=sponsors.csv'
+			self.response.out.write('\n'.join(csv))
+		else:
+			self.error(404)
 
 # Auction Items
 
@@ -393,6 +428,7 @@ def main():
 										  ('/admin/auction', ManageAuction),
 										  ('/admin/upload-auction', UploadAuctionItem),
 										  ('/admin/view/(.*)', ViewRegistrations),
+										  ('/admin/csv/(.*)', DownloadCSV),
 										  ('/admin/logout', Logout)],
 										 debug=dev_server)
 	util.run_wsgi_app(application)
