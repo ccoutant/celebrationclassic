@@ -25,6 +25,8 @@
 #viewguests td p { margin: 0; }
 #viewguests td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 #viewguests tr.seating p { font-size: 80%; font-style: italic; color: #555; }
+ul.pages { list-style: none; margin: 0; padding: 0; text-align: right; }
+ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 </style>
 </head>
 <body id="viewguests">
@@ -64,6 +66,10 @@
 <h2>Golfers and Dinner Guests</h2>
 
 {% if dinners %}
+
+<ul class="pages">
+	<li><a href="/admin/csv/guests">Download CSV</a></li>
+</ul>
 
 <table>
 <thead>

@@ -338,16 +338,57 @@ class DownloadCSV(webapp.RequestHandler):
 				for sskey in s.sponsorships:
 					ss = db.get(sskey)
 					sponsorships.append(ss.name)
-				csv.append(','.join([csv_encode(x) for x in [s.id, s.name, s.company, s.address,
-									 s.city, s.email, s.phone, ','.join(sponsorships),
-									 s.num_golfers, s.num_golfers + s.num_dinners,
-									 s.payment_due, s.payment_made,
-									 s.payment_type, s.transaction_code]]))
-			self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
-			self.response.headers['Content-Disposition'] = 'attachment;filename=sponsors.csv'
-			self.response.out.write('\n'.join(csv))
+				csv.append(','.join([csv_encode(x)
+									 for x in [s.id, s.name, s.company, s.address,
+											   s.city, s.email, s.phone, ','.join(sponsorships),
+											   s.num_golfers, s.num_golfers + s.num_dinners,
+											   s.payment_due, s.payment_made,
+											   s.payment_type, s.transaction_code]]))
+		elif what == "golfers":
+			q = Sponsor.all()
+			q.order("timestamp")
+			csv = []
+			csv.append(','.join(['contact', 'name', 'gender', 'title', 'company', 'address', 'city',
+								 'email', 'phone', 'golf_index', 'best_score', 'ghn_number',
+								 'shirt_size']))
+			for s in q:
+				q = Golfer.all().ancestor(s.key())
+				golfers = q.fetch(s.num_golfers)
+				for g in golfers:
+					csv.append(','.join([csv_encode(x)
+										 for x in [s.name, g.name, g.gender, g.company, g.title,
+												   g.address, g.city, g.email, g.phone,
+												   g.golf_index, g.best_score, g.ghn_number,
+												   g.shirt_size]]))
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					csv.append(','.join([csv_encode(x)
+										 for x in [s.name, 'n/a', '', '', '', '', '', '', '',
+												   '', '', '', '']]))
+		elif what == "guests":
+			q = Sponsor.all()
+			q.order("timestamp")
+			csv = []
+			csv.append(','.join(['contact', 'name', 'dinner_choice']))
+			for s in q:
+				q = Golfer.all().ancestor(s.key())
+				golfers = q.fetch(s.num_golfers)
+				for g in golfers:
+					csv.append(','.join([csv_encode(x) for x in [s.name, g.name, g.dinner_choice]]))
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					csv.append(','.join([csv_encode(x) for x in [s.name, 'n/a', '']]))
+				q = DinnerGuest.all().ancestor(s.key())
+				guests = q.fetch(s.num_dinners)
+				for g in guests:
+					csv.append(','.join([csv_encode(x) for x in [s.name, g.name, g.dinner_choice]]))
+				for i in range(len(guests) + 1, s.num_dinners + 1):
+					csv.append(','.join([csv_encode(x) for x in [s.name, '', '']]))
 		else:
 			self.error(404)
+			return
+		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+		self.response.headers['Content-Disposition'] = 'attachment;filename=%s.csv' % what
+		self.response.out.write('\n'.join(csv))
+		self.response.out.write('\n')
 
 # Auction Items
 

@@ -25,6 +25,8 @@
 #viewgolfers td p { margin: 0; }
 #viewgolfers td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 #viewgolfers tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
+ul.pages { list-style: none; margin: 0; padding: 0; text-align: right; }
+ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 </style>
 </head>
 <body id="viewgolfers">
@@ -64,6 +66,10 @@
 <h2>Golfers</h2>
 
 {% if golfers %}
+
+<ul class="pages">
+	<li><a href="/admin/csv/golfers">Download CSV</a></li>
+</ul>
 
 <table>
 <thead>
