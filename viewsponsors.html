@@ -79,12 +79,13 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		<th>ID</th>
 		<th>Sponsor/Contact</th>
 		<th>Sponsorship</th>
-		<th># Golfers<br># Dinner Guests</th>
+		<th># Golfers<br># Dinners</th>
 		<th>Payment</th>
 	</tr>
 </thead>
 <tbody>
 {% for s in sponsors %}
+{% with s.num_golfers|add:s.num_dinners as num_dinners %}
 	<tr valign="baseline">
 		<td><a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
 		<td>
@@ -106,7 +107,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		</td>
 		<td>
 		<p>{{ s.num_golfers }} golfer{{ s.num_golfers|pluralize }}</p>
-		<p>{{ s.num_dinners }} dinner guest{{ s.num_dinners|pluralize }}</p>
+		<p>{{ num_dinners }} dinner{{ num_dinners|pluralize }}</p>
 		</td>
 		<td>
 		<p>Due: ${{ s.payment_due }}</p>
@@ -117,6 +118,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		{% endif %}
 		</td>
 	</tr>
+{% endwith %}
 {% endfor %}
 </tbody>
 </table>
