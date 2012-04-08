@@ -7,6 +7,7 @@ import random
 import urllib
 import re
 from google.appengine.ext import db, webapp
+from google.appengine.api import memcache
 from google.appengine.ext.webapp import util, template
 
 import capabilities
@@ -178,6 +179,17 @@ class Register(webapp.RequestHandler):
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
 			logging.info('Payment Due from form was %d, calculated %d instead' % (form_payment_due, s.payment_due))
 
+		if caps.can_add_registrations:
+			payment_made = self.request.get('payment_made')
+			if payment_made:
+				try:
+					s.payment_made = int(payment_made)
+				except ValueError:
+					s.payment_made = 0
+					messages.append('You entered an invalid value in the "Payment Made" field.')
+				s.payment_type = self.request.get('paytype')
+				s.transaction_code = self.request.get('transcode')
+
 		if messages:
 			show_registration_form(self.response, s, messages, caps, dev_server)
 			return
@@ -191,6 +203,9 @@ class Register(webapp.RequestHandler):
 				if not result: break
 				logging.info('ID collision for %d; retrying...' % s.id)
 		s.put()
+		if caps.can_add_registrations and s.payment_made > 0 and self.request.get('save'):
+			self.redirect('/register')
+			return
 		self.redirect('/register?id=%d' % s.id)
 
 # Registration Step 2.
@@ -241,17 +256,6 @@ class Continue(webapp.RequestHandler):
 			guest.put()
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
-
-		if caps.can_add_registrations:
-			payment_made = self.request.get('payment_made')
-			if payment_made:
-				try:
-					s.payment_made = int(payment_made)
-				except ValueError:
-					s.payment_made = 0
-					messages.append('You entered an invalid value in the "Payment Made" field.')
-				s.payment_type = self.request.get('paytype')
-				s.transaction_code = self.request.get('transcode')
 
 		s.put()
 		memcache.delete('/admin/view/golfers')
