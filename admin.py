@@ -236,6 +236,33 @@ class ViewRegistrations(webapp.RequestHandler):
 				i += lim
 			template_values = {
 				'sponsors': sponsors,
+				'incomplete': False,
+				'nav': nav
+				}
+			self.response.out.write(template.render('viewsponsors.html', template_values))
+		elif what == "incomplete":
+			q = Sponsor.all()
+			q.order("timestamp")
+			sponsors = []
+			for s in q:
+				if s.payment_made == 0:
+					sponsors.append(s)
+				else:
+					golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+					ndinners = 0
+					for g in golfers:
+						if g.dinner_choice:
+							ndinners += 1
+					guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
+					for g in guests:
+						if g.dinner_choice:
+							ndinners += 1
+					if ndinners < s.num_golfers + s.num_dinners:
+						sponsors.append(s)
+			nav = []
+			template_values = {
+				'sponsors': sponsors,
+				'incomplete': True,
 				'nav': nav
 				}
 			self.response.out.write(template.render('viewsponsors.html', template_values))
@@ -249,8 +276,8 @@ class ViewRegistrations(webapp.RequestHandler):
 			q = Sponsor.all()
 			q.order("timestamp")
 			for s in q:
-				q = Golfer.all().ancestor(s.key())
-				golfers = q.fetch(s.num_golfers)
+				q2 = Golfer.all().ancestor(s.key())
+				golfers = q2.fetch(s.num_golfers)
 				for g in golfers:
 					all_golfers.append(ViewGolfer(s, g, counter))
 					counter += 1
@@ -284,16 +311,16 @@ class ViewRegistrations(webapp.RequestHandler):
 			q = Sponsor.all()
 			q.order("timestamp")
 			for s in q:
-				q = Golfer.all().ancestor(s.key())
-				golfers = q.fetch(s.num_golfers)
+				q2 = Golfer.all().ancestor(s.key())
+				golfers = q2.fetch(s.num_golfers)
 				for g in golfers:
 					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence, counter))
 					counter += 1
 				for i in range(len(golfers) + 1, s.num_golfers + 1):
 					all_dinners.append(ViewDinner(s, '', '', i, counter))
 					counter += 1
-				q = DinnerGuest.all().ancestor(s.key())
-				guests = q.fetch(s.num_dinners)
+				q2 = DinnerGuest.all().ancestor(s.key())
+				guests = q2.fetch(s.num_dinners)
 				for g in guests:
 					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence + s.num_golfers, counter))
 					counter += 1

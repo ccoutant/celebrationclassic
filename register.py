@@ -45,7 +45,7 @@ def show_registration_form(response, s, messages, caps, debug):
 # Show the continuation form.
 
 def show_continuation_form(response, s, messages, caps, debug):
-	q = Golfer.all().ancestor(s.key())
+	q = Golfer.all().ancestor(s.key()).order('sequence')
 	golfers = q.fetch(s.num_golfers)
 	for i in range(len(golfers) + 1, s.num_golfers + 1):
 		golfer = Golfer(parent = s, sequence = i)
@@ -57,7 +57,7 @@ def show_continuation_form(response, s, messages, caps, debug):
 			golfer.phone = s.phone
 			golfer.email = s.email
 		golfers.append(golfer)
-	q = DinnerGuest.all().ancestor(s.key())
+	q = DinnerGuest.all().ancestor(s.key()).order('sequence')
 	dinner_guests = q.fetch(s.num_dinners)
 	for i in range(len(dinner_guests) + 1, s.num_dinners + 1):
 		guest = DinnerGuest(parent = s, sequence = i)
@@ -225,7 +225,7 @@ class Continue(webapp.RequestHandler):
 			show_registration_form(self.response, s, messages, caps, dev_server)
 			return
 
-		q = Golfer.all().ancestor(s.key())
+		q = Golfer.all().ancestor(s.key()).order('sequence')
 		golfers = q.fetch(s.num_golfers)
 		for i in range(1, s.num_golfers + 1):
 			if len(golfers) < i:
@@ -245,7 +245,7 @@ class Continue(webapp.RequestHandler):
 			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
 			golfer.put()
 
-		q = DinnerGuest.all().ancestor(s.key())
+		q = DinnerGuest.all().ancestor(s.key()).order('sequence')
 		dinner_guests = q.fetch(s.num_dinners)
 		for i in range(1, s.num_dinners + 1):
 			if len(dinner_guests) < i:

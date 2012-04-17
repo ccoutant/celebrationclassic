@@ -57,21 +57,26 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 	<li><a href="/map.html">Map and Directions</a></li>
 	<li>View Registrations</li>
 	<li><a href="/admin/view/golfers">View Golfers</a></li>
-	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+	<li><a href="/admin/view/guests">View Dinners</a></li>
 </ul>
 </div>
 
 <div id="content">
 <h2>Registrations</h2>
 
-{% if sponsors %}
-
 <ul class="pages">
+{% if incomplete %}
+	<li><a href="/admin/view/sponsors">View All</a></li>
+{% else %}
+	<li><a href="/admin/view/incomplete">View Incomplete</a></li>
 	<li><a href="/admin/csv/sponsors">Download CSV</a></li>
+{% endif %}
 {% for n in nav %}
 	<li>{{ n|safe }}</li>
 {% endfor %}
 </ul>
+
+{% if sponsors %}
 
 <table>
 <thead>
@@ -125,7 +130,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 
 {% else %}
 
-<p>No registrations yet.</p>
+<p>No {% if incomplete %}incomplete {% endif %}registrations.</p>
 
 {% endif %}
 
