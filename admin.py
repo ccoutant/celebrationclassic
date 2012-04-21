@@ -225,6 +225,13 @@ class ViewRegistrations(webapp.RequestHandler):
 			q = Sponsor.all()
 			q.order("timestamp")
 			sponsors = q.fetch(lim, offset = start)
+			for s in sponsors:
+				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+				no_dinners = 0
+				for g in golfers:
+					if g.dinner_choice == 'No Dinner':
+						no_dinners += 1
+				s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			count = q.count()
 			nav = []
 			i = 0
@@ -276,8 +283,7 @@ class ViewRegistrations(webapp.RequestHandler):
 			q = Sponsor.all()
 			q.order("timestamp")
 			for s in q:
-				q2 = Golfer.all().ancestor(s.key())
-				golfers = q2.fetch(s.num_golfers)
+				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 				for g in golfers:
 					all_golfers.append(ViewGolfer(s, g, counter))
 					counter += 1
@@ -311,16 +317,15 @@ class ViewRegistrations(webapp.RequestHandler):
 			q = Sponsor.all()
 			q.order("timestamp")
 			for s in q:
-				q2 = Golfer.all().ancestor(s.key())
-				golfers = q2.fetch(s.num_golfers)
+				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 				for g in golfers:
-					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence, counter))
-					counter += 1
+					if g.dinner_choice != 'No Dinner':
+						all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence, counter))
+						counter += 1
 				for i in range(len(golfers) + 1, s.num_golfers + 1):
 					all_dinners.append(ViewDinner(s, '', '', i, counter))
 					counter += 1
-				q2 = DinnerGuest.all().ancestor(s.key())
-				guests = q2.fetch(s.num_dinners)
+				guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
 				for g in guests:
 					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence + s.num_golfers, counter))
 					counter += 1
