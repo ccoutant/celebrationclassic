@@ -1,11 +1,10 @@
-from google.appengine.ext import db, webapp
+from google.appengine.ext import db
 from django.utils.safestring import mark_safe
-
+from django.template import Library
 import sponsorship
-
 import markdown2
 
-register = webapp.template.create_template_register()
+register = Library()
 
 @register.filter
 def get_sponsorship_name(value):

@@ -3,21 +3,9 @@
 <html>
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Auction Item Administration</title>
+	<title>Celebration Classic&trade; Admin: Detail Pages</title>
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
-<style type="text/css">
-#auctionitems { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 1em; }
-#auctionitems tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
-#auctionitems td.photo { padding: 1em 0; width: 200px; }
-#auctionitems td.photo img { margin: 0; }
-#auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
-#auctionitems td.description { padding: 1em 0 1em 2em; }
-#auctionitems td p { margin: 0 0 0.5em 0; }
-#auctionitems td p.edit { text-align: center; }
-#content { margin-bottom: 3em; }
-#newbutton { text-align: center; }
-</style>
 </head>
 <body>
 
@@ -47,39 +35,20 @@
 </div>
 
 <div id="content">
-<h2>Auction Items</h2>
 
-{% load custom_filters %}
+<h2>Detail Pages</h2>
 
-{% if auction_items %}
+<form action="/admin/edit" method="post" accept-charset="utf-8">
 
-<table id="auctionitems">
-<tbody>
-{% for item in auction_items %}
-	<tr valign="top">
-		<td class="photo">
-		{% if item.thumbnail_id %}
-		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
-		{% else %}
-		<p>(No photo available)</p>
-		{% endif %}
-		</td>
-		<td class="description">
-		{{ item.description|markdown }}
-		<p class="edit"><a href="/admin/auction?key={{ item.key }}"><input type="button" name="edit" value="Edit"></a></p>
-		</td>
-	</tr>
+<ul>
+
+{% for page in pages %}
+<li><p><a href="/{{ page.name }}.html">{{ page.name }}.html</a>: Published version {{ page.published_version }}{% if page.is_draft %}; Draft version {{ page.draft_version }}{% endif %} <input type="submit" name="edit{{ page.name }}" value="Edit"></p></li>
 {% endfor %}
-</tbody>
-</table>
 
-{% else %}
+</ul>
 
-<p>No auction items yet.</p>
-
-{% endif %}
-
-<p id="newbutton"><a href="/admin/auction?new=y"><input type="button" name="add" value="Add a New Item"></a></p>
+</form>
 
 </div> <!-- content -->
 

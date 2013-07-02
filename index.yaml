@@ -10,6 +10,16 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: AuctionItem
+  ancestor: yes
+  properties:
+  - name: sequence
+
+- kind: Capabilities
+  ancestor: yes
+  properties:
+  - name: email
+
 - kind: DinnerGuest
   ancestor: yes
   properties:
@@ -20,7 +30,28 @@ indexes:
   properties:
   - name: sequence
 
+- kind: PageVersion
+  ancestor: yes
+  properties:
+  - name: name
+
+- kind: Sponsor
+  ancestor: yes
+  properties:
+  - name: timestamp
+
 - kind: Sponsorship
   properties:
   - name: level
+  - name: sequence
+
+- kind: Sponsorship
+  ancestor: yes
+  properties:
+  - name: level
+  - name: sequence
+
+- kind: Sponsorship
+  ancestor: yes
+  properties:
   - name: sequence

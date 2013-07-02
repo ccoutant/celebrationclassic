@@ -6,10 +6,13 @@ import logging
 import random
 import urllib
 import re
-from google.appengine.ext import db, webapp
+import webapp2
+from google.appengine.ext import db
 from google.appengine.api import memcache
-from google.appengine.ext.webapp import util, template
+from django.template.loaders.filesystem import Loader
+from django.template.loader import render_to_string
 
+import tournament
 import capabilities
 import sponsorship
 from sponsor import Sponsor, Golfer, DinnerGuest
@@ -20,9 +23,10 @@ dev_server = True if server_software and server_software.startswith("Development
 # Show the initial registration form.
 
 def show_registration_form(response, s, messages, caps, debug):
-	premier = sponsorship.get_sponsorships("Premier")
-	executive = sponsorship.get_sponsorships("Executive")
-	pro = sponsorship.get_sponsorships("Pro")
+	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
+	holeinone = sponsorship.get_sponsorships("Hole in One")
+	eagle = sponsorship.get_sponsorships("Eagle")
+	underpar = sponsorship.get_sponsorships("Under Par")
 	angel = sponsorship.get_sponsorships("Angel")
 	selected_sponsorships = []
 	for sskey in s.sponsorships:
@@ -31,16 +35,17 @@ def show_registration_form(response, s, messages, caps, debug):
 			selected_sponsorships.append(ss.sequence)
 	template_values = {
 		'sponsor': s,
-		'premier': premier,
-		'executive': executive,
-		'pro': pro,
+		'doubleeagle': doubleeagle,
+		'holeinone': holeinone,
+		'eagle': eagle,
+		'underpar': underpar,
 		'angel': angel[0],
 		'selected': selected_sponsorships,
 		'messages': messages,
 		'capabilities': caps,
 		'debug': debug
 	}
-	response.out.write(template.render('register.html', template_values))
+	response.out.write(render_to_string('register.html', template_values))
 
 # Show the continuation form.
 
@@ -69,23 +74,24 @@ def show_continuation_form(response, s, messages, caps, debug):
 		'golfers': golfers,
 		'dinner_guests': dinner_guests,
 		'messages': messages,
-		'submit_button': 'Checkout ->' if s.payment_made == 0 else 'Save Changes',
 		'capabilities': caps,
 		'debug': debug
 	}
-	response.out.write(template.render('continue.html', template_values))
+	response.out.write(render_to_string('continue.html', template_values))
 
 # Registration Step 1.
 
-class Register(webapp.RequestHandler):
+class Register(webapp2.RequestHandler):
 	# Show a form for a new sponsor or the continuation form,
 	# depending on whether or not the "id" parameter was provided.
 	def get(self):
+		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		messages = []
 		if self.request.get('id'):
 			id = self.request.get('id')
 			q = Sponsor.all()
+			q.ancestor(root)
 			q.filter('id = ', int(id))
 			s = q.get()
 			if s:
@@ -101,14 +107,16 @@ class Register(webapp.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		messages = []
+		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		id = int(self.request.get('id'))
 		if id:
 			q = Sponsor.all()
+			q.ancestor(root)
 			q.filter('id = ', id)
 			s = q.get()
 		else:
-			s = Sponsor()
+			s = Sponsor(parent=root)
 		s.name = self.request.get('name')
 		s.company = self.request.get('company')
 		s.address = self.request.get('address')
@@ -122,6 +130,7 @@ class Register(webapp.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
+		s.payment_made = 0
 
 		if s.name == '':
 			messages.append('Please enter your name.')
@@ -153,25 +162,25 @@ class Register(webapp.RequestHandler):
 				s.sponsorships.append(ss.key())
 				sponsorship_names.append(ss.name)
 				s.payment_due += ss.price
-				if ss.price >= 20000:
+				if ss.price >= 25000:
 					golfers_included += 12
 				elif ss.price >= 15000:
 					golfers_included += 8
 				elif ss.price >= 10000:
-					golfers_included += 6
+					golfers_included += 4
 				elif ss.level == 'Angel':
 					golfers_included += 4
-				elif ss.price >= 3000:
+				elif ss.price >= 3500:
 					golfers_included += 2
 				else:
 					golfers_included += 1
 		dinners_included = golfers_included
 		if s.num_golfers > golfers_included:
-			s.payment_due += 360 * (s.num_golfers - golfers_included)
+			s.payment_due += 400 * (s.num_golfers - golfers_included)
 		else:
 			dinners_included += golfers_included - s.num_golfers
 		if s.num_dinners > dinners_included:
-			s.payment_due += 75 * (s.num_dinners - dinners_included)
+			s.payment_due += 150 * (s.num_dinners - dinners_included)
 		s.payment_due += s.additional_donation
 		if s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
@@ -198,6 +207,7 @@ class Register(webapp.RequestHandler):
 			while True:
 				s.id = random.randrange(100000,999999)
 				q = Sponsor.all()
+				q.ancestor(root)
 				q.filter('id = ', s.id)
 				result = q.get()
 				if not result: break
@@ -210,13 +220,15 @@ class Register(webapp.RequestHandler):
 
 # Registration Step 2.
 
-class Continue(webapp.RequestHandler):
+class Continue(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		messages = []
+		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		id = self.request.get('id')
 		q = Sponsor.all()
+		q.ancestor(root)
 		q.filter('id = ', int(id))
 		s = q.get()
 		if not s:
@@ -266,7 +278,15 @@ class Continue(webapp.RequestHandler):
 				'sponsor': s,
 				'capabilities': caps
 			}
-			self.response.out.write(template.render('ack.html', template_values))
+			self.response.out.write(render_to_string('ack.html', template_values))
+			return
+
+		if self.request.get('pay_by_check'):
+			template_values = {
+				'sponsor': s,
+				'capabilities': caps
+			}
+			self.response.out.write(render_to_string('paybycheck.html', template_values))
 			return
 
 		sponsorship_names = []
@@ -309,15 +329,17 @@ class Continue(webapp.RequestHandler):
 
 # Process the POST request from Acceptiva confirming payment.
 
-class PostPayment(webapp.RequestHandler):
+class PostPayment(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
+		root = tournament.get_tournament()
 		name = self.request.get('contactname')
 		id = self.request.get('idnumberhidden')
 		payment_made = self.request.get('amount_20_20_amt')
 		paytype = self.request.get('paytype')
 		transcode = self.request.get('transcode')
 		q = Sponsor.all()
+		q.ancestor(root)
 		q.filter('id = ', int(id))
 		s = q.get()
 		if not s:
@@ -334,7 +356,7 @@ class PostPayment(webapp.RequestHandler):
 
 # Simulate the acceptiva page (for testing).
 
-class FakeAcceptiva(webapp.RequestHandler):
+class FakeAcceptiva(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
 		name = self.request.get('contactname')
@@ -368,14 +390,8 @@ class FakeAcceptiva(webapp.RequestHandler):
 		self.response.out.write('<p><a href="/register?id=%s">Continue registration...</a></p>\n' % id)
 		self.response.out.write('</body></html>\n')
 
-def main():
-	logging.getLogger().setLevel(logging.INFO)
-	application = webapp.WSGIApplication([('/register', Register),
-										  ('/continue', Continue),
-										  ('/postpayment', PostPayment),
-										  ('/fakeacceptiva', FakeAcceptiva)],
-										 debug=dev_server)
-	util.run_wsgi_app(application)
-
-if __name__ == '__main__':
-	main()
+app = webapp2.WSGIApplication([('/register', Register),
+							   ('/continue', Continue),
+							   ('/postpayment', PostPayment),
+							   ('/fakeacceptiva', FakeAcceptiva)],
+							  debug=dev_server)

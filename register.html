@@ -17,31 +17,25 @@ window.onload = function() {
 </head>
 <body>
 
-<div class="container">
+<div id="header">
 
-<div id="logo">
-<a href="index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
-</div>
+<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
+<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
+<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
 
-<div id="banner">
-<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
-<p class="subhead">May 6&ndash;7, 2012
-<br>The Golf Club at Boulder Ridge
-<br>San Jose, CA</p>
-</div>
-
-</div> <!-- container -->
+</div> <!-- header -->
 
 <div class="container">
 
 <div id="nav">
 <ul>
+	<li><a href="index.html">Home</a></li>
 	<li><a href="details.html">Tournament Details</a></li>
-	<li>Registration</li>
+	<li>Register</li>
 	<li><a href="sponsor.html">Sponsorship Opportunities</a></li>
 	<li><a href="volunteer.html">Volunteer Information</a></li>
 	<li><a href="auction.html">Live Auction</a></li>
-	<li><a href="map.html">Map and Directions</a></li>
+	<li><a href="map.html">Maps and Directions</a></li>
 {% if capabilities.can_view_registrations %}
 	<li><a href="/admin/view/sponsors">View Registrations</a></li>
 	<li><a href="/admin/view/golfers">View Golfers</a></li>
@@ -68,19 +62,19 @@ and enter the number of golfers and dinner guests.</p>
 <li><p>Enter information for each golfer,
 and make your dinner selections.</p>
 
-<li><p>Make your payment online through Acceptiva.</p>
+<li><p>Make your payment online through Acceptiva or by check.</p>
 
 </ol>
 
 <p>If you don't have all the information for the golfers in your group,
 don't worry&mdash;you can still register now and
 return to this site as often as you need to complete your registration
-(through April 26).
+(through September 30).
 When you pay through Acceptiva, you will receive an email receipt
 that contains a link that you can use to complete your registration
 or modify your choices.</p>
 
-<p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
+<p>YOUR REGISTRATION MUST BE COMPLETED BY SEPTEMBER 30, 2013.</p>
 
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
@@ -89,7 +83,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
-<form action="/register" method="post">
+<form action="/register" method="post" accept-charset="utf-8">
 
 <div id="register-form" class="form">
 
@@ -154,7 +148,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
-Premier, Executive, or Pro sponsor for this event.
+Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 <a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
 </div>
 </div>
@@ -162,9 +156,9 @@ Premier, Executive, or Pro sponsor for this event.
 <div id="sponsorship_choices" class="form-column-container">
 <div class="form-column">
 
-<h3>Premier Sponsors</h3>
+<h3>Double Eagle Sponsors</h3>
 
-{% for sponsorship in premier %}
+{% for sponsorship in doubleeagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
@@ -173,9 +167,9 @@ Premier, Executive, or Pro sponsor for this event.
 </div>
 {% endfor %}
 
-<h3>Executive Sponsors</h3>
+<h3>Hole-in-One Sponsors</h3>
 
-{% for sponsorship in executive %}
+{% for sponsorship in holeinone %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
@@ -188,9 +182,20 @@ Premier, Executive, or Pro sponsor for this event.
 
 <div class="form-column">
 
-<h3>Pro Sponsors</h3>
+<h3>Eagle Sponsors</h3>
 
-{% for sponsorship in pro %}
+{% for sponsorship in eagle %}
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
+</div>
+</div>
+{% endfor %}
+
+<h3>Under Par Sponsors</h3>
+
+{% for sponsorship in underpar %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
@@ -210,7 +215,7 @@ Premier, Executive, or Pro sponsor for this event.
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_num_golfers"># Golfers</label>
+<label for="entry_num_golfers">Golfers</label>
 <select id="entry_num_golfers" name="num_golfers">
 <option label="0" value="0" {% ifequal sponsor.num_golfers 0 %} selected {% endifequal %}>0</option>
 <option label="1" value="1" {% ifequal sponsor.num_golfers 1 %} selected {% endifequal %}>1</option>
@@ -226,13 +231,13 @@ Premier, Executive, or Pro sponsor for this event.
 <option label="11" value="11" {% ifequal sponsor.num_golfers 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_golfers 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right">&emsp;$360 each (includes dinner)</label>
+<label class="right">&emsp;$450 (includes dinner)<br><i>Early registration $400 (thru Sept. 3)</i></label>
 </div>
 </div>
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_num_dinners"># Dinner Guests</label>
+<label for="entry_num_dinners">Dinner-Only</label>
 <select id="entry_num_dinners" name="num_dinners">
 <option label="0" value="0" {% ifequal sponsor.num_dinners 0 %} selected {% endifequal %}>0</option>
 <option label="1" value="1" {% ifequal sponsor.num_dinners 1 %} selected {% endifequal %}>1</option>
@@ -248,7 +253,7 @@ Premier, Executive, or Pro sponsor for this event.
 <option label="11" value="11" {% ifequal sponsor.num_dinners 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_dinners 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right" for="entry_num_dinners">&emsp;$75 each (non-golfers only)</label>
+<label class="right" for="entry_num_dinners">&emsp;$175 (non-golfers only)<br><i>Early registration $150 (thru Sept. 3)</i></label>
 </div>
 </div>
 
@@ -364,23 +369,6 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 </div> <!-- content -->
 
 </div> <!-- container -->
-
-<div id="footer">
-<p>All proceeds from the Celebration Classic Dinner and Golf
-Tournament will benefit <a href="http://www.shirhadash.org">Congregation Shir Hadash</a>
-and its community programs, which are aimed at improving the
-lives of many under-served populations in Santa Clara County.
-These include the annual
-<a href="http://www.shirhadash.org/tikkunolam/healthfair.html">Healthy Living Fair</a>,
-which provides a wide array of health
-services and screenings at no charge;
-participation in interfaith Habitat for Humanity;
-non-sectarian support for our community&rsquo;s elderly;
-providing food and supplies to local shelters, and
-school supplies to local children in need;
-the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
-and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
-</div>
 
 </body>
 </html>

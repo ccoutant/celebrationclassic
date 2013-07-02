@@ -2,8 +2,8 @@
 
 import logging
 import datetime
-from google.appengine.ext import webapp, db
-from google.appengine.ext.webapp import util
+import webapp2
+from google.appengine.ext import db
 from google.appengine.api import users, urlfetch
 
 HTTP_DATE_FMT = "%a, %d %b %Y %H:%M:%S GMT"
@@ -14,11 +14,11 @@ class CachedFile(db.Model):
 	content = db.BlobProperty()
 	last_modified = db.DateTimeProperty(required = True, auto_now = True)
 
-class MainHandler(webapp.RequestHandler):
+class MainHandler(webapp2.RequestHandler):
 	def get(self):
 		self.redirect('/index.html')
 
-class CacheHandler(webapp.RequestHandler):
+class CacheHandler(webapp2.RequestHandler):
 	def get(self):
 		if not users.is_current_user_admin():
 			self.redirect(users.create_login_url(self.request.uri))
@@ -37,7 +37,7 @@ class CacheHandler(webapp.RequestHandler):
 		self.response.out.write('</body>\n')
 		self.response.out.write('</html>\n')
 
-class ClearCacheHandler(webapp.RequestHandler):
+class ClearCacheHandler(webapp2.RequestHandler):
 	def post(self):
 		if not users.is_current_user_admin():
 			self.redirect(users.create_login_url(self.request.uri))
@@ -52,7 +52,7 @@ class ClearCacheHandler(webapp.RequestHandler):
 		self.response.out.write('</body>\n')
 		self.response.out.write('</html>\n')
 
-class ProxyHandler(webapp.RequestHandler):
+class ProxyHandler(webapp2.RequestHandler):
 	def get(self, name):
 		query = CachedFile.all()
 		query.filter("name = ", name)
@@ -80,7 +80,7 @@ class ProxyHandler(webapp.RequestHandler):
 			logging.debug("Saved cached object for %s, Content-Type %s, length %d" % (name, ctype, len(content)))
 		last_modified = cached.last_modified.strftime(HTTP_DATE_FMT)
 		self.response.headers['Last-Modified'] = last_modified
-		self.response.headers['Content-Type'] = ctype
+		self.response.headers['Content-Type'] = str(ctype)
 		self.response.headers['Cache-Control'] = 'public, max-age=900;'
 		modified = True
 		if 'If-Modified-Since' in self.request.headers:
@@ -95,17 +95,11 @@ class ProxyHandler(webapp.RequestHandler):
 		else:
 			self.response.set_status(304)
 
-def main():
-	logging.getLogger().setLevel(logging.INFO)
-	application = webapp.WSGIApplication([('/', MainHandler),
-										  ('/cache', CacheHandler),
-										  ('/clearcache', ClearCacheHandler),
-										  (r'/(images/.*)', ProxyHandler),
-										  (r'/(photos/.*)', ProxyHandler),
-										  (r'/([^/]+\.html)', ProxyHandler),
-										  (r'/([^/]+\.css)', ProxyHandler)],
-										 debug=True)
-	util.run_wsgi_app(application)
-
-if __name__ == '__main__':
-	main()
+app = webapp2.WSGIApplication([('/', MainHandler),
+							   ('/cache', CacheHandler),
+							   ('/clearcache', ClearCacheHandler),
+							   (r'/(images/.*)', ProxyHandler),
+							   (r'/(photos/.*)', ProxyHandler),
+							   (r'/([^/]+\.html)', ProxyHandler),
+							   (r'/([^/]+\.css)', ProxyHandler)],
+							  debug=True)

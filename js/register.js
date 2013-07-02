@@ -42,15 +42,16 @@ function recalculate() {
 	for (var i = 0; i < checkboxes.length; i++) {
 		if (checkboxes[i].checked) {
 			var triple = checkboxes[i].value.split(":");
+			var level = triple[0];
 			var price = parseInt(triple[2]);
 			total += price;
-			if (price >= 20000)
+			if (price >= 25000)
 				golfers_included += 12;
 			else if (price >= 15000)
 				golfers_included += 8;
 			else if (price >= 10000)
-				golfers_included += 6;
-			else if (price >= 3000)
+				golfers_included += 4;
+			else if (price >= 3500)
 				golfers_included += 2;
 			else
 				golfers_included += 1;
@@ -102,11 +103,11 @@ function recalculate() {
 		dinners_included -= golfers;
 		golfers = 0;
 		}
-	total += golfers * 360;
+	total += golfers * 400;
 	var dinners = parseInt(dinnerbox.value) - dinners_included;
 	if (dinners < 0)
 		dinners = 0;
-	total += dinners * 75;
+	total += dinners * 150;
 
 	if (otherbox.value) {
 		var otherval = parseInt(otherbox.value);

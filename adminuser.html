@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<title>Edit User List</title>
+</head>
+<body>
+<h1>Edit User List</h1>
+<form action="/admin/users" method="post">
+<table border="0" cellspacing="0" cellpadding="10">
+<tr valign="bottom"><th>Email</th><th>Update<br>Sponsorships</th><th>View<br>Registrations</th><th>Add<br>Registrations</th><th>Update<br>Auction</th><th>Edit<br>Content</th></tr>
+{% for u in caps %}
+<tr>
+<td align="center">%s<input type="hidden" name="email%d" value="%s"></td>\n' % (cgi.escape(u.email), seq, cgi.escape(u.email)))
+<td align="center"><input type="checkbox" name="us%d" value="u" %s></td>\n' % (seq, "checked" if u.can_update_sponsorships else ""))
+<td align="center"><input type="checkbox" name="vr%d" value="v" %s></td>\n' % (seq, "checked" if u.can_view_registrations else ""))
+<td align="center"><input type="checkbox" name="ar%d" value="a" %s></td>\n' % (seq, "checked" if u.can_add_registrations else ""))
+<td align="center"><input type="checkbox" name="ua%d" value="u" %s></td>\n' % (seq, "checked" if u.can_update_auction else ""))
+<td align="center"><input type="checkbox" name="ec%d" value="e" %s></td>\n' % (seq, "checked" if u.can_edit_content else ""))
+</tr>
+{% endfor %}
+<tr>
+<td align="center"><input type="text" size="30" name="email" value=""></td>
+<td align="center"><input type="checkbox" name="us" value="u"></td>
+<td align="center"><input type="checkbox" name="vr" value="v"></td>
+<td align="center"><input type="checkbox" name="ar" value="a"></td>
+<td align="center"><input type="checkbox" name="ua" value="u"></td>
+<td align="center"><input type="checkbox" name="ec" value="e"></td>
+</tr>
+</table>
+<input type="hidden" name="count" value="{{ caps|length }}">
+<input type="submit" value="Save">
+</form>
+</body>
+</html>

@@ -19,43 +19,39 @@
 </head>
 <body>
 
-<div class="container">
+<div id="header">
 
-<div id="logo">
-<a href="/index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
-</div>
+<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
+<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
+<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
 
-<div id="banner">
-<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
-<p class="subhead">May 6&ndash;7, 2012
-<br>The Golf Club at Boulder Ridge
-<br>San Jose, CA</p>
-</div>
-
-</div> <!-- container -->
+</div> <!-- header -->
 
 <div class="container">
 
 <div id="nav">
 <ul>
+	<li><a href="/index.html">Home</a></li>
 	<li><a href="/details.html">Tournament Details</a></li>
-	<li><a href="/register">Registration</a></li>
+	<li><a href="/register">Register</a></li>
 	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
 	<li><a href="/volunteer.html">Volunteer Information</a></li>
 	<li>Live Auction</li>
-	<li><a href="/map.html">Map and Directions</a></li>
+	<li><a href="/map.html">Maps and Directions</a></li>
 </ul>
 </div>
 
 <div id="content">
 <h2>Live Auction</h2>
 
+{% load custom_filters %}
+
 {% if auction_items %}
 
 <p class="intro">The Celebration Classic Live Auction
-will feature ten fantastic items&mdash;including
+will feature many fantastic items&mdash;including
 some genuine once-in-a-lifetime offerings!
-The auction will begin after dinner on Sunday, May 6.
+The auction will begin after dinner on Saturday, October 12.
 Here is just a smattering of what you can expect&hellip;</p>
 
 <table id="auctionitems">
@@ -80,30 +76,13 @@ Here is just a smattering of what you can expect&hellip;</p>
 {% else %}
 
 <p>Coming soon: a preview of some of the items that will be available for auction
-following dinner on Sunday, May 6.</p>
+following dinner on Sunday, October 12.</p>
 
 {% endif %}
 
 </div> <!-- content -->
 
 </div> <!-- container -->
-
-<div id="footer">
-<p>All proceeds from the Celebration Classic Dinner and Golf
-Tournament will benefit <a href="http://www.shirhadash.org">Congregation Shir Hadash</a>
-and its community programs, which are aimed at improving the
-lives of many under-served populations in Santa Clara County.
-These include the annual
-<a href="http://www.shirhadash.org/tikkunolam/healthfair.html">Healthy Living Fair</a>,
-which provides a wide array of health
-services and screenings at no charge;
-participation in interfaith Habitat for Humanity;
-non-sectarian support for our community&rsquo;s elderly;
-providing food and supplies to local shelters, and
-school supplies to local children in need;
-the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
-and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
-</div>
 
 </body>
 </html>

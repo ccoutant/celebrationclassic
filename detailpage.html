@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+{% load custom_filters %}
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Celebration Classic&trade; {{ page.title }}</title>
+	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
+	<link rel="icon" href="favicon.png" type="image/png">
+</head>
+<body>
+
+<div id="header">
+
+<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
+<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
+<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
+
+</div> <!-- header -->
+
+<div class="container">
+
+<div id="nav">
+<ul>
+{% ifequal page.name "index" %}
+{% else %}
+	<li><a href="index.html">Home</a></li>
+{% endifequal %}
+	<li><a href="details.html">Tournament Details</a></li>
+	<li><a href="/register">Register</a></li>
+	<li><a href="sponsor.html">Sponsorship Opportunities</a></li>
+	<li><a href="volunteer.html">Volunteer Information</a></li>
+	<li><a href="auction.html">Live Auction</a></li>
+	<li><a href="map.html">Maps and Directions</a></li>
+{% if capabilities.can_view_registrations %}
+	<li><a href="/admin/view/sponsors">View Registrations</a></li>
+	<li><a href="/admin/view/golfers">View Golfers</a></li>
+	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
+{% endif %}
+{% if capabilities.can_update_auction %}
+	<li><a href="/admin/auction">Edit Auction Page</a></li>
+{% endif %}
+{% if capabilities.can_edit_content %}
+	<li><a href="/admin/edit">Edit Content</a></li>
+{% endif %}
+{% if capabilities.can_update_sponsorships %}
+	<li><a href="/admin/sponsorships">Edit Sponsorships</a></li>
+{% endif %}
+</ul>
+</div>
+
+<div id="content">
+
+{{ page.content|markdown }}
+
+</div>
+
+</div> <!-- container -->
+
+{% ifequal page.name "index" %}
+<div id="footer">
+<p>Congregation Shir Hadash, 20 Cherry Blossom Lane, Los Gatos, CA 94032-4637 or fax: 408.358.1753
+<br>The Celebration Classic&trade; Dinner &amp; Golf Tournament benefits CSH and its community programs.
+Congregation Shir Hadash is a 501(c)(3) tax exempt organization.</p>
+</div>
+{% endifequal %}
+
+</body>
+</html>

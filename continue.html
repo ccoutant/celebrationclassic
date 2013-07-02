@@ -10,31 +10,25 @@
 </head>
 <body>
 
-<div class="container">
+<div id="header">
 
-<div id="logo">
-<a href="index.html"><div class="homelink">Home</div><img src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="Celebration Classic Home Page" width="144" height="132" border="0"></a>
-</div>
+<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
+<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
+<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
 
-<div id="banner">
-<h1>Celebration Classic&trade; Dinner and Golf Tournament</h1>
-<p class="subhead">May 6&ndash;7, 2012
-<br>The Golf Club at Boulder Ridge
-<br>San Jose, CA</p>
-</div>
-
-</div> <!-- container -->
+</div> <!-- header -->
 
 <div class="container">
 
 <div id="nav">
 <ul>
+	<li><a href="index.html">Home</a></li>
 	<li><a href="details.html">Tournament Details</a></li>
-	<li>Registration</li>
+	<li>Register</li>
 	<li><a href="sponsor.html">Sponsorship Opportunities</a></li>
 	<li><a href="volunteer.html">Volunteer Information</a></li>
 	<li><a href="auction.html">Live Auction</a></li>
-	<li><a href="map.html">Map and Directions</a></li>
+	<li><a href="map.html">Maps and Directions</a></li>
 {% if capabilities.can_view_registrations %}
 	<li><a href="/admin/view/sponsors">View Registrations</a></li>
 	<li><a href="/admin/view/golfers">View Golfers</a></li>
@@ -51,14 +45,14 @@
 <p>If you don&rsquo;t have all the information you need yet
 (or you can&rsquo;t make up your mind about what to have for dinner),
 don&rsquo;t panic&mdash;just <b><a href="/register?id={{ sponsor.id }}">bookmark this page!</a></b>
-You can proceed to the checkout step and pay through Acceptiva even if you
+You can proceed to the checkout step and pay even if you
 haven&rsquo;t completed this form.
 After you&rsquo;ve paid, you can return to this page at any time,
 as often as you wish&mdash;until the registration deadline&mdash;to change your selections.
 Just remember to save your changes each time.
-Your registration receipt from Acceptiva will also contain a link back to this page.</p>
+If you pay online, your registration receipt from Acceptiva will also contain a link back to this page.</p>
 
-<p>YOUR REGISTRATION MUST BE COMPLETED BY APRIL 26, 2012.</p>
+<p>YOUR REGISTRATION MUST BE COMPLETED BY SEPTEMBER 30, 2013.</p>
 
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
@@ -67,7 +61,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
-<form action="/continue" method="post">
+<form action="/continue" method="post" accept-charset="utf-8">
 
 <div id="continue-form" class="form">
 
@@ -185,9 +179,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <label for="entry_golfer_choice{{ golfer.sequence }}">Dinner Choice</label>
 <select name="golfer_choice{{ golfer.sequence }}" id="entry_golfer_choice{{ golfer.sequence }}">
 <option value="">Select one...</option>
-<option value="Skirt Steak" {% ifequal golfer.dinner_choice "Skirt Steak" %}selected{% endifequal %}>Skirt Steak</option>
-<option value="Fresh Fish" {% ifequal golfer.dinner_choice "Fresh Fish" %}selected{% endifequal %}>Fresh Fish</option>
-<option value="Vegetarian Pasta" {% ifequal golfer.dinner_choice "Vegetarian Pasta" %}selected{% endifequal %}>Vegetarian Pasta</option>
+<option value="Beef" {% ifequal golfer.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
+<option value="Fish" {% ifequal golfer.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
+<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
 <option value="No Dinner" {% ifequal golfer.dinner_choice "No Dinner" %}selected{% endifequal %}>No Dinner</option>
 </select>
 </div>
@@ -227,9 +221,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <label for="entry_guest_choice{{ guest.sequence }}">Dinner Choice</label>
 <select name="guest_choice{{ guest.sequence }}" id="entry_guest_choice{{ guest.sequence }}">
 <option value="">Select one...</option>
-<option value="Skirt Steak" {% ifequal guest.dinner_choice "Skirt Steak" %}selected{% endifequal %}>Skirt Steak</option>
-<option value="Fresh Fish" {% ifequal guest.dinner_choice "Fresh Fish" %}selected{% endifequal %}>Fresh Fish</option>
-<option value="Vegetarian Pasta" {% ifequal guest.dinner_choice "Vegetarian Pasta" %}selected{% endifequal %}>Vegetarian Pasta</option>
+<option value="Beef" {% ifequal guest.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
+<option value="Fish" {% ifequal guest.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
+<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
 </select>
 </div>
 </div>
@@ -252,7 +246,15 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-submit">
 <div class="form-button">
-<input type="submit" name="submit" value="{{ submit_button }}">
+{% ifequal sponsor.payment_made 0 %}
+{% if capabilities.can_add_registrations %}
+<input type="submit" name="save" value="Save Changes">
+{% endif %}
+<input type="submit" name="pay_by_acceptiva" value="Pay by Credit Card ->">
+<input type="submit" name="pay_by_check" value="Pay by Check ->">
+{% else %}
+<input type="submit" name="save" value="Save Changes">
+{% endifequal %}
 </div>
 </div>
 
@@ -265,23 +267,6 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 </div> <!-- content -->
 
 </div> <!-- container -->
-
-<div id="footer">
-<p>All proceeds from the Celebration Classic Dinner and Golf
-Tournament will benefit <a href="http://www.shirhadash.org">Congregation Shir Hadash</a>
-and its community programs, which are aimed at improving the
-lives of many under-served populations in Santa Clara County.
-These include the annual
-<a href="http://www.shirhadash.org/tikkunolam/healthfair.html">Healthy Living Fair</a>,
-which provides a wide array of health
-services and screenings at no charge;
-participation in interfaith Habitat for Humanity;
-non-sectarian support for our community&rsquo;s elderly;
-providing food and supplies to local shelters, and
-school supplies to local children in need;
-the <a href="http://shecc.org">Early Childhood Center</a>, which is open to all;
-and the new <a href="http://www.shirhadash.org/jobs/index.html">Job Board</a>.</p>
-</div>
 
 </body>
 </html>

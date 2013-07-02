@@ -1,26 +1,25 @@
 import os
 import cgi
 import logging
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template, util
+import webapp2
 from google.appengine.api import images
+from django.template.loaders.filesystem import Loader
+from django.template.loader import render_to_string
 
 import auctionitem
-
-webapp.template.register_template_library('tags.custom_filters')
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
 
-class Auction(webapp.RequestHandler):
+class Auction(webapp2.RequestHandler):
 	def get(self):
 		auction_items = auctionitem.get_auction_items()
 		template_values = {
 			'auction_items': auction_items
 			}
-		self.response.out.write(template.render('auction.html', template_values))
+		self.response.out.write(render_to_string('auction.html', template_values))
 
-class ServeThumbnail(webapp.RequestHandler):
+class ServeThumbnail(webapp2.RequestHandler):
 	def get(self, id):
 		thumb = auctionitem.Thumbnail.get_by_id(long(id))
 		if thumb:
@@ -30,12 +29,6 @@ class ServeThumbnail(webapp.RequestHandler):
 		else:
 			self.error(404)
 
-def main():
-	logging.getLogger().setLevel(logging.INFO)
-	application = webapp.WSGIApplication([('/auction.html', Auction),
-										  ('/img/(.*)', ServeThumbnail)],
-										 debug=dev_server)
-	util.run_wsgi_app(application)
-
-if __name__ == '__main__':
-	main()
+app = webapp2.WSGIApplication([('/auction.html', Auction),
+							   ('/img/(.*)', ServeThumbnail)],
+							  debug=dev_server)

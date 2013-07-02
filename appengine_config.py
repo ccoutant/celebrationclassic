@@ -3,10 +3,6 @@ import quopri
 
 from webob import multidict
 
-from google.appengine.dist import use_library
-
-use_library('django', '1.2')
-
 # Patch to fix a problem with encoding of fields in blobstore upload forms.
 # See http://code.google.com/p/googleappengine/issues/detail?id=2749
 

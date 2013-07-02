@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; {% if key %}Edit{% else %}New{% endif %} Auction Item</title>
+	<title>Celebration Classic&trade; Admin: Edit Page Content</title>
 	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
 <style type="text/css">
@@ -12,6 +12,7 @@ p.description { margin-bottom: 0.5em; }
 .hints p { margin-bottom: 0; }
 .hints ul { margin: 0 0 1.5em 0; padding: 0 0 0 1.5em; }
 .hints code { color: #157d15; }
+#preview { width: 100%; border: 1px solid #c4e5c4; padding: 10px; margin: 0 -11px 30px; }
 </style>
 </head>
 <body>
@@ -45,39 +46,49 @@ p.description { margin-bottom: 0.5em; }
 
 {% load custom_filters %}
 
-<h2>{% if key %}Edit{% else %}New{% endif %} Auction Item</h2>
+<h2>Edit {{ page.name }} Page</h2>
 
-<form action="{{ upload_url }}" method="post" enctype="multipart/form-data" accept-charset="utf-8">
+<form action="/admin/edit" method="post" accept-charset="utf-8">
 
-{% if item.thumbnail_id %}
-<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
-{% endif %}
+<p><i>Last modified {{ page.last_modified }}
+({% if page.draft %}Draft {% endif %}{% if page.preview %}Preview {% endif %}Version {{ page.version }})</i></p>
 
-<p>{% if item.thumbnail_id %}Replace{% else %}Upload{% endif %} photo: <input type="file" name="file"></p>
+<p><label for="pagetitle">Title:</label> <input name="pagetitle" type="text" size="60" value="{{ page.title }}"></p>
 
-<p class="description">Item Description:</p>
-
-<textarea rows="12" cols="60" name="description">{{ item.description }}</textarea>
+<textarea rows="40" cols="80" name="pagecontent">{{ page.content }}</textarea>
 
 <div class="hints">
 <p>Formatting hints:</p>
 <ul>
+	<li>For a heading, type <code>##</code> at the start of the line</li>
 	<li>For a new paragraph, type a blank line</li>
 	<li>For a forced line break, type two spaces at the end of a line</li>
 	<li>For a bullet list, type a blank line, then use <code>*</code> and a space at the beginning of each line</li>
+	<li>For space between each bullet item, put a blank line between bullet items</li>
 	<li>For <i>italics</i>, type <code>_italics_</code></li>
 	<li>For <b>bold</b>, type <code>**bold**</code></li>
-	<li>For hyperlinks, type <code>[text of link](http://example.com/index.html)</code></li>
+	<li>For links, type <code>[text of link](http://example.com/index.html)</code></li>
+	<li>For email links, type <code>[name](mailto:someone@example.com)</code> or <code>&lt;someone@example.com&gt;</code></li>
 	<li><a href="http://daringfireball.net/projects/markdown/basics" target="_blank">Full Markdown documentation...</a></li>
 </ul>
 </div>
 
-<p>Sequence # <input type="text" name="sequence" value="{{ item.sequence }}" size="5">
-<span class="hints">(Use this to control the order of the auction items.)</span></p>
+<input type="hidden" name="name" value="{{ page.name }}">
+<input type="hidden" name="version" value="{{ page.version }}">
+<input type="hidden" name="draft" value="{% if page.draft %}1{% else %}0{% endif %}">
+<input type="hidden" name="preview" value="{% if page.preview %}1{% else %}0{% endif %}">
 
-<input type="hidden" name="key" value="{{ key }}">
+<p>
+<input type="submit" name="previewbutton" value="Preview">
+<input type="submit" name="savebutton" value="Save as Draft">
+<input type="submit" name="publishbutton" value="Publish">
+</p>
 
-<p><input type="submit" name="save" value="Save"></p>
+<h2>Preview</h2>
+
+<div id="preview">
+{{ page.content|markdown }}
+</div> <!-- preview -->
 
 </form>
 
