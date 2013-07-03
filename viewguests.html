@@ -1,59 +1,30 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Dinners</title>
-	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
-	<link rel="icon" href="/favicon.png" type="image/png">
+{% extends "base.html" %}
+
+{% block title %}Dinners{% endblock %}
+
+{% block head %}
 <style type="text/css">
-#viewguests { width: 100%; }
-#viewguests #logo { margin-left: 3%; }
-#viewguests #nav { width: 12%; margin-left: 3%; }
-#viewguests #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
-#viewguests table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
-#viewguests thead tr { border-bottom: 2px solid #c4e5c4; }
-#viewguests tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
-#viewguests tbody tr.guest:hover { background-color: #e7fbe7; }
-#viewguests th { color: #6061ab; padding: 0.5em; text-align: left; }
-#viewguests td { padding: 0.5em; }
-#viewguests tr.sponsor td { font-weight: bold; padding-top: 1em; }
-#viewguests td.firstcol { padding-left: 2em; }
-#viewguests td p { margin: 0; }
-#viewguests td p.details { margin-left: 3em; font-size: 80%; color: #555; }
-#viewguests tr.seating p { font-size: 80%; font-style: italic; color: #555; }
+#body { width: 100%; }
+#body #header { margin-left: auto; margin-right: auto; }
+#body #nav { width: 12%; margin-left: 3%; }
+#body #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body thead tr { border-bottom: 2px solid #c4e5c4; }
+#body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
+#body tbody tr.guest:hover { background-color: #e7fbe7; }
+#body th { color: #6061ab; padding: 0.5em; text-align: left; }
+#body td { padding: 0.5em; }
+#body tr.sponsor td { font-weight: bold; padding-top: 1em; }
+#body td.firstcol { padding-left: 2em; }
+#body td p { margin: 0; }
+#body td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#body tr.seating p { font-size: 80%; font-style: italic; color: #555; }
 ul.pages { list-style: none; margin: 0; padding: 0; text-align: right; }
 ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 </style>
-</head>
-<body id="viewguests">
+{% endblock %}
 
-<div id="header">
-
-<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
-<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
-<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
-
-</div> <!-- header -->
-
-<div class="container">
-
-<div id="nav">
-<ul>
-	<li><a href="/index.html">Home</a></li>
-	<li><a href="/details.html">Tournament Details</a></li>
-	<li><a href="/register">Register</a></li>
-	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
-	<li><a href="/volunteer.html">Volunteer Information</a></li>
-	<li><a href="/auction.html">Live Auction</a></li>
-	<li><a href="/map.html">Maps and Directions</a></li>
-	<li><a href="/admin/view/sponsors">View Registrations</a></li>
-	<li><a href="/admin/view/golfers">View Golfers</a></li>
-	<li>View Dinners</li>
-</ul>
-</div>
-
-<div id="content">
+{% block content %}
 <h2>Dinners</h2>
 
 {% if dinners %}
@@ -101,10 +72,4 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 	<li>{{ key }}: {{ value }}</li>
 {% endfor %}
 </ul>
-
-</div> <!-- content -->
-
-</div> <!-- container -->
-
-</body>
-</html>
+{% endblock %}

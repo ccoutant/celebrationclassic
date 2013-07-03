@@ -7,6 +7,7 @@ from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
 
 import auctionitem
+import capabilities
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -14,8 +15,10 @@ dev_server = True if server_software and server_software.startswith("Development
 class Auction(webapp2.RequestHandler):
 	def get(self):
 		auction_items = auctionitem.get_auction_items()
+		caps = capabilities.get_current_user_caps()
 		template_values = {
-			'auction_items': auction_items
+			'auction_items': auction_items,
+			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('auction.html', template_values))
 

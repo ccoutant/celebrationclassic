@@ -1,11 +1,10 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<title>Celebration Classic&trade; Admin: Edit Page Content</title>
-	<link rel="stylesheet" href="http://www.shirhadash.org/celebrationclassic/cc.css" type="text/css">
-	<link rel="icon" href="/favicon.png" type="image/png">
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% block title %}Admin: Edit Page Content{% endblock %}
+
+{% block head %}
 <style type="text/css">
 p.description { margin-bottom: 0.5em; }
 .hints { font-size: 80%; color: #484848; }
@@ -14,38 +13,9 @@ p.description { margin-bottom: 0.5em; }
 .hints code { color: #157d15; }
 #preview { width: 100%; border: 1px solid #c4e5c4; padding: 10px; margin: 0 -11px 30px; }
 </style>
-</head>
-<body>
+{% endblock %}
 
-<div id="header">
-
-<h1><a href="/index.html"><img id="cclogo" src="http://www.shirhadash.org/celebrationclassic/images/CCGolfLOGO_3_144.gif" alt="" width="144" height="132"></a>
-<img id="ccbanner" width="477" height="184" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-Presents.gif" alt="Stephen Silver Fine Jewelry Presents the Celebration Classic">
-<a href="http://www.stephensilverfinejewelry.com"><img id="ssfjlogo" width="216" height="99" src="http://www.shirhadash.org/celebrationclassic/images/SSFJ-stacked-logo.gif" alt=""></a></h1>
-
-</div> <!-- header -->
-
-<div class="container">
-
-<div id="nav">
-<ul>
-	<li><a href="/index.html">Home</a></li>
-	<li><a href="/details.html">Tournament Details</a></li>
-	<li><a href="/register">Register</a></li>
-	<li><a href="/sponsor.html">Sponsorship Opportunities</a></li>
-	<li><a href="/volunteer.html">Volunteer Information</a></li>
-	<li><a href="/auction.html">Live Auction</a></li>
-	<li><a href="/map.html">Maps and Directions</a></li>
-	<li><a href="/admin/view/sponsors">View Registrations</a></li>
-	<li><a href="/admin/view/golfers">View Golfers</a></li>
-	<li><a href="/admin/view/guests">View Dinner Guests</a></li>
-</ul>
-</div>
-
-<div id="content">
-
-{% load custom_filters %}
-
+{% block content %}
 <h2>Edit {{ page.name }} Page</h2>
 
 <form action="/admin/edit" method="post" accept-charset="utf-8">
@@ -91,10 +61,4 @@ p.description { margin-bottom: 0.5em; }
 </div> <!-- preview -->
 
 </form>
-
-</div> <!-- content -->
-
-</div> <!-- container -->
-
-</body>
-</html>
+{% endblock %}

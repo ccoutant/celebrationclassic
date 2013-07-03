@@ -129,8 +129,8 @@ class ManageUsers(webapp2.RequestHandler):
 class Sponsorships(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_update_sponsorships:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_update_sponsorships:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		sponsorships = sponsorship.get_sponsorships("all")
@@ -185,8 +185,8 @@ class Sponsorships(webapp2.RequestHandler):
 
 	# Process the submitted info.
 	def post(self):
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_update_sponsorships:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_update_sponsorships:
 			self.redirect(users.create_login_url('/admin/sponsorships'))
 			return
 		sponsorship.clear_sponsorships_cache()
@@ -238,8 +238,8 @@ class ViewDinner(object):
 class ViewRegistrations(webapp2.RequestHandler):
 	def get(self, what):
 		root = tournament.get_tournament()
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_view_registrations:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		if what == "sponsors":
@@ -271,7 +271,8 @@ class ViewRegistrations(webapp2.RequestHandler):
 			template_values = {
 				'sponsors': sponsors,
 				'incomplete': False,
-				'nav': nav
+				'nav': nav,
+				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('viewsponsors.html', template_values))
 		elif what == "incomplete":
@@ -299,7 +300,8 @@ class ViewRegistrations(webapp2.RequestHandler):
 			template_values = {
 				'sponsors': sponsors,
 				'incomplete': True,
-				'nav': nav
+				'nav': nav,
+				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('viewsponsors.html', template_values))
 		elif what == "golfers":
@@ -332,7 +334,8 @@ class ViewRegistrations(webapp2.RequestHandler):
 				shirt_sizes[key] += 1
 			template_values = {
 				'golfers': all_golfers,
-				'shirt_sizes': shirt_sizes
+				'shirt_sizes': shirt_sizes,
+				'capabilities': caps
 				}
 			html = render_to_string('viewgolfers.html', template_values)
 			memcache.add('/admin/view/golfers', html, 60*60*24)
@@ -371,7 +374,8 @@ class ViewRegistrations(webapp2.RequestHandler):
 				dinner_choices[key] += 1
 			template_values = {
 				'dinners': all_dinners,
-				'dinner_choices': dinner_choices
+				'dinner_choices': dinner_choices,
+				'capabilities': caps
 				}
 			html = render_to_string('viewguests.html', template_values)
 			memcache.add('/admin/view/guests', html, 60*60*24)
@@ -386,8 +390,8 @@ def csv_encode(val):
 class DownloadCSV(webapp2.RequestHandler):
 	def get(self, what):
 		root = tournament.get_tournament()
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_view_registrations:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		if what == "sponsors":
@@ -463,8 +467,8 @@ class DownloadCSV(webapp2.RequestHandler):
 class ManageAuction(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_update_auction:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_update_auction:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		if self.request.get('key'):
@@ -473,7 +477,8 @@ class ManageAuction(webapp2.RequestHandler):
 			template_values = {
 				'item': item,
 				'key': key,
-				'upload_url': blobstore.create_upload_url('/admin/upload-auction')
+				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
+				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		elif self.request.get('new'):
@@ -486,13 +491,15 @@ class ManageAuction(webapp2.RequestHandler):
 			template_values = {
 				'item': item,
 				'key': '',
-				'upload_url': blobstore.create_upload_url('/admin/upload-auction')
+				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
+				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		else:
 			auction_items = auctionitem.get_auction_items()
 			template_values = {
-				'auction_items': auction_items
+				'auction_items': auction_items,
+				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('adminauction.html', template_values))
 
@@ -500,8 +507,8 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 	# Process the submitted info.
 	def post(self):
 		root = tournament.get_tournament()
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_update_auction:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_update_auction:
 			self.redirect(users.create_login_url('/admin/auction'))
 			return
 		auctionitem.clear_auction_item_cache()
@@ -532,19 +539,20 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 		item.put()
 		self.redirect("/admin/auction")
 
-def show_edit_form(name, response):
+def show_edit_form(name, caps, response):
 	page = detailpage.get_detail_page(name, True)
 	logging.info("showing %s, version %d, draft %s, preview %s" %
 				 (page.name, page.version, "yes" if page.draft else "no", "yes" if page.preview else "no"))
 	template_values = {
-		'page': page
+		'page': page,
+		'capabilities': caps
 		}
 	response.out.write(render_to_string('admineditpage.html', template_values))
 
 class EditPageHandler(webapp2.RequestHandler):
 	def get(self):
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_edit_content:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_content:
 			self.redirect(users.create_login_url('/admin/edit'))
 			return
 		pages = []
@@ -559,7 +567,8 @@ class EditPageHandler(webapp2.RequestHandler):
 				}
 			pages.append(page)
 		template_values = {
-			'pages': pages
+			'pages': pages,
+			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('adminedit.html', template_values))
 
@@ -596,28 +605,23 @@ class EditPageHandler(webapp2.RequestHandler):
 		detailpage.set_version(name, version, is_preview or is_draft)
 
 	def post(self):
-		user = capabilities.get_current_user_caps()
-		if user is None or not user.can_edit_content:
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_content:
 			self.redirect(users.create_login_url('/admin/edit'))
 			return
 		for name in detailpage.detail_page_list():
 			if self.request.get('edit' + name):
-				show_edit_form(name, self.response)
+				show_edit_form(name, caps, self.response)
 				return
 		if self.request.get('previewbutton'):
 			self.save(True, False)
-			show_edit_form(self.request.get('name'), self.response)
+			show_edit_form(self.request.get('name'), caps, self.response)
 		elif self.request.get('savebutton'):
 			self.save(False, True)
 			self.redirect("/admin/edit")
 		elif self.request.get('publishbutton'):
 			self.save(False, False)
 			self.redirect("/admin/edit")
-#		elif self.request.get('setversions'):
-#			for name in detailpage.detail_page_list():
-#				v = int(self.request.get('version_' + name))
-#				detailpage.set_version(name, v, False)
-#			self.redirect("/admin/edit")
 		else:
 			self.response.set_status(204, 'No submit button pressed')
 
