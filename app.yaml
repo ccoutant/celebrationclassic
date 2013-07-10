@@ -34,7 +34,7 @@ handlers:
 - url: /img/.*
   script: auction.app
 
-- url: /(index|details|sponsor|volunteer|raffle)\.html
+- url: /(index|details|sponsor|volunteer|map|raffle)\.html
   script: detailpagehandler.app
 
 - url: /.*
