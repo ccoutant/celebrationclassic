@@ -37,7 +37,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 <thead>
 	<tr valign="bottom">
 		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer</th>
-		<th>Index<br>Best Score<br>GHN Number</th>
+		<th>GHIN Number<br>Averaage Score</th>
 		<th>Shirt Size</th>
 	</tr>
 </thead>
@@ -50,7 +50,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 	{% endifequal %}
 	<tr class="golfer" valign="baseline">
 		<td class="firstcol">
-		<p>{{ g.count }}.&ensp;{{ g.golfer.name|default:"N/A" }}</p>
+		<p>{{ g.count }}.&ensp;{{ g.golfer.name|default:"(n/a)" }}</p>
 		{% if g.golfer.company %}<p class="details">{{ g.golfer.company }}</p>{% endif %}
 		{% if g.golfer.address %}<p class="details">{{ g.golfer.address }}</p>{% endif %}
 		{% if g.golfer.city %}<p class="details">{{ g.golfer.city }}</p>{% endif %}
@@ -59,9 +59,8 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		{% if g.golfer.fax %}<p class="details">Fax: {{ g.golfer.fax }}</p>{% endif %}
 		</td>
 		<td>
-		{% if g.golfer.golf_index %}<p>Index: {{ g.golfer.golf_index }}</p>{% endif %}
-		{% if g.golfer.best_score %}<p>Best Score: {{ g.golfer.best_score }}</p>{% endif %}
-		{% if g.golfer.ghn_number %}<p>GHN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
+		{% if g.golfer.ghn_number %}<p>GHIN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
+		{% if g.golfer.best_score %}<p>Average Score: {{ g.golfer.best_score }}</p>{% endif %}
 		</td>
 		<td>{{ g.golfer.shirt_size }}</td>
 	</tr>

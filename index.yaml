@@ -38,6 +38,12 @@ indexes:
 - kind: Sponsor
   ancestor: yes
   properties:
+  - name: confirmed
+  - name: timestamp
+
+- kind: Sponsor
+  ancestor: yes
+  properties:
   - name: timestamp
 
 - kind: Sponsorship

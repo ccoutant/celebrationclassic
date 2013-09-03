@@ -112,17 +112,15 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-number">
 <div class="form-input">
-<label for="entry_index{{ golfer.sequence }}">Index</label>
-<input type="text" name="index{{ golfer.sequence }}" value="{{ golfer.golf_index }}" id="entry_index{{ golfer.sequence }}">
-<label class="right" for="entry_best{{ golfer.sequence }}"><i>OR</i> Best Score</label>
+<label for="entry_ghn{{ golfer.sequence }}">GHIN Number</label>
+<input type="text" name="ghn{{ golfer.sequence }}" value="{{ golfer.ghn_number }}" id="entry_ghn{{ golfer.sequence }}">
+<label class="right" for="entry_best{{ golfer.sequence }}"><i>OR</i> Average Score</label>
 <input type="text" name="best{{ golfer.sequence }}" value="{{ golfer.best_score }}" id="entry_best{{ golfer.sequence }}">
 </div>
 </div>
 
 <div class="form-entry form-number">
 <div class="form-input">
-<label for="entry_ghn{{ golfer.sequence }}">GHN Number</label>
-<input type="text" name="ghn{{ golfer.sequence }}" value="{{ golfer.ghn_number }}" id="entry_ghn{{ golfer.sequence }}">
 </div>
 </div>
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import os
 import cgi
 import logging
@@ -22,7 +23,11 @@ dev_server = True if server_software and server_software.startswith("Development
 
 # Show the initial registration form.
 
-def show_registration_form(response, s, messages, caps, debug):
+def show_registration_form(response, root, s, messages, caps, debug):
+	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
+	# last until 1 am PDT.)
+	today = datetime.datetime.now() - datetime.timedelta(hours=8)
+	early_bird = today.date() <= root.early_bird_deadline
 	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
@@ -34,7 +39,9 @@ def show_registration_form(response, s, messages, caps, debug):
 		if ss:
 			selected_sponsorships.append(ss.sequence)
 	template_values = {
+		'tournament': root,
 		'sponsor': s,
+		'earlybird': early_bird,
 		'doubleeagle': doubleeagle,
 		'holeinone': holeinone,
 		'eagle': eagle,
@@ -96,18 +103,24 @@ class Register(webapp2.RequestHandler):
 			s = q.get()
 			if s:
 				if self.request.get('page') == '1':
-					show_registration_form(self.response, s, messages, caps, dev_server)
+					show_registration_form(self.response, root, s, messages, caps, dev_server)
 				else:
 					show_continuation_form(self.response, s, messages, caps, dev_server)
 				return
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 		s = Sponsor(sponsorships = [])
-		show_registration_form(self.response, s, messages, caps, dev_server)
+		show_registration_form(self.response, root, s, messages, caps, dev_server)
 
 	# Process the submitted info.
 	def post(self):
 		messages = []
 		root = tournament.get_tournament()
+		# Get today's date in PST. (We won't worry about DST, so early bird pricing will
+		# last until 1 am PDT.)
+		today = datetime.datetime.now() - datetime.timedelta(hours=8)
+		early_bird = today.date() <= root.early_bird_deadline
+		golf_price = root.golf_price_early if early_bird else root.golf_price_late
+		dinner_price = root.dinner_price_early if early_bird else root.dinner_price_late
 		caps = capabilities.get_current_user_caps()
 		id = int(self.request.get('id'))
 		if id:
@@ -176,11 +189,11 @@ class Register(webapp2.RequestHandler):
 					golfers_included += 1
 		dinners_included = golfers_included
 		if s.num_golfers > golfers_included:
-			s.payment_due += 400 * (s.num_golfers - golfers_included)
+			s.payment_due += golf_price * (s.num_golfers - golfers_included)
 		else:
 			dinners_included += golfers_included - s.num_golfers
 		if s.num_dinners > dinners_included:
-			s.payment_due += 150 * (s.num_dinners - dinners_included)
+			s.payment_due += dinner_price * (s.num_dinners - dinners_included)
 		s.payment_due += s.additional_donation
 		if s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
@@ -200,7 +213,7 @@ class Register(webapp2.RequestHandler):
 				s.transaction_code = self.request.get('transcode')
 
 		if messages:
-			show_registration_form(self.response, s, messages, caps, dev_server)
+			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
 		if s.id == 0:
@@ -234,7 +247,7 @@ class Continue(webapp2.RequestHandler):
 		if not s:
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 			s = Sponsor(sponsorships = [])
-			show_registration_form(self.response, s, messages, caps, dev_server)
+			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
 		q = Golfer.all().ancestor(s.key()).order('sequence')
@@ -250,7 +263,8 @@ class Continue(webapp2.RequestHandler):
 			golfer.city = self.request.get('city%d' % i)
 			golfer.phone = self.request.get('phone%d' % i)
 			golfer.email = self.request.get('email%d' % i)
-			golfer.golf_index = self.request.get('index%d' % i)
+			# We don't collect the index anymore; we can get that straight from GHIN.
+			# golfer.golf_index = self.request.get('index%d' % i)
 			golfer.best_score = self.request.get('best%d' % i)
 			golfer.ghn_number = self.request.get('ghn%d' % i)
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
@@ -266,12 +280,17 @@ class Continue(webapp2.RequestHandler):
 			guest.name = self.request.get('guest%d' % i)
 			guest.dinner_choice = self.request.get('guest_choice%d' % i)
 			guest.put()
+
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
-
+		s.confirmed = True
 		s.put()
 		memcache.delete('/admin/view/golfers')
 		memcache.delete('/admin/view/guests')
+
+		if caps.can_add_registrations and self.request.get('save'):
+			self.redirect('/admin/view/sponsors')
+			return
 
 		if s.payment_made > 0:
 			template_values = {

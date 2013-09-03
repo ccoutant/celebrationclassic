@@ -8,7 +8,7 @@ import logging
 import webapp2
 from google.appengine.ext import db, blobstore
 from google.appengine.ext.webapp import blobstore_handlers
-from google.appengine.api import users, memcache, images
+from google.appengine.api import users, memcache, images, mail
 from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
 
@@ -247,9 +247,10 @@ class ViewRegistrations(webapp2.RequestHandler):
 				start = int(self.request.get('start'))
 			else:
 				start = 0
-			lim = 20
+			lim = 50
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			sponsors = q.fetch(lim, offset = start)
 			for s in sponsors:
@@ -278,28 +279,71 @@ class ViewRegistrations(webapp2.RequestHandler):
 		elif what == "incomplete":
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			sponsors = []
 			for s in q:
 				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+				golfers_complete = 0
 				ndinners = 0
 				no_dinners = 0
 				for g in golfers:
+					if g.name and (g.ghn_number or g.best_score) and g.shirt_size:
+						golfers_complete += 1
 					if g.dinner_choice:
 						ndinners += 1
 					if g.dinner_choice == 'No Dinner':
 						no_dinners += 1
 				guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
 				for g in guests:
-					if g.dinner_choice:
+					if g.name and g.dinner_choice:
 						ndinners += 1
-				if s.payment_made == 0 or ndinners < s.num_golfers + s.num_dinners:
+				if s.payment_made > 0 and (golfers_complete < s.num_golfers or ndinners < s.num_golfers + s.num_dinners):
 					s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 					sponsors.append(s)
 			nav = []
 			template_values = {
 				'sponsors': sponsors,
-				'incomplete': True,
+				'incomplete': 'incomplete',
+				'nav': nav,
+				'capabilities': caps
+				}
+			self.response.out.write(render_to_string('viewsponsors.html', template_values))
+		elif what == "unpaid":
+			q = Sponsor.all()
+			q.ancestor(root)
+			q.filter("confirmed =", True)
+			q.order("timestamp")
+			sponsors = []
+			for s in q:
+				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+				no_dinners = 0
+				for g in golfers:
+					if g.dinner_choice == 'No Dinner':
+						no_dinners += 1
+				if s.payment_made == 0:
+					s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
+					sponsors.append(s)
+			nav = []
+			template_values = {
+				'sponsors': sponsors,
+				'incomplete': 'unpaid',
+				'nav': nav,
+				'capabilities': caps
+				}
+			self.response.out.write(render_to_string('viewsponsors.html', template_values))
+		elif what == "unconfirmed":
+			q = Sponsor.all()
+			q.ancestor(root)
+			q.filter("confirmed =", False)
+			q.order("timestamp")
+			sponsors = q.fetch(100)
+			for s in sponsors:
+				s.adjusted_dinners = s.num_golfers + s.num_dinners
+			nav = []
+			template_values = {
+				'sponsors': sponsors,
+				'incomplete': 'unconfirmed',
 				'nav': nav,
 				'capabilities': caps
 				}
@@ -313,9 +357,10 @@ class ViewRegistrations(webapp2.RequestHandler):
 			counter = 1
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			for s in q:
-				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+				golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 				for g in golfers:
 					all_golfers.append(ViewGolfer(s, g, counter))
 					counter += 1
@@ -349,9 +394,10 @@ class ViewRegistrations(webapp2.RequestHandler):
 			counter = 1
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			for s in q:
-				golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
+				golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 				for g in golfers:
 					if g.dinner_choice != 'No Dinner':
 						all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence, counter))
@@ -359,7 +405,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 				for i in range(len(golfers) + 1, s.num_golfers + 1):
 					all_dinners.append(ViewDinner(s, '', '', i, counter))
 					counter += 1
-				guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
+				guests = DinnerGuest.all().ancestor(s.key()).order("sequence").fetch(s.num_dinners)
 				for g in guests:
 					all_dinners.append(ViewDinner(s, g.name, g.dinner_choice, g.sequence + s.num_golfers, counter))
 					counter += 1
@@ -419,8 +465,7 @@ class DownloadCSV(webapp2.RequestHandler):
 			q.order("timestamp")
 			csv = []
 			csv.append(','.join(['contact', 'name', 'gender', 'title', 'company', 'address', 'city',
-								 'email', 'phone', 'golf_index', 'best_score', 'ghn_number',
-								 'shirt_size']))
+								 'email', 'phone', 'ghin_number', 'avg_score', 'shirt_size']))
 			for s in q:
 				q = Golfer.all().ancestor(s.key())
 				golfers = q.fetch(s.num_golfers)
@@ -428,8 +473,7 @@ class DownloadCSV(webapp2.RequestHandler):
 					csv.append(','.join([csv_encode(x)
 										 for x in [s.name, g.name, g.gender, g.company, g.title,
 												   g.address, g.city, g.email, g.phone,
-												   g.golf_index, g.best_score, g.ghn_number,
-												   g.shirt_size]]))
+												   g.ghn_number, g.best_score, g.shirt_size]]))
 				for i in range(len(golfers) + 1, s.num_golfers + 1):
 					csv.append(','.join([csv_encode(x)
 										 for x in [s.name, 'n/a', '', '', '', '', '', '', '',
@@ -461,6 +505,82 @@ class DownloadCSV(webapp2.RequestHandler):
 		self.response.headers['Content-Disposition'] = 'attachment;filename=%s.csv' % what
 		self.response.out.write('\n'.join(csv))
 		self.response.out.write('\n')
+
+# Reminder E-mails
+
+class SendEmail(webapp2.RequestHandler):
+	def post(self, what):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		subject = "Your Celebration Classic Registration"
+		sender = users.get_current_user().email()
+		if what == 'incomplete':
+			body_template = """
+Dear %s,
+
+Thank you for registering for the Celebration Classic Dinner and Golf Tournament!
+In order to prepare for this event, we need a little more information from you.
+Please visit the following URL:
+
+    http://www.celebrationclassic.org/register?id=%s
+
+and check to make sure that you have provided all of the following information
+for each golfer and dinner guest:
+
+- Name
+- GHIN number or average score (for golfers)
+- Shirt size (for golfers)
+- Dinner selection
+
+If you have any questions, just reply to this email and we'll be glad to assist.
+"""
+		elif what == 'unpaid':
+			body_template = """
+Dear %s,
+
+Thank you for registering for the Celebration Classic Dinner and Golf Tournament!
+Our records show that you have not yet paid for this event.  Please visit the
+following URL:
+
+    http://www.celebrationclassic.org/register?id=%s
+
+and choose a payment method at the bottom of the page. If you have already paid
+by other means, or if we should cancel this registration, please reply to this
+message and let us know.
+
+Please also check to make sure that you have provided all of the following
+information for each golfer and dinner guest:
+
+- Name
+- GHIN number or average score (for golfers)
+- Shirt size (for golfers)
+- Dinner selection
+
+If you have any questions, just reply to this email and we'll be glad to assist.
+"""
+		else:
+			self.error(404)
+			return
+		selected_items = self.request.get_all('selected_items')
+		num_sent = 0
+		for id in selected_items:
+			q = Sponsor.all()
+			q.ancestor(root)
+			q.filter('id = ', int(id))
+			s = q.get()
+			if s:
+				body = body_template % (s.name, s.id)
+				logging.info("sending mail to %s (id %s)" % (s.name, s.id))
+				mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
+				num_sent += 1
+		template_values = {
+			'capabilities': caps,
+			'num_sent': num_sent
+			}
+		self.response.out.write(render_to_string('emailack.html', template_values))
 
 # Auction Items
 
@@ -625,12 +745,58 @@ class EditPageHandler(webapp2.RequestHandler):
 		else:
 			self.response.set_status(204, 'No submit button pressed')
 
+# Upgrade database to initialize "confirmed" field in existing records.
+
+class Upgrade(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		if self.request.get('start'):
+			start = int(self.request.get('start'))
+		else:
+			start = 0
+		lim = 50
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.order("timestamp")
+		sponsors = q.fetch(lim, offset = start)
+		for s in sponsors:
+			num_golfers = Golfer.all().ancestor(s.key()).count()
+			num_dinners = DinnerGuest.all().ancestor(s.key()).count()
+			if num_golfers + num_dinners > 0:
+				s.confirmed = True
+			else:
+				s.confirmed = False
+			s.put()
+			s.adjusted_dinners = s.num_golfers + s.num_dinners
+		count = q.count()
+		nav = []
+		i = 0
+		while i < count:
+			if i == start:
+				nav.append('<b>%d-%d</b>' % (i+1, min(count, i+lim)))
+			else:
+				nav.append('<a href="%s?start=%d">%d-%d</a>' % (self.request.path, i, i+1, min(count, i+lim)))
+			i += lim
+		template_values = {
+			'sponsors': sponsors,
+			'incomplete': False,
+			'nav': nav,
+			'capabilities': caps
+			}
+		self.response.out.write(render_to_string('viewsponsors.html', template_values))
+
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
 							   ('/admin/auction', ManageAuction),
 							   ('/admin/upload-auction', UploadAuctionItem),
 							   ('/admin/view/(.*)', ViewRegistrations),
+							   ('/admin/upgrade/set-confirm', Upgrade),
 							   ('/admin/csv/(.*)', DownloadCSV),
+							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
 							   ('/admin/logout', Logout)],
 							  debug=dev_server)

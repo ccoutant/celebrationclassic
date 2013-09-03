@@ -48,7 +48,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 	</tr>
 	{% endifequal %}
 	<tr class="guest" valign="baseline">
-		<td class="firstcol">{{ d.count }}.&ensp;{{ d.name|default:"N/A" }}</td>
+		<td class="firstcol">{{ d.count }}.&ensp;{{ d.name|default:"(n/a)" }}</td>
 		<td>{{ d.dinner_choice }}</td>
 	</tr>
 	{% if d.seating %}

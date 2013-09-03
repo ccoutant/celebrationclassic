@@ -28,7 +28,7 @@ label.sold { color: #999; }
 .form-input, .form-button { margin: 0 0 0.25em 8em; }
 .form-text .form-input input { width: 90%; }
 .form-phone .form-input input { width: 50%; }
-.form-number .form-input input { width: 3em; }
+.form-number .form-input input { width: 5em; }
 .form-dollars .form-input input { width: 6em; }
 
 .form ul { display: inline; list-style: none; margin: 0; padding: 0; }

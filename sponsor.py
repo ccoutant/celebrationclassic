@@ -22,6 +22,7 @@ class Sponsor(db.Model):
 	pairing = db.StringProperty(default = '')
 	dinner_seating = db.StringProperty(default = '')
 	timestamp = db.DateTimeProperty(auto_now_add = True)
+	confirmed = db.BooleanProperty(default = False) # Set after registration Step 2 completed.
 
 class Golfer(db.Model):
 	sequence = db.IntegerProperty(default = 0)
@@ -33,9 +34,9 @@ class Golfer(db.Model):
 	city = db.StringProperty(default = '')
 	phone = db.StringProperty(default = '')
 	email = db.StringProperty(default = '')
-	golf_index = db.StringProperty(default = '')
-	best_score = db.StringProperty(default = '')
-	ghn_number = db.StringProperty(default = '')
+	golf_index = db.StringProperty(default = '') # Not collected any more.
+	best_score = db.StringProperty(default = '') # Actually, average score.
+	ghn_number = db.StringProperty(default = '') # Should be ghin_number.
 	shirt_size = db.StringProperty(default = '')
 	dinner_choice = db.StringProperty(default = '')
 

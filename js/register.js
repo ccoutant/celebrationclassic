@@ -26,6 +26,14 @@ function recalculate() {
 	var totalbox = document.getElementById("entry_payment_due");
 	var totalbox_c = document.getElementById("entry_payment_due_c");
 
+	var early_bird = parseInt(document.getElementById("earlybird").value);
+	var golf_price_early = document.getElementById("golf_price_early").value;
+	var golf_price_late = document.getElementById("golf_price_late").value;
+	var dinner_price_early = document.getElementById("dinner_price_early").value;
+	var dinner_price_late = document.getElementById("dinner_price_late").value;
+	var golf_price = early_bird ? golf_price_early : golf_price_late;
+	var dinner_price = early_bird ? dinner_price_early : dinner_price_late;
+
 	// Show or hide the sponsorship checkboxes.
 	if (show_sponsorships_box.checked)
 		sponsorship_choices.style.display = "block";
@@ -103,11 +111,11 @@ function recalculate() {
 		dinners_included -= golfers;
 		golfers = 0;
 		}
-	total += golfers * 400;
+	total += golfers * golf_price;
 	var dinners = parseInt(dinnerbox.value) - dinners_included;
 	if (dinners < 0)
 		dinners = 0;
-	total += dinners * 150;
+	total += dinners * dinner_price;
 
 	if (otherbox.value) {
 		var otherval = parseInt(otherbox.value);

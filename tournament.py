@@ -21,7 +21,7 @@ def get_tournament():
 		memcache.add("tournament", t, 60*60*24)
 		return t
 	t = Tournament(name = "cc2013",
-				   early_bird_deadline = datetime.date(2013, 9, 3),
+				   early_bird_deadline = datetime.date(2013, 9, 10),
 				   golf_price_early = 400,
 				   golf_price_late = 450,
 				   dinner_price_early = 150,
