@@ -90,10 +90,10 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		{% if s.payment_made %}
 		<p class="details">Payment Type: {{ s.payment_type|default:'' }}</p>
 		<p class="details">Transaction Code: {{ s.transaction_code|default:'' }}</p>
-		{% endif %}
-		{% if s.confirmed %}
 		{% else %}
-		<p class="details"><b>Unconfirmed registration</b></p>
+		{% if capabilities.can_add_registrations and s.confirmed %}
+		<a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit payment info</button></a>
+		{% endif %}
 		{% endif %}
 		</td>
 	</tr>
