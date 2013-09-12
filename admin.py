@@ -443,6 +443,7 @@ class DownloadCSV(webapp2.RequestHandler):
 		if what == "sponsors":
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			csv = []
 			csv.append(','.join(['ID', 'contact', 'company', 'address', 'city', 'email', 'phone',
@@ -462,6 +463,7 @@ class DownloadCSV(webapp2.RequestHandler):
 		elif what == "golfers":
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			csv = []
 			csv.append(','.join(['contact', 'name', 'gender', 'title', 'company', 'address', 'city',
@@ -481,6 +483,7 @@ class DownloadCSV(webapp2.RequestHandler):
 		elif what == "guests":
 			q = Sponsor.all()
 			q.ancestor(root)
+			q.filter("confirmed =", True)
 			q.order("timestamp")
 			csv = []
 			csv.append(','.join(['contact', 'name', 'dinner_choice']))
