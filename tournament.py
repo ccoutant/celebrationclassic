@@ -25,7 +25,7 @@ def get_tournament():
 				   golf_price_early = 400,
 				   golf_price_late = 450,
 				   dinner_price_early = 150,
-				   dinner_price_late = 175)
+				   dinner_price_late = 150)
 	t.put()
 	memcache.add("tournament", t, 60*60*24)
 	return t
