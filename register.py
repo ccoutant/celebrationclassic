@@ -156,6 +156,9 @@ class Register(webapp2.RequestHandler):
 				messages.append('Please enter your email address.')
 			if s.phone == '':
 				messages.append('Please enter your phone number.')
+			# GOLF SOLD OUT
+			if s.num_golfers > 0:
+				messages.append('Sorry, the golf tournament is sold out.')
 
 		form_payment_due = int(self.request.get('payment_due'))
 		try:
@@ -213,6 +216,8 @@ class Register(webapp2.RequestHandler):
 				s.transaction_code = self.request.get('transcode')
 
 		if messages:
+			# GOLF SOLD OUT
+			s.num_golfers = 0
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
