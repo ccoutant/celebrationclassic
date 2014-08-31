@@ -9,6 +9,7 @@
 {% block content %}
 <h2>Golfer Information and Dinner Choices</h2>
 
+{% if not capabilities.can_add_registrations %}
 <p>Complete your online registration by providing the golfer information and dinner choices below.</p>
 
 <p>If you don&rsquo;t have all the information you need yet
@@ -19,10 +20,11 @@ haven&rsquo;t completed this form.
 After you&rsquo;ve paid, you can return to this page at any time,
 as often as you wish, to change your selections.
 Just remember to save your changes each time.
-If you pay online, your registration receipt from Acceptiva will also contain a link back to this page.</p>
+If you pay online, your registration receipt will also contain a link back to this page.</p>
 
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
+{% endif %}
 
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
@@ -39,7 +41,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_name">Name</label>
-<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name" readonly>
+<input type="text" name="name" value="{{ sponsor.first_name }} {{ sponsor.last_name }}" id="entry_name" readonly>
 </div>
 </div>
 
@@ -50,6 +52,13 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 </div>
 </div>
 
+{% if capabilities.can_add_registrations %}
+<div class="form-entry-left form-text">
+<div class="form-button">
+<a href="/register?id={{ sponsor.id }}&page=1"><button type="button" name="page1">Edit Contact Information</button></a>
+</div>
+</div>
+{% endif %}
 <input type="hidden" name="id" value="{{ sponsor.id }}">
 
 </div> <!-- form-section -->
@@ -59,14 +68,15 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <h2>Golfer #{{golfer.sequence}}</h2>
 
-<div class="form-entry-left form-text">
+<div class="form-entry form-text">
 <div class="form-input">
-<label for="entry_golfer_name{{ golfer.sequence }}">Name</label>
-<input type="text" name="name{{ golfer.sequence }}" value="{{ golfer.name }}" id="entry_golfer_name{{ golfer.sequence }}">
+<label for="entry_golfer_first_name{{ golfer.sequence }}">Name</label>
+<input class="form-first-name" type="text" name="first_name{{ golfer.sequence }}" value="{{ golfer.first_name }}" id="entry_golfer_first_name{{ golfer.sequence }}" placeholder="First">
+<input class="form-last-name" type="text" name="last_name{{ golfer.sequence }}" value="{{ golfer.last_name }}" id="entry_golfer_last_name{{ golfer.sequence }}" placeholder="Last">
 </div>
 </div>
 
-<div class="form-entry-right form-gender">
+<div class="form-entry-left form-gender">
 <div class="form-input">
 <ul>
 <li><label><input type="radio" name="gender{{ golfer.sequence }}" value="M" {% ifequal golfer.gender "M" %}checked{% endifequal %}> M</label></li>
@@ -78,44 +88,46 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_company{{ golfer.sequence }}">Company</label>
-<input type="text" name="company{{ golfer.sequence }}" value="{{ golfer.company }}" id="entry_company{{ golfer.sequence }}">
+<input type="text" name="company{{ golfer.sequence }}" value="{{ golfer.company }}" id="entry_company{{ golfer.sequence }}" placeholder="Company">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_address{{ golfer.sequence }}">Address</label>
-<input type="text" name="address{{ golfer.sequence }}" value="{{ golfer.address }}" id="entry_address{{ golfer.sequence }}">
+<input type="text" name="address{{ golfer.sequence }}" value="{{ golfer.address }}" id="entry_address{{ golfer.sequence }}" placeholder="Street">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_city{{ golfer.sequence }}">City, State, ZIP</label>
-<input type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}">
+<!--<label for="entry_city{{ golfer.sequence }}">City, State, ZIP</label>-->
+<input class="form-city" type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}" placeholder="City">
+<input class="form-state" type="text" name="state{{ golfer.sequence }}" value="{{ golfer.state }}" id="entry_state{{ golfer.sequence }}" placeholder="State">
+<input class="form-zip" type="text" name="zip{{ golfer.sequence }}" value="{{ golfer.zip }}" id="entry_zip{{ golfer.sequence }}" placeholder="ZIP">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_email{{ golfer.sequence }}">Email</label>
-<input type="text" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}">
+<input type="text" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone{{ golfer.sequence }}">Phone</label>
-<input type="text" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}">
+<input type="text" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}" placeholder="Phone">
 </div>
 </div>
 
 <div class="form-entry form-number">
 <div class="form-input">
-<label for="entry_ghn{{ golfer.sequence }}">GHIN Number</label>
-<input type="text" name="ghn{{ golfer.sequence }}" value="{{ golfer.ghn_number }}" id="entry_ghn{{ golfer.sequence }}">
-<label class="right" for="entry_best{{ golfer.sequence }}"><i>OR</i> Average Score</label>
-<input type="text" name="best{{ golfer.sequence }}" value="{{ golfer.best_score }}" id="entry_best{{ golfer.sequence }}">
+<label for="entry_ghin{{ golfer.sequence }}">GHIN Number</label>
+<input type="text" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}">
+<label class="right" for="entry_avg{{ golfer.sequence }}"><i>OR</i> Average Score</label>
+<input type="text" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}">
 </div>
 </div>
 
@@ -144,9 +156,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <label for="entry_golfer_choice{{ golfer.sequence }}">Dinner Choice</label>
 <select name="golfer_choice{{ golfer.sequence }}" id="entry_golfer_choice{{ golfer.sequence }}">
 <option value="">Select one...</option>
-<option value="Beef" {% ifequal golfer.dinner_choice "Beef" %}selected{% endifequal %}>Filet Mignon</option>
-<option value="Fish" {% ifequal golfer.dinner_choice "Fish" %}selected{% endifequal %}>Wild Sea Bass</option>
-<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Portobello Mushroom with Couscous</option>
+<option value="Beef" {% ifequal golfer.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
+<option value="Fish" {% ifequal golfer.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
+<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
 <option value="No Dinner" {% ifequal golfer.dinner_choice "No Dinner" %}selected{% endifequal %}>No Dinner</option>
 </select>
 </div>
@@ -176,8 +188,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_guest_name{{ guest.sequence }}">Name</label>
-<input type="text" name="guest{{ guest.sequence }}" value="{{ guest.name }}" id="entry_guest_name{{ guest.sequence }}">
+<label for="entry_guest_first_name{{ guest.sequence }}">Name</label>
+<input type="text" name="guest_first_name{{ guest.sequence }}" value="{{ guest.first_name }}" id="entry_guest_first_name{{ guest.sequence }}">
+<input type="text" name="guest_last_name{{ guest.sequence }}" value="{{ guest.last_name }}" id="entry_guest_last_name{{ guest.sequence }}">
 </div>
 </div>
 
@@ -186,9 +199,9 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <label for="entry_guest_choice{{ guest.sequence }}">Dinner Choice</label>
 <select name="guest_choice{{ guest.sequence }}" id="entry_guest_choice{{ guest.sequence }}">
 <option value="">Select one...</option>
-<option value="Beef" {% ifequal guest.dinner_choice "Beef" %}selected{% endifequal %}>Filet Mignon</option>
-<option value="Fish" {% ifequal guest.dinner_choice "Fish" %}selected{% endifequal %}>Wild Sea Bass</option>
-<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Portobello Mushroom with Couscous</option>
+<option value="Beef" {% ifequal guest.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
+<option value="Fish" {% ifequal guest.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
+<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
 </select>
 </div>
 </div>

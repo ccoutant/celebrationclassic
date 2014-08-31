@@ -1,0 +1,83 @@
+body { width: 1080px; margin: 30px auto 0; }
+
+body, div, p, td, li, dd {
+  font-family: Baskerville, "Times New Roman", Times, serif;
+  }
+h1, h2, h3, th, #nav li {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
+}
+
+div.container { position: relative; overflow: hidden; }
+
+#header { width: 1080px; height: 200px; position: relative;
+    border-bottom: 1px solid black;
+    border-top: 1px solid black;
+    margin-bottom: 20px; }
+#header img { margin: 0; border: none; }
+#cclogo { position: absolute; left: 35px; top: 32px; }
+#ccbanner { position: absolute; left: 302px; top: 10px; }
+#ssfjlogo { position: absolute; left: 864px; top: 50px; }
+
+#nav { float: left; width: 186px; margin: 1em 15px 0; }
+#nav ul { list-style: none; margin: 0; padding: 0; }
+#nav ul li { margin: 0 0 1em 1em; text-indent: -1em; padding: 0; font-weight: bold; font-size: 90%; }
+
+#content { float: left; width: 618px; margin: 1em 15px 0; }
+#content b, #content strong { color: #157d15; }
+
+#footer { width: 1080px; margin: 2em 0 30px; padding-top: 1em; /* border-top: 2px solid #c4e5c4; */ }
+#footer p { font-style: italic; font-size: 90%; text-align: center; color: #666; }
+
+h1 { font-size: 180%; font-weight: bold; color: #157d15; margin: 0 2em 1em 2em; text-align: center; }
+h2, h3 { font-size: 100%; font-weight: bold; color: #157d15; text-transform: uppercase; letter-spacing: 0.075em; }
+h2 { margin: 2em 0 1.5em; padding: 2px; border-bottom: 1px solid #c4e5c4; }
+h2 { background-image: url(/images/green-gradient.gif); background-repeat: repeat-x; background-position: bottom; }
+h2:first-child { margin-top: 0; }
+h3 { margin: 0 0 1em; }
+
+p { line-height: 1.333em; margin: 0 0 0.75em 0; }
+p.subhead { font-weight: bold; line-height: 1.5em; text-align: center; margin: 0 2em 1em 2em; }
+p.subhead2 { font-style: italic; line-height: 1.5em; text-align: center; margin: 0 2em 1em 2em; }
+p.center { line-height: 1.5em; text-align: center; margin: 0 2em 1em 2em; }
+p.position { margin: 1.5em 2em; text-indent: -2em; }
+p.needed { margin: 1.5em 2em; font-style: italic; }
+
+#content img { margin: 0 0 1.5em 0; }
+#dinnertable { float: right; margin: 0.2em 0 0 1.5em; }
+
+ul { list-style-type: square; }
+ul, ol { margin: 0 0 1.5em 0; padding: 0 0 0 3em; line-height: 1.333em; }
+li p { margin: 0 0 0.5em 0; }
+ul.benefits { list-style-type: none; font-weight: bold; margin: 0; padding: 0; }
+ul.benefits ul { font-weight: normal; }
+
+dt { font-weight: bold; color: #142690; margin: 1em 0 0 0; line-height: 1.333em; }
+dd { margin: 0 0 1em 2em; line-height: 1.333em; }
+
+a { color: #058805; text-decoration: none; }
+a:hover { color: #058805; text-decoration: underline; }
+a:visited { color: #47aa47; text-decoration: underline; }
+
+.sponsortab { margin: 1em -5px; }
+.sponsortab h3 { text-align: center; margin: 10px 0; }
+.sponsorlevel { float: left; width: 290px; margin: 0 10px; }
+.sponsorlevellong { min-height: 19em; }
+.sponsorlevelmedium { min-height: 16em; }
+.sponsorlevelshort { min-height: 8em; }
+.sponsorlevel { background-color: #e7fbe7; border: 1px solid #c4e5c4; }
+.sponsorlevel table { border: none; width: 100%; margin: 0; }
+.sponsorlevel table tr { vertical-align: top; }
+.sponsorlevel table td { border: none; padding: 0.333em 0.25em; font-size: 90%; }
+.sponsorlevel table td.price { text-align: right; }
+.sponsorlevel table td.desc { padding: 0 0.5em 0.333em 0.5em; text-align: center; font-size: 75%; font-style: italic; color: #777; }
+
+div.form { margin: 2em 0; }
+
+.volunteer ul { list-style: none; display: block; padding: 0; }
+.volunteer ul li { margin: 1em 0 0 0; padding: 0; }
+.volunteer ul li p { margin: 0; }
+.volunteer ul ul { list-style-type: square; margin: 0; padding-left: 2em; }
+.volunteer ul ul li { margin: 0 0 0 1em; padding: 0; }
+
+/* IE6 hacks */
+* html .container { display: inline-block; }

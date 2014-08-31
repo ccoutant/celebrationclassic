@@ -14,10 +14,6 @@ class CachedFile(db.Model):
 	content = db.BlobProperty()
 	last_modified = db.DateTimeProperty(required = True, auto_now = True)
 
-class MainHandler(webapp2.RequestHandler):
-	def get(self):
-		self.redirect('/index.html')
-
 class CacheHandler(webapp2.RequestHandler):
 	def get(self):
 		if not users.is_current_user_admin():
@@ -62,7 +58,7 @@ class ProxyHandler(webapp2.RequestHandler):
 			content = cached.content
 			logging.debug("Found cached object for %s, Content-Type %s, length %d" % (name, ctype, len(content)))
 		else:
-			url = 'http://www.shirhadash.org/celebrationclassic/' + name
+			url = 'http://www1.shirhadash.org/celebrationclassic/' + name
 			result = urlfetch.fetch(url)
 			if result.status_code != 200:
 				self.error(result.status_code)
@@ -95,8 +91,7 @@ class ProxyHandler(webapp2.RequestHandler):
 		else:
 			self.response.set_status(304)
 
-app = webapp2.WSGIApplication([('/', MainHandler),
-							   ('/cache', CacheHandler),
+app = webapp2.WSGIApplication([('/cache', CacheHandler),
 							   ('/clearcache', ClearCacheHandler),
 							   (r'/(images/.*)', ProxyHandler),
 							   (r'/(photos/.*)', ProxyHandler),

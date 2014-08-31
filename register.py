@@ -28,6 +28,9 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
 	early_bird = today.date() <= root.early_bird_deadline
+	early_bird_deadline = "%s %d, %d" % (root.early_bird_deadline.strftime("%B"),
+										 root.early_bird_deadline.day,
+										 root.early_bird_deadline.year)
 	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
@@ -41,7 +44,8 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	template_values = {
 		'tournament': root,
 		'sponsor': s,
-		'earlybird': early_bird,
+		'early_bird': early_bird,
+		'early_bird_deadline': early_bird_deadline,
 		'doubleeagle': doubleeagle,
 		'holeinone': holeinone,
 		'eagle': eagle,
@@ -62,10 +66,13 @@ def show_continuation_form(response, s, messages, caps, debug):
 	for i in range(len(golfers) + 1, s.num_golfers + 1):
 		golfer = Golfer(parent = s, sequence = i)
 		if i == 1:
-			golfer.name = s.name
+			golfer.first_name = s.first_name
+			golfer.last_name = s.last_name
 			golfer.company = s.company
 			golfer.address = s.address
 			golfer.city = s.city
+			golfer.state = s.state
+			golfer.zip = s.zip
 			golfer.phone = s.phone
 			golfer.email = s.email
 		golfers.append(golfer)
@@ -130,10 +137,13 @@ class Register(webapp2.RequestHandler):
 			s = q.get()
 		else:
 			s = Sponsor(parent=root)
-		s.name = self.request.get('name')
+		s.first_name = self.request.get('first_name')
+		s.last_name = self.request.get('last_name')
 		s.company = self.request.get('company')
 		s.address = self.request.get('address')
 		s.city = self.request.get('city')
+		s.state = self.request.get('state')
+		s.zip = self.request.get('zip')
 		s.phone = self.request.get('phone')
 		s.fax = self.request.get('fax')
 		s.email = self.request.get('email')
@@ -145,20 +155,23 @@ class Register(webapp2.RequestHandler):
 		s.payment_due = 0
 		s.payment_made = 0
 
-		if s.name == '':
+		if not s.first_name and not s.last_name:
 			messages.append('Please enter your name.')
+		elif not s.first_name or not s.last_name:
+			messages.append('Please enter both first and last name.')
 		if not caps.can_add_registrations:
 			if s.address == '':
 				messages.append('Please enter your mailing address.')
-			if s.city == '':
+			if s.city == '' or s.state == '' or s.zip == '':
 				messages.append('Please enter your city, state, and ZIP code.')
 			if s.email == '':
 				messages.append('Please enter your email address.')
 			if s.phone == '':
 				messages.append('Please enter your phone number.')
-			# GOLF SOLD OUT
-			if s.num_golfers > 0:
+			if root.golf_sold_out and s.num_golfers > 0:
 				messages.append('Sorry, the golf tournament is sold out.')
+			if root.dinner_sold_out and s.num_dinners > 0:
+				messages.append('Sorry, the dinner is sold out.')
 
 		form_payment_due = int(self.request.get('payment_due'))
 		try:
@@ -173,23 +186,12 @@ class Register(webapp2.RequestHandler):
 		golfers_included = 0
 		dinners_included = 0
 		for ss in sponsorships:
-			k = '%s:%d:%d' % (ss.level, ss.sequence, ss.price)
+			k = '%s:%d:%d:%d' % (ss.level, ss.sequence, ss.price, ss.golfers_included)
 			if k in selected:
 				s.sponsorships.append(ss.key())
 				sponsorship_names.append(ss.name)
 				s.payment_due += ss.price
-				if ss.price >= 25000:
-					golfers_included += 12
-				elif ss.price >= 15000:
-					golfers_included += 8
-				elif ss.price >= 10000:
-					golfers_included += 4
-				elif ss.level == 'Angel':
-					golfers_included += 4
-				elif ss.price >= 3500:
-					golfers_included += 2
-				else:
-					golfers_included += 1
+				golfers_included += ss.golfers_included
 		dinners_included = golfers_included
 		if s.num_golfers > golfers_included:
 			s.payment_due += golf_price * (s.num_golfers - golfers_included)
@@ -206,7 +208,11 @@ class Register(webapp2.RequestHandler):
 
 		if caps.can_add_registrations:
 			payment_made = self.request.get('payment_made')
-			if payment_made:
+			if payment_made == '':
+				s.payment_made = 0
+				s.payment_type = ''
+				s.transaction_code = ''
+			else:
 				try:
 					s.payment_made = int(payment_made)
 				except ValueError:
@@ -214,10 +220,23 @@ class Register(webapp2.RequestHandler):
 					messages.append('You entered an invalid value in the "Payment Made" field.')
 				s.payment_type = self.request.get('paytype')
 				s.transaction_code = self.request.get('transcode')
+			discount = self.request.get('discount')
+			if discount == '':
+				s.discount = 0
+				s.discount_type = ''
+			else:
+				try:
+					s.discount = int(discount)
+				except ValueError:
+					s.discount = 0
+					messages.append('You entered an invalid value in the "Discount" field.')
+				s.discount_type = self.request.get('discount_type')
 
 		if messages:
-			# GOLF SOLD OUT
-			s.num_golfers = 0
+			if root.golf_sold_out:
+				s.num_golfers = 0
+			if root.dinner_sold_out:
+				s.num_dinners = 0
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
@@ -231,7 +250,9 @@ class Register(webapp2.RequestHandler):
 				if not result: break
 				logging.info('ID collision for %d; retrying...' % s.id)
 		s.put()
-		if caps.can_add_registrations and s.payment_made > 0 and self.request.get('save'):
+		memcache.delete('2015/admin/view/golfers')
+		memcache.delete('2015/admin/view/dinners')
+		if caps.can_add_registrations and (s.payment_made > 0 or s.discount > 0) and self.request.get('save'):
 			self.redirect('/register')
 			return
 		self.redirect('/register?id=%d' % s.id)
@@ -261,17 +282,18 @@ class Continue(webapp2.RequestHandler):
 			if len(golfers) < i:
 				golfers.append(Golfer(parent = s, sequence = i))
 			golfer = golfers[i-1]
-			golfer.name = self.request.get('name%d' % i)
+			golfer.first_name = self.request.get('first_name%d' % i)
+			golfer.last_name = self.request.get('last_name%d' % i)
 			golfer.gender = self.request.get('gender%d' % i)
 			golfer.company = self.request.get('company%d' % i)
 			golfer.address = self.request.get('address%d' % i)
 			golfer.city = self.request.get('city%d' % i)
+			golfer.state = self.request.get('state%d' % i)
+			golfer.zip = self.request.get('zip%d' % i)
 			golfer.phone = self.request.get('phone%d' % i)
 			golfer.email = self.request.get('email%d' % i)
-			# We don't collect the index anymore; we can get that straight from GHIN.
-			# golfer.golf_index = self.request.get('index%d' % i)
-			golfer.best_score = self.request.get('best%d' % i)
-			golfer.ghn_number = self.request.get('ghn%d' % i)
+			golfer.average_score = self.request.get('avg%d' % i)
+			golfer.ghin_number = self.request.get('ghin%d' % i)
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
 			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
 			golfer.put()
@@ -282,7 +304,8 @@ class Continue(webapp2.RequestHandler):
 			if len(dinner_guests) < i:
 				dinner_guests.append(DinnerGuest(parent = s, sequence = i))
 			guest = dinner_guests[i-1]
-			guest.name = self.request.get('guest%d' % i)
+			guest.first_name = self.request.get('guest_first_name%d' % i)
+			guest.last_name = self.request.get('guest_last_name%d' % i)
 			guest.dinner_choice = self.request.get('guest_choice%d' % i)
 			guest.put()
 
@@ -290,11 +313,11 @@ class Continue(webapp2.RequestHandler):
 		s.dinner_seating = self.request.get('dinner_seating')
 		s.confirmed = True
 		s.put()
-		memcache.delete('/admin/view/golfers')
-		memcache.delete('/admin/view/guests')
+		memcache.delete('2015/admin/view/golfers')
+		memcache.delete('2015/admin/view/dinners')
 
 		if caps.can_add_registrations and self.request.get('save'):
-			self.redirect('/admin/view/sponsors')
+			self.redirect('/admin/view/registrations')
 			return
 
 		if s.payment_made > 0:
@@ -318,34 +341,20 @@ class Continue(webapp2.RequestHandler):
 			ss = db.get(sskey)
 			if ss:
 				sponsorship_names.append(ss.name)
-		fname = ''
-		lname = ''
-		names = s.name.split()
-		if len(names) == 2:
-			fname = names[0]
-			lname = names[1]
-		city = ''
-		state = ''
-		zip = ''
-		m = re.match(r'([^,]*)[, ]*([A-Z][A-Z])[, ]*(\d{5,5}(-\d{4,4})?)?$', s.city)
-		if m:
-			city = m.group(1)
-			state = m.group(2)
-			zip = m.group(3) or ''
 		parms = [('cst', '60605a'),
-				 ('contactname', s.name),
+				 ('contactname', s.first_name + " " + s.last_name),
 				 ('contactemailaddress', s.email),
 				 ('sponsorshiplevel', ','.join(sponsorship_names)),
 				 ('numberofgolfers', s.num_golfers),
 				 ('numberofdinnerguests', s.num_dinners),
 				 ('amount_20_20_amt', s.payment_due),
 				 ('idnumberhidden', s.id),
-				 ('fname', fname),
-				 ('lname', lname),
+				 ('fname', s.first_name),
+				 ('lname', s.last_name),
 				 ('address', s.address),
-				 ('city', city),
-				 ('state', state),
-				 ('zip', zip),
+				 ('city', s.city),
+				 ('state', s.state),
+				 ('zip', s.zip),
 				 ('phone', s.phone),
 				 ('email', s.email)]
 		acceptiva = 'https://secure.acceptiva.com/' if not dev_server else '/fakeacceptiva'

@@ -2,10 +2,13 @@ from google.appengine.ext import db
 
 class Sponsor(db.Model):
 	id = db.IntegerProperty(default = 0)
-	name = db.StringProperty(default = '')
+	first_name = db.StringProperty(default = '')
+	last_name = db.StringProperty(default = '')
 	company = db.StringProperty(default = '')
 	address = db.StringProperty(default = '')
 	city = db.StringProperty(default = '')
+	state = db.StringProperty(default = '')
+	zip = db.StringProperty(default = '')
 	phone = db.StringProperty(default = '')
 	fax = db.StringProperty(default = '')
 	email = db.StringProperty(default = '')
@@ -16,6 +19,8 @@ class Sponsor(db.Model):
 	num_dinners = db.IntegerProperty(default = 0)
 	additional_donation = db.IntegerProperty(default = 0)
 	payment_due = db.IntegerProperty(default = 0)
+	discount = db.IntegerProperty(default = 0)
+	discount_type = db.StringProperty(default = '')
 	payment_made = db.IntegerProperty(default = 0)
 	payment_type = db.StringProperty(default = '')
 	transaction_code = db.StringProperty(default = '')
@@ -26,19 +31,24 @@ class Sponsor(db.Model):
 
 class Golfer(db.Model):
 	sequence = db.IntegerProperty(default = 0)
-	name = db.StringProperty(default = '')
+	first_name = db.StringProperty(default = '')
+	last_name = db.StringProperty(default = '')
 	gender = db.StringProperty(default = '')
-	title = db.StringProperty(default = '')
 	company = db.StringProperty(default = '')
 	address = db.StringProperty(default = '')
 	city = db.StringProperty(default = '')
+	state = db.StringProperty(default = '')
+	zip = db.StringProperty(default = '')
 	phone = db.StringProperty(default = '')
 	email = db.StringProperty(default = '')
-	golf_index = db.StringProperty(default = '') # Not collected any more.
-	best_score = db.StringProperty(default = '') # Actually, average score.
-	ghn_number = db.StringProperty(default = '') # Should be ghin_number.
+	average_score = db.StringProperty(default = '')
+	ghin_number = db.StringProperty(default = '')
 	shirt_size = db.StringProperty(default = '')
 	dinner_choice = db.StringProperty(default = '')
+	foursome = db.IntegerProperty(default = 0)
+	starting_hole = db.IntegerProperty(default = 0)
+	starting_hole_ab = db.IntegerProperty(default = 1)
+	cart = db.IntegerProperty(default = 1)
 
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)

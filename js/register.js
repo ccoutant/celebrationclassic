@@ -26,7 +26,7 @@ function recalculate() {
 	var totalbox = document.getElementById("entry_payment_due");
 	var totalbox_c = document.getElementById("entry_payment_due_c");
 
-	var early_bird = parseInt(document.getElementById("earlybird").value);
+	var early_bird = parseInt(document.getElementById("early_bird").value);
 	var golf_price_early = document.getElementById("golf_price_early").value;
 	var golf_price_late = document.getElementById("golf_price_late").value;
 	var dinner_price_early = document.getElementById("dinner_price_early").value;
@@ -49,20 +49,11 @@ function recalculate() {
 	var dinners_included = 0;
 	for (var i = 0; i < checkboxes.length; i++) {
 		if (checkboxes[i].checked) {
-			var triple = checkboxes[i].value.split(":");
-			var level = triple[0];
-			var price = parseInt(triple[2]);
+			var tuple = checkboxes[i].value.split(":");
+			var price = parseInt(tuple[2]);
+			var included = parseInt(tuple[3]);
 			total += price;
-			if (price >= 25000)
-				golfers_included += 12;
-			else if (price >= 15000)
-				golfers_included += 8;
-			else if (price >= 10000)
-				golfers_included += 4;
-			else if (price >= 3500)
-				golfers_included += 2;
-			else
-				golfers_included += 1;
+			golfers_included += included;
 		}
 	}
 	dinners_included = golfers_included;
@@ -93,9 +84,12 @@ function recalculate() {
 		angelbox.checked = false;
 	}
 	if (angelbox.checked) {
-		total += 3000;
-		golfers_included += 4;
-		dinners_included += 4;
+		var tuple = angelbox.value.split(":");
+		var price = parseInt(tuple[2]);
+		var included = parseInt(tuple[3]);
+		total += price;
+		golfers_included += included;
+		dinners_included += included;
 	}
 
 	// If no sponsorship, hide the "agree to publish my name" checkbox.

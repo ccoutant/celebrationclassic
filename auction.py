@@ -32,6 +32,6 @@ class ServeThumbnail(webapp2.RequestHandler):
 		else:
 			self.error(404)
 
-app = webapp2.WSGIApplication([('/auction.html', Auction),
+app = webapp2.WSGIApplication([('/auction', Auction),
 							   ('/img/(.*)', ServeThumbnail)],
 							  debug=dev_server)

@@ -7,13 +7,26 @@
 
 <form action="/admin/edit" method="post" accept-charset="utf-8">
 
-<ul>
-
+<table border="0" cellspacing="0" cellpadding="10">
+<thead>
+<tr valign="bottom">
+  <th align="left">Page</th>
+  <th>Published<br>Version</th>
+  <th>Draft<br>Version</th>
+  <th></th>
+</tr>
+</thead>
+<tbody>
 {% for page in pages %}
-<li><p><a href="/{{ page.name }}.html">{{ page.name }}.html</a>: Published version {{ page.published_version }}{% if page.is_draft %}; Draft version {{ page.draft_version }}{% endif %} <input type="submit" name="edit{{ page.name }}" value="Edit"></p></li>
+<tr>
+  <td align="left"><a href="/{{ page.path }}">{{ page.name }}</a></td>
+  <td align="center">{{ page.published_version }}</td>
+  <td align="center">{% if page.is_draft %}{{ page.draft_version }}{% endif %}</td>
+  <td align="center"><input type="submit" name="edit{{ page.name }}" value="Edit"></td>
+</tr>
 {% endfor %}
-
-</ul>
+</tbody>
+</table>
 
 </form>
 {% endblock %}

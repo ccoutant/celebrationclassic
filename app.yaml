@@ -1,5 +1,5 @@
 application: celebrationclassic
-version: 7
+version: 8
 runtime: python27
 api_version: 1
 threadsafe: false
@@ -15,6 +15,9 @@ handlers:
   static_files: favicon.png
   upload: favicon.png
 
+- url: /images
+  static_dir: images
+
 - url: /css
   static_dir: css
 
@@ -28,21 +31,21 @@ handlers:
   script: admin.app
   login: required
 
-- url: /auction.html
+- url: /auction
   script: auction.app
 
 - url: /img/.*
   script: auction.app
 
-- url: /(index|details|sponsor|volunteer|map|raffle)\.html
+- url: /.*
   script: detailpagehandler.app
 
-- url: /.*
-  script: proxy.app
-
 libraries:
+- name: webob
+  version: "1.2.3"
+
 - name: webapp2
   version: "2.5.2"
 
 - name: django
-  version: "1.2"
+  version: "1.4"

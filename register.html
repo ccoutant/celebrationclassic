@@ -16,6 +16,7 @@ window.onload = function() {
 {% block content %}
 <h2>Registration</h2>
 
+{% if not capabilities.can_add_registrations %}
 <p>Start your online registration by filling out this form.
 If you would prefer to download and print a registration form to mail in with your payment,
 you can download one of the registration forms listed at the bottom of this page.</p>
@@ -31,19 +32,19 @@ and enter the number of golfers and dinner guests.</p>
 <li><p>Enter information for each golfer,
 and make your dinner selections.</p>
 
-<li><p>Make your payment online through Acceptiva or by check.</p>
+<li><p>Make your payment online or by check.</p>
 
 </ol>
 
 <p>If you don't have all the information for the golfers in your group,
 don't worry&mdash;you can still register now and
 return to this site as often as you need to complete your registration.
-When you pay through Acceptiva, you will receive an email receipt
-that contains a link that you can use to complete your registration
-or modify your choices.</p>
+You will receive an email receipt that contains a link that you can use
+to complete your registration or modify your choices.</p>
 
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
+{% endif %}
 
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
@@ -55,57 +56,60 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-section">
 
-<div class="form-entry-left form-text">
+<div class="form-entry form-text">
 <div class="form-input">
-<label for="entry_name">Name</label>
-<input type="text" name="name" value="{{ sponsor.name }}" id="entry_name"> *
+<label for="entry_first_name">* Name</label>
+<input class="form-first-name" type="text" name="first_name" value="{{ sponsor.first_name }}" id="entry_first_name" placeholder="First">
+<input class="form-last-name" type="text" name="last_name" value="{{ sponsor.last_name }}" id="entry_last_name" placeholder="Last">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_company">Company</label>
-<input type="text" name="company" value="{{ sponsor.company }}" id="entry_company">
+<input type="text" name="company" value="{{ sponsor.company }}" id="entry_company" placeholder="Company">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_address">Address</label>
-<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address"> *
+<label for="entry_address">* Address</label>
+<input type="text" name="address" value="{{ sponsor.address }}" id="entry_address" placeholder="Street">
+</div>
+</div>
+
+<div class="form-entry form-text">
+<div class="form-input">
+<!--<label for="entry_city">* City, State, ZIP</label>-->
+<input class="form-city" type="text" name="city" value="{{ sponsor.city }}" id="entry_city" placeholder="City">
+<input class="form-state" type="text" name="state" value="{{ sponsor.state }}" id="entry_state" placeholder="State">
+<input class="form-zip" type="text" name="zip" value="{{ sponsor.zip }}" id="entry_zip" placeholder="ZIP">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<label for="entry_city">City, State, ZIP</label>
-<input type="text" name="city" value="{{ sponsor.city }}" id="entry_city"> *
-</div>
-</div>
-
-<div class="form-entry-left form-text">
-<div class="form-input">
-<label for="entry_email">Email</label>
-<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email"> *
+<label for="entry_email">* Email</label>
+<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
-<label for="entry_phone">Phone</label>
-<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone"> *
+<label for="entry_phone">* Phone</label>
+<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone" placeholder="Phone">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_fax">Fax</label>
-<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax">
+<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax" placeholder="Fax">
 </div>
 </div>
 
 <input type="hidden" name="id" value="{{ sponsor.id }}">
-<input type="hidden" id="earlybird" name="earlybird" value="{% if earlybird %}1{% else %}0{% endif %}">
+<input type="hidden" id="early_bird" name="early_bird" value="{% if early_bird %}1{% else %}0{% endif %}">
 <input type="hidden" id="golf_price_early" name="golf_price_early" value="{{ tournament.golf_price_early }}">
 <input type="hidden" id="golf_price_late" name="golf_price_late" value="{{ tournament.golf_price_late }}">
 <input type="hidden" id="dinner_price_early" name="dinner_price_early" value="{{ tournament.dinner_price_early }}">
@@ -132,7 +136,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in doubleeagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -143,7 +147,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in holeinone %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -158,7 +162,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in eagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -169,7 +173,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in underpar %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -202,7 +206,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 <option label="11" value="11" {% ifequal sponsor.num_golfers 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_golfers 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right">&emsp;{% if 0 %}$450 (includes dinner){% if earlybird %}<br><i>Early registration $400 (thru Sept. 10)</i>{% endif %}{% else %}(SOLD OUT){% endif %}</label>
+<label class="right">&emsp;${{ tournament.golf_price_late }} (includes dinner){% if early_bird %}<br><i>Early registration ${{ tournament.golf_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
 </div>
 </div>
 
@@ -224,13 +228,13 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 <option label="11" value="11" {% ifequal sponsor.num_dinners 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_dinners 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right" for="entry_num_dinners">&emsp;$150 (non-golfers only)</label>
+<label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} (non-golfers only){% if early_bird %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
 </div>
 </div>
 
 <div id="angel" class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel" value="{{ angel.level }}:{{ angel.sequence }}:{{ angel.price }}" {% if angel.sequence in selected %}checked{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_Angel" value="{{ angel.level }}:{{ angel.sequence }}:{{ angel.price }}:{{ angel.golfers_included }}" {% if angel.sequence in selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_Angel">Want to be an angel
 and get some good PR for your organization at the same time?
 Check here to become an Angel sponsor for your foursome.
@@ -305,6 +309,20 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 </div>
 </div>
 
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_discount">Discount</label>
+$<input type="text" name="discount" value="{% if sponsor.discount %}{{ sponsor.discount }}{% endif %}" id="entry_discount">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_discount_type">Discount Type</label>
+$<input type="text" name="discount_type" value="{% if sponsor.discount_type %}{{ sponsor.discount_type }}{% endif %}" id="entry_discount_type">
+</div>
+</div>
+
 </div> <!-- form-section -->
 {% endif %}
 
@@ -332,8 +350,8 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 <h2>Download Registration Forms</h2>
 
 <ul>
-	<li><a href="http://www.shirhadash.org/celebrationclassic/Single%20Sign%20Up.pdf">Registration form for singles</a></li>
-	<li><a href="http://www.shirhadash.org/celebrationclassic/Twosome%20Sign%20Up.pdf">Registration form for twosomes</a></li>
-	<li><a href="http://www.shirhadash.org/celebrationclassic/Foursome%20Sign%20Up.pdf">Registration form for foursomes</a></li>
+	<li><a href="/forms/Single%20Sign%20Up.pdf">Registration form for singles</a></li>
+	<li><a href="/forms/Twosome%20Sign%20Up.pdf">Registration form for twosomes</a></li>
+	<li><a href="/forms/Foursome%20Sign%20Up.pdf">Registration form for foursomes</a></li>
 </ul>
 {% endblock %}

@@ -4,12 +4,28 @@
 
 {% block head %}
 <style type="text/css">
-ul.pages { list-style: none; margin: 0; padding: 0; }
-ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
+#body { width: 95%; }
+#body #header { margin-left: auto; margin-right: auto; }
+#body #footer { margin-left: auto; margin-right: auto; }
+#body #nav { display: none; }
+#body #content { float: none; width: 100%; margin: 1em 0 3em; }
+#body #content p { text-align: center; }
+h2 { text-align: center; }
+ul.viewnav { list-style: none; margin: 0; padding: 0; text-align: center; }
+ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
 </style>
 {% endblock %}
 
 {% block content %}
+<ul class="viewnav">
+	<li><a href="/admin/view/registrations">All</a></li>
+	<li><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/dinners">Dinners</a></li>
+	<li><a href="/admin/view/unpaid">Unpaid</a></li>
+	<li><a href="/admin/view/incomplete">Incomplete</a></li>
+	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
+</ul>
+
 <h2>Reminder Emails</h2>
 
 {% if num_sent == 0 %}
@@ -21,11 +37,5 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 <p>{{ num_sent }} reminder emails were sent.</p>
 {% endif %}
 {% endif %}
-
-<ul class="pages">
-	<li><a href="/admin/view/sponsors">View All</a></li>
-	<li><a href="/admin/view/unpaid">View Unpaid</a></li>
-	<li><a href="/admin/view/incomplete">View Incomplete</a></li>
-</ul>
 
 {% endblock %}

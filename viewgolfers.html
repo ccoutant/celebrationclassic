@@ -4,10 +4,11 @@
 
 {% block head %}
 <style type="text/css">
-#body { width: 100%; }
+#body { width: 95%; }
 #body #header { margin-left: auto; margin-right: auto; }
-#body #nav { width: 12%; margin-left: 3%; }
-#body #content { width: 79%; margin-left: 3%; margin-bottom: 3em; }
+#body #footer { margin-left: auto; margin-right: auto; }
+#body #nav { display: none; }
+#body #content { float: none; width: 100%; margin: 1em 0 3em; }
 #body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
 #body thead tr { border-bottom: 2px solid #c4e5c4; }
 #body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
@@ -19,19 +20,28 @@
 #body td p { margin: 0; }
 #body td p.details { margin-left: 3em; font-size: 80%; color: #555; }
 #body tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
-ul.pages { list-style: none; margin: 0; padding: 0; text-align: right; }
-ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
+h2 { text-align: center; }
+ul.viewnav { list-style: none; margin: 0; padding: 0; text-align: center; }
+ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
+ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
+ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 </style>
 {% endblock %}
 
 {% block content %}
+<ul class="viewnav">
+	<li><a href="/admin/view/registrations">All</a></li>
+	<li class="selected"><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/dinners">Dinners</a></li>
+	<li><a href="/admin/view/unpaid">Unpaid</a></li>
+	<li><a href="/admin/view/incomplete">Incomplete</a></li>
+	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
+	<li><a href="/admin/csv/guests">Download CSV</a></li>
+</ul>
+
 <h2>Golfers</h2>
 
 {% if golfers %}
-
-<ul class="pages">
-	<li><a href="/admin/csv/golfers">Download CSV</a></li>
-</ul>
 
 <table>
 <thead>
@@ -50,7 +60,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 	{% endifequal %}
 	<tr class="golfer" valign="baseline">
 		<td class="firstcol">
-		<p>{{ g.count }}.&ensp;{{ g.golfer.name|default:"(n/a)" }}</p>
+		<p>{{ g.count }}.&ensp;{{ g.golfer_name }}</p>
 		{% if g.golfer.company %}<p class="details">{{ g.golfer.company }}</p>{% endif %}
 		{% if g.golfer.address %}<p class="details">{{ g.golfer.address }}</p>{% endif %}
 		{% if g.golfer.city %}<p class="details">{{ g.golfer.city }}</p>{% endif %}
@@ -59,8 +69,8 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 		{% if g.golfer.fax %}<p class="details">Fax: {{ g.golfer.fax }}</p>{% endif %}
 		</td>
 		<td>
-		{% if g.golfer.ghn_number %}<p>GHIN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
-		{% if g.golfer.best_score %}<p>Average Score: {{ g.golfer.best_score }}</p>{% endif %}
+		{% if g.golfer.ghin_number %}<p>GHIN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
+		{% if g.golfer.average_score %}<p>Average Score: {{ g.golfer.average_score }}</p>{% endif %}
 		</td>
 		<td>{{ g.golfer.shirt_size }}</td>
 	</tr>
@@ -75,7 +85,7 @@ ul.pages li { display: inline; margin: 0; padding: 0 1em 0 0; }
 
 {% else %}
 
-<p>No golfers yet.</p>
+<p>No golfers.</p>
 
 {% endif %}
 

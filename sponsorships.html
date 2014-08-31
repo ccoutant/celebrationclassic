@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Sponsorships{% endblock %}
+
+{% block head %}
+<style type="text/css">
+#body #nav { display: none; }
+#body #content { float: left; width: 100%; margin: 1em 0 3em; }
+h2 { text-align: center; }
+form table { margin: 0 auto; }
+form table tr th { font-size: 75%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Sponsorships</h2>
+<form action="/admin/sponsorships" method="post">
+<table border="0" cellspacing="0" cellpadding="5">
+<tr valign="bottom"><th>Order</th><th>Name</th><th>Level</th><th>Price</th><th>Golfers<br>Included</th><th>Unique</th><th>Sold</th><th>Delete</th></tr>
+{% for s in sponsorships %}
+<tr>
+	<td align="center">{{ s.sequence }}</td>
+	<td align="center">{{ s.name }}<input type="hidden" name="name{{ forloop.counter }}" value="{{ s.name }}"></td>
+	<td align="center">{{ s.level }}</td>
+	<td align="center"><input type="text" size="8" name="price{{ forloop.counter }}" value="{{ s.price }}"></td>
+	<td align="center"><input type="text" size="8" name="golfers_included{{ forloop.counter }}" value="{{ s.golfers_included }}"></td>
+	<td align="center"><input type="checkbox" name="unique{{ forloop.counter }}" value="u" {% if s.unique %}checked{% endif %}></td>
+	<td align="center"><input type="checkbox" name="sold{{ forloop.counter }}" value="s" {% if s.sold %}checked{% endif %}></td>
+	<td align="center"><input type="checkbox" name="delete{{ forloop.counter }}" value="d"></td>
+</tr>
+{% endfor %}
+<tr>
+	<td align="center"><input type="text" size="4" name="seq" value="{{ next_seq }}"></td>
+	<td align="center"><input type="text" size="12" name="name" value=""></td>
+	<td align="center">
+		<select name="level">
+		<option label="Double Eagle" value="Double Eagle" {% if last_level == "Double Eagle" %}selected{% endif %}></option>
+		<option label="Hole in One" value="Hole in One" {% if last_level == "Hole in One" %}selected{% endif %}></option>
+		<option label="Eagle" value="Eagle" {% if last_level == "Eagle" %}selected{% endif %}></option>
+		<option label="Under Par" value="Under Par" {% if last_level == "Under Par" %}selected{% endif %}></option>
+		<option label="Angel" value="Angel" {% if last_level == "Angel" %}selected{% endif %}></option>
+		</select>
+	</td>
+	<td align="center"><input type="text" size="8" name="price" value=""></td>
+	<td align="center"><input type="text" size="8" name="golfers_included" value=""></td>
+	<td align="center"><input type="checkbox" name="unique" value="u"></td>
+	<td align="center"><input type="checkbox" name="sold" value="s"></td>
+	<td align="center"></td>
+</tr>
+<tr>
+	<td colspan="8" align="center">
+	<input type="hidden" name="count" value="{{ sponsorships|length }}">
+	<input type="submit" value="Save">
+	</td>
+</tr>
+</table>
+</form>
+{% endblock %}
