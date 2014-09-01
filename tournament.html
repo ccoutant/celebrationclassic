@@ -44,7 +44,7 @@ function gen_date_picker(name, month, day, year) {
 <td align="left">Golf Tournament</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
-gen_date_picker("golf", {{ tournament.golf_date.month|default:5 }}, {{ tournament.golf_date.day|default:18 }}, {{ tournament.golf_date.year|default:2015 }});
+gen_date_picker("golf", {{ tournament.golf_date.month }}, {{ tournament.golf_date.day }}, {{ tournament.golf_date.year }});
 </script>
 </td>
 </tr>
@@ -52,7 +52,7 @@ gen_date_picker("golf", {{ tournament.golf_date.month|default:5 }}, {{ tournamen
 <td align="left">Dinner</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
-gen_date_picker("dinner", {{ tournament.dinner_date.month|default:5 }}, {{ tournament.dinner_date.day|default:18 }}, {{ tournament.dinner_date.year|default:2015 }});
+gen_date_picker("dinner", {{ tournament.dinner_date.month }}, {{ tournament.dinner_date.day }}, {{ tournament.dinner_date.year }});
 </script>
 </td>
 </tr>
