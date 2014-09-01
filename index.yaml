@@ -61,3 +61,8 @@ indexes:
   ancestor: yes
   properties:
   - name: sequence
+
+- kind: UploadedFile
+  ancestor: yes
+  properties:
+  - name: name

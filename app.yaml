@@ -37,6 +37,9 @@ handlers:
 - url: /img/.*
   script: auction.app
 
+- url: /(photos|files)/.*
+  script: uploads.app
+
 - url: /.*
   script: detailpagehandler.app
 

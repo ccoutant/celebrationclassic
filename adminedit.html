@@ -6,7 +6,6 @@
 <h2>Detail Pages</h2>
 
 <form action="/admin/edit" method="post" accept-charset="utf-8">
-
 <table border="0" cellspacing="0" cellpadding="10">
 <thead>
 <tr valign="bottom">
@@ -27,6 +26,76 @@
 {% endfor %}
 </tbody>
 </table>
-
 </form>
+
+<h2>Photos</h2>
+
+{% if photos %}
+<form action="/admin/delete-file" method="post" enctype="multipart/form-data">
+<table border="0" cellspacing="0" cellpadding="10">
+<thead>
+<tr valign="bottom">
+  <th align="left">Name</th>
+  <th align="left">Path</th>
+  <th align="center"></th>
+</tr>
+</thead>
+<tbody>
+{% for photo in photos %}
+<tr>
+  <td align="left"><a href="{{ photo.path }}">{{ photo.name }}</a></td>
+  <td align="left"><input type="text" size="30" value="{{ photo.path|urlencode }}" readonly></td>
+  <td align="center"><input type="checkbox" name="delete-photo" value="{{ photo.path }}"></td>
+</tr>
+{% endfor %}
+<tr>
+  <td align="left"></td>
+  <td align="left"></td>
+  <td align="center"><input type="submit" name="delete-photos" value="Delete Selected"></td>
+</tr>
+</tbody>
+</table>
+</form>
+{% endif %}
+
+<form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
+<input type="file" name="file">
+<input type="submit" name="upload-photo" value="Upload New Photo">
+</form>
+
+<h2>PDF Files</h2>
+
+{% if files %}
+<form action="/admin/delete-file" method="post" enctype="multipart/form-data">
+<table border="0" cellspacing="0" cellpadding="10">
+<thead>
+<tr valign="bottom">
+  <th align="left">Name</th>
+  <th align="left">Path</th>
+  <th align="center"></th>
+</tr>
+</thead>
+<tbody>
+{% for file in files %}
+<tr>
+  <td align="left"><a href="{{ file.path }}">{{ file.name }}</a></td>
+  <td align="left"><input type="text" size="30" value="{{ file.path|urlencode }}" readonly></td>
+  <td align="center"><input type="checkbox" name="delete-file" value="{{ file.path }}"></td>
+</tr>
+{% endfor %}
+<tr>
+  <td align="left"></td>
+  <td align="left"></td>
+  <td align="center"><input type="submit" name="delete-files" value="Delete Selected"></td>
+</tr>
+</tbody>
+</table>
+</form>
+{% endif %}
+
+<form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
+<input type="file" name="file">
+<input type="submit" name="upload-file" value="Upload New File">
+</form>
+
 {% endblock %}

@@ -18,6 +18,7 @@ import capabilities
 import sponsorship
 import auctionitem
 import detailpage
+import uploadedfile
 from sponsor import Sponsor, Golfer, DinnerGuest
 
 server_software = os.environ.get('SERVER_SOFTWARE')
@@ -737,6 +738,52 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 		item.put()
 		self.redirect("/admin/auction")
 
+class DeleteFile(webapp2.RequestHandler):
+	def post(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_content:
+			self.redirect(users.create_login_url('/admin/edit'))
+			return
+		if self.request.get('delete-photos'):
+			items_to_delete = self.request.get_all('delete-photo')
+		else:
+			items_to_delete = self.request.get_all('delete-file')
+		for path in items_to_delete:
+			q = uploadedfile.UploadedFile.all()
+			q.ancestor(root)
+			q.filter("path =", path)
+			item = q.get()
+			if item:
+				blobstore.delete(item.blob.key())
+				item.delete()
+		self.redirect("/admin/edit")
+
+class UploadFile(blobstore_handlers.BlobstoreUploadHandler):
+	def post(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_content:
+			self.redirect(users.create_login_url('/admin/edit'))
+			return
+		upload_files = self.get_uploads('file')
+		if upload_files:
+			blob_key = upload_files[0].key()
+			filename = upload_files[0].filename
+			if self.request.get('upload-photo'):
+				item = uploadedfile.UploadedFile(parent = root, name = filename,
+												 path = "/photos/%s" % filename,
+												 blob = blob_key)
+				item.put()
+			elif self.request.get('upload-file'):
+				item = uploadedfile.UploadedFile(parent = root, name = filename,
+												 path = "/files/%s" % filename,
+												 blob = blob_key)
+				item.put()
+			else:
+				blobstore.delete(blob_key)
+		self.redirect("/admin/edit")
+
 def show_edit_form(name, caps, response):
 	page = detailpage.get_detail_page(name, True)
 	logging.info("showing %s, version %d, draft %s, preview %s" %
@@ -749,6 +796,7 @@ def show_edit_form(name, caps, response):
 
 class EditPageHandler(webapp2.RequestHandler):
 	def get(self):
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
 			self.redirect(users.create_login_url('/admin/edit'))
@@ -766,8 +814,21 @@ class EditPageHandler(webapp2.RequestHandler):
 				'is_draft': draft_version > published_version
 				}
 			pages.append(page)
+		photos = []
+		files = []
+		q = uploadedfile.UploadedFile.all()
+		q.ancestor(t)
+		q.order("name")
+		for item in q:
+			if item.path.startswith('/photos/'):
+				photos.append(item)
+			elif item.path.startswith('/files/'):
+				files.append(item)
 		template_values = {
 			'pages': pages,
+			'photos': photos,
+			'files': files,
+			'upload_url': blobstore.create_upload_url('/admin/upload-file'),
 			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('adminedit.html', template_values))
@@ -830,6 +891,8 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/tournament', ManageTournament),
 							   ('/admin/auction', ManageAuction),
 							   ('/admin/upload-auction', UploadAuctionItem),
+							   ('/admin/upload-file', UploadFile),
+							   ('/admin/delete-file', DeleteFile),
 							   ('/admin/view/registrations', ViewRegistrations),
 							   ('/admin/view/incomplete', ViewIncomplete),
 							   ('/admin/view/unpaid', ViewUnpaid),
