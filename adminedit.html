@@ -44,7 +44,7 @@
 {% for photo in photos %}
 <tr>
   <td align="left"><a href="{{ photo.path }}">{{ photo.name }}</a></td>
-  <td align="left"><input type="text" size="30" value="{{ photo.path|urlencode }}" readonly></td>
+  <td align="left"><input type="text" size="30" value="{{ photo.path|urlencode }}" readonly onfocus="this.select();" onmouseup="return false;"></td>
   <td align="center"><input type="checkbox" name="delete-photo" value="{{ photo.path }}"></td>
 </tr>
 {% endfor %}
@@ -79,7 +79,7 @@
 {% for file in files %}
 <tr>
   <td align="left"><a href="{{ file.path }}">{{ file.name }}</a></td>
-  <td align="left"><input type="text" size="30" value="{{ file.path|urlencode }}" readonly></td>
+  <td align="left"><input type="text" size="30" value="{{ file.path|urlencode }}" readonly onfocus="this.select();" onmouseup="return false;"></td>
   <td align="center"><input type="checkbox" name="delete-file" value="{{ file.path }}"></td>
 </tr>
 {% endfor %}
