@@ -121,6 +121,14 @@ class ManageTournament(webapp2.RequestHandler):
 		q = tournament.Tournament.all()
 		q.filter("name = ", "cc2015")
 		t = q.get()
+		golf_month = int(self.request.get("golf_month"))
+		golf_day = int(self.request.get("golf_day"))
+		golf_year = int(self.request.get("golf_year"))
+		t.golf_date = datetime.date(golf_year, golf_month, golf_day)
+		dinner_month = int(self.request.get("dinner_month"))
+		dinner_day = int(self.request.get("dinner_day"))
+		dinner_year = int(self.request.get("dinner_year"))
+		t.dinner_date = datetime.date(dinner_year, dinner_month, dinner_day)
 		early_bird_month = int(self.request.get("early_bird_month"))
 		early_bird_day = int(self.request.get("early_bird_day"))
 		early_bird_year = int(self.request.get("early_bird_year"))
@@ -642,6 +650,12 @@ class SendEmail(webapp2.RequestHandler):
 			body_template = unpaid_email_template
 		else:
 			self.error(404)
+			self.response.out.write('<html><head>\n')
+			self.response.out.write('<title>404 Not Found</title>\n')
+			self.response.out.write('</head><body>\n')
+			self.response.out.write('<h1>Not Found</h1>\n')
+			self.response.out.write('<p>The requested page "/admin/mail/%s" was not found on this server.</p>\n' % what)
+			self.response.out.write('</body></html>\n')
 			return
 		selected_items = self.request.get_all('selected_items')
 		num_sent = 0

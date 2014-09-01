@@ -10,6 +10,30 @@ h2 { text-align: center; }
 form table { margin: 0 auto; }
 form table tr th { font-size: 75%; }
 </style>
+<script type="text/javascript" language="javascript">
+var months_of_year = [ "January", "February", "March", "April", "May", "June",
+					   "July", "August", "September", "October", "November", "December" ];
+function gen_date_picker(name, month, day, year) {
+	document.write("<select name=" + name + "_month>");
+	for (var m = 1; m <= 12; m++)
+		document.write("<option label=\"" + months_of_year[m-1] + "\" value=\"" + m + "\"" +
+					   (m == month ? " selected" : "") + ">" +
+					   months_of_year[m-1] + "</option>");
+	document.write("</select>");
+	document.write("<select name=" + name + "_day>");
+	for (var d = 1; d <= 31; d++)
+		document.write("<option label=\"" + d + "\" value=\"" + d + "\"" +
+					   (d == day ? " selected" : "") + ">" +
+					   d + "</option>");
+	document.write("</select>");
+	document.write("<select name=" + name + "_year>");
+	for (var y = 2014; y <= 2015; y++)
+		document.write("<option label=\"" + y + "\" value=\"" + y + "\"" +
+					   (y == year ? " selected" : "") + ">" +
+					   y + "</option>");
+	document.write("</select>");
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -17,62 +41,27 @@ form table tr th { font-size: 75%; }
 <form action="/admin/tournament" method="post">
 <table border="0" cellspacing="0" cellpadding="10">
 <tr>
+<td align="left">Golf Tournament</td>
+<td align="left">
+<script type="text/javascript" language="javascript">
+gen_date_picker("golf", {{ tournament.golf_date.month|default:5 }}, {{ tournament.golf_date.day|default:18 }}, {{ tournament.golf_date.year|default:2015 }});
+</script>
+</td>
+</tr>
+<tr>
+<td align="left">Dinner</td>
+<td align="left">
+<script type="text/javascript" language="javascript">
+gen_date_picker("dinner", {{ tournament.dinner_date.month|default:5 }}, {{ tournament.dinner_date.day|default:18 }}, {{ tournament.dinner_date.year|default:2015 }});
+</script>
+</td>
+</tr>
+<tr>
 <td align="left">Early Bird Deadline</td>
 <td align="left">
-<select name="early_bird_month">
-<option label="January" value="1" {% ifequal tournament.early_bird_deadline.month 1 %}selected{% endifequal %}>January</option>
-<option label="February" value="2" {% ifequal tournament.early_bird_deadline.month 2 %}selected{% endifequal %}>February</option>
-<option label="March" value="3" {% ifequal tournament.early_bird_deadline.month 3 %}selected{% endifequal %}>March</option>
-<option label="April" value="4" {% ifequal tournament.early_bird_deadline.month 4 %}selected{% endifequal %}>April</option>
-<option label="May" value="5" {% ifequal tournament.early_bird_deadline.month 5 %}selected{% endifequal %}>May</option>
-<option label="June" value="6" {% ifequal tournament.early_bird_deadline.month 6 %}selected{% endifequal %}>June</option>
-<option label="July" value="7" {% ifequal tournament.early_bird_deadline.month 7 %}selected{% endifequal %}>July</option>
-<option label="August" value="8" {% ifequal tournament.early_bird_deadline.month 8 %}selected{% endifequal %}>August</option>
-<option label="September" value="9" {% ifequal tournament.early_bird_deadline.month 9 %}selected{% endifequal %}>September</option>
-<option label="October" value="10" {% ifequal tournament.early_bird_deadline.month 10 %}selected{% endifequal %}>October</option>
-<option label="November" value="11" {% ifequal tournament.early_bird_deadline.month 11 %}selected{% endifequal %}>November</option>
-<option label="December" value="12" {% ifequal tournament.early_bird_deadline.month 12 %}selected{% endifequal %}>December</option>
-</select>
-<select name="early_bird_day">
-<option label="1" value="1" {% ifequal tournament.early_bird_deadline.day 1 %}selected{% endifequal %}>1</option>
-<option label="2" value="2" {% ifequal tournament.early_bird_deadline.day 2 %}selected{% endifequal %}>2</option>
-<option label="3" value="3" {% ifequal tournament.early_bird_deadline.day 3 %}selected{% endifequal %}>3</option>
-<option label="4" value="4" {% ifequal tournament.early_bird_deadline.day 4 %}selected{% endifequal %}>4</option>
-<option label="5" value="5" {% ifequal tournament.early_bird_deadline.day 5 %}selected{% endifequal %}>5</option>
-<option label="6" value="6" {% ifequal tournament.early_bird_deadline.day 6 %}selected{% endifequal %}>6</option>
-<option label="7" value="7" {% ifequal tournament.early_bird_deadline.day 7 %}selected{% endifequal %}>7</option>
-<option label="8" value="8" {% ifequal tournament.early_bird_deadline.day 8 %}selected{% endifequal %}>8</option>
-<option label="9" value="9" {% ifequal tournament.early_bird_deadline.day 9 %}selected{% endifequal %}>9</option>
-<option label="10" value="10" {% ifequal tournament.early_bird_deadline.day 10 %}selected{% endifequal %}>10</option>
-<option label="11" value="11" {% ifequal tournament.early_bird_deadline.day 11 %}selected{% endifequal %}>11</option>
-<option label="12" value="12" {% ifequal tournament.early_bird_deadline.day 12 %}selected{% endifequal %}>12</option>
-<option label="13" value="13" {% ifequal tournament.early_bird_deadline.day 13 %}selected{% endifequal %}>13</option>
-<option label="14" value="14" {% ifequal tournament.early_bird_deadline.day 14 %}selected{% endifequal %}>14</option>
-<option label="15" value="15" {% ifequal tournament.early_bird_deadline.day 15 %}selected{% endifequal %}>15</option>
-<option label="16" value="16" {% ifequal tournament.early_bird_deadline.day 16 %}selected{% endifequal %}>16</option>
-<option label="17" value="17" {% ifequal tournament.early_bird_deadline.day 17 %}selected{% endifequal %}>17</option>
-<option label="18" value="18" {% ifequal tournament.early_bird_deadline.day 18 %}selected{% endifequal %}>18</option>
-<option label="19" value="19" {% ifequal tournament.early_bird_deadline.day 19 %}selected{% endifequal %}>19</option>
-<option label="20" value="20" {% ifequal tournament.early_bird_deadline.day 20 %}selected{% endifequal %}>20</option>
-<option label="21" value="21" {% ifequal tournament.early_bird_deadline.day 21 %}selected{% endifequal %}>21</option>
-<option label="22" value="22" {% ifequal tournament.early_bird_deadline.day 22 %}selected{% endifequal %}>22</option>
-<option label="23" value="23" {% ifequal tournament.early_bird_deadline.day 23 %}selected{% endifequal %}>23</option>
-<option label="24" value="24" {% ifequal tournament.early_bird_deadline.day 24 %}selected{% endifequal %}>24</option>
-<option label="25" value="25" {% ifequal tournament.early_bird_deadline.day 25 %}selected{% endifequal %}>25</option>
-<option label="26" value="26" {% ifequal tournament.early_bird_deadline.day 26 %}selected{% endifequal %}>26</option>
-<option label="27" value="27" {% ifequal tournament.early_bird_deadline.day 27 %}selected{% endifequal %}>27</option>
-<option label="28" value="28" {% ifequal tournament.early_bird_deadline.day 28 %}selected{% endifequal %}>28</option>
-<option label="29" value="29" {% ifequal tournament.early_bird_deadline.day 29 %}selected{% endifequal %}>29</option>
-<option label="30" value="30" {% ifequal tournament.early_bird_deadline.day 30 %}selected{% endifequal %}>30</option>
-<option label="31" value="31" {% ifequal tournament.early_bird_deadline.day 31 %}selected{% endifequal %}>31</option>
-</select>
-<select name="early_bird_year">
-<option label="2014" value="2014" {% ifequal tournament.early_bird_deadline.year 2014 %}selected{% endifequal %}>2014</option>
-<option label="2015" value="2015" {% ifequal tournament.early_bird_deadline.year 2015 %}selected{% endifequal %}>2015</option>
-<option label="2016" value="2016" {% ifequal tournament.early_bird_deadline.year 2016 %}selected{% endifequal %}>2016</option>
-<option label="2017" value="2017" {% ifequal tournament.early_bird_deadline.year 2017 %}selected{% endifequal %}>2017</option>
-<option label="2018" value="2018" {% ifequal tournament.early_bird_deadline.year 2018 %}selected{% endifequal %}>2018</option>
-</select>
+<script type="text/javascript" language="javascript">
+gen_date_picker("early_bird", {{ tournament.early_bird_deadline.month }}, {{ tournament.early_bird_deadline.day }}, {{ tournament.early_bird_deadline.year }});
+</script>
 </td>
 </tr>
 <tr>

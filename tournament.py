@@ -4,6 +4,8 @@ from google.appengine.api import memcache
 
 class Tournament(db.Model):
 	name = db.StringProperty()
+	golf_date = db.DateProperty()
+	dinner_date = db.DateProperty()
 	early_bird_deadline = db.DateProperty()
 	golf_price_early = db.IntegerProperty()
 	golf_price_late = db.IntegerProperty()
@@ -25,6 +27,8 @@ def get_tournament():
 		memcache.add("2015/tournament", t, 60*60*24)
 		return t
 	t = Tournament(name = "cc2015",
+				   golf_date = datetime.date(2015, 5, 18),
+				   dinner_date = datetime.date(2015, 5, 318),
 				   early_bird_deadline = datetime.date(2015, 3, 30),
 				   golf_price_early = 400,
 				   golf_price_late = 450,
