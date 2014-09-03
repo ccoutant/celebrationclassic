@@ -38,15 +38,12 @@ class PageHandler(webapp2.RequestHandler):
 			self.response.out.write('<p>The requested page "%s" was not found on this server.</p>\n' % name)
 			self.response.out.write('</body></html>\n')
 			return
-		last_modified = page.last_modified.strftime(HTTP_DATE_FMT)
-		self.response.headers['Last-Modified'] = last_modified
-		self.response.headers['Content-Type'] = 'text/html'
-		self.response.headers['Cache-Control'] = 'public, max-age=900;'
+		last_modified = max(page.last_modified, t.timestamp)
 		modified = True
 		if 'If-Modified-Since' in self.request.headers:
 			try:
 				last_seen = datetime.datetime.strptime(self.request.headers['If-Modified-Since'].strip(), HTTP_DATE_FMT)
-				if last_seen >= page.last_modified.replace(microsecond=0):
+				if last_seen >= last_modified.replace(microsecond=0):
 					modified = False
 			except ValueError:
 				pass
@@ -55,6 +52,9 @@ class PageHandler(webapp2.RequestHandler):
 				'page': page,
 				'capabilities': caps
 				}
+			self.response.headers['Last-Modified'] = last_modified.strftime(HTTP_DATE_FMT)
+			self.response.headers['Content-Type'] = 'text/html'
+			self.response.headers['Cache-Control'] = 'public, max-age=900;'
 			self.response.out.write(render_to_string('detailpage.html', template_values))
 		else:
 			self.response.set_status(304)

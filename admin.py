@@ -133,6 +133,10 @@ class ManageTournament(webapp2.RequestHandler):
 		early_bird_day = int(self.request.get("early_bird_day"))
 		early_bird_year = int(self.request.get("early_bird_year"))
 		t.early_bird_deadline = datetime.date(early_bird_year, early_bird_month, early_bird_day)
+		deadline_month = int(self.request.get("deadline_month"))
+		deadline_day = int(self.request.get("deadline_day"))
+		deadline_year = int(self.request.get("deadline_year"))
+		t.deadline = datetime.date(deadline_year, deadline_month, deadline_day)
 		t.golf_price_early = int(self.request.get("golf_price_early"))
 		t.golf_price_late = int(self.request.get("golf_price_late"))
 		t.dinner_price_early = int(self.request.get("dinner_price_early"))
@@ -216,16 +220,26 @@ class Sponsorships(webapp2.RequestHandler):
 		self.redirect('/admin/sponsorships')
 
 class ViewGolfer(object):
-	def __init__(self, s, g, count):
+	def __init__(self, t, s, g, count):
 		self.sponsor_id = s.id
 		self.sponsor_name = s.first_name + " " + s.last_name
 		self.golfer = g
 		if g.first_name or g.last_name:
 			self.golfer_name = g.first_name + " " + g.last_name
 		else:
-			self.golfer_name = "%s #%d" % (s.last_name, count)
+			self.golfer_name = "(%s #%d)" % (s.last_name, count)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
+		if g.has_index:
+			self.course_handicap = min(36.0, g.handicap_index * t.course_slope / 113.0)
+		elif g.average_score:
+			try:
+				handicap_index = float(g.average_score) * 0.8258 - 61.17
+				self.course_handicap = min(36.0, handicap_index * t.course_slope / 113.0)
+			except:
+				self.course_handicap = 36.0
+		else:
+			self.course_handicap = 0.0
 
 class ViewDinner(object):
 	def __init__(self, s, first_name, last_name, choice, sequence, count):
@@ -234,7 +248,7 @@ class ViewDinner(object):
 		if first_name or last_name:
 			self.guest_name = first_name + " " + last_name
 		else:
-			self.guest_name = "%s #%d" % (s.last_name, count)
+			self.guest_name = "(%s #%d)" % (s.last_name, count)
 		self.dinner_choice = choice
 		self.sequence = sequence
 		self.count = count
@@ -247,16 +261,11 @@ class ViewRegistrations(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
-		if self.request.get('start'):
-			start = int(self.request.get('start'))
-		else:
-			start = 0
-		lim = 100
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
 		q.order("timestamp")
-		sponsors = q.fetch(lim, offset = start)
+		sponsors = q.fetch(limit = None)
 		for s in sponsors:
 			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 			no_dinners = 0
@@ -267,19 +276,9 @@ class ViewRegistrations(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
-		count = q.count()
-		nav = []
-		i = 0
-		while i < count:
-			if i == start:
-				nav.append('<b>%d-%d</b>' % (i+1, min(count, i+lim)))
-			else:
-				nav.append('<a href="%s?start=%d">%d-%d</a>' % (self.request.path, i, i+1, min(count, i+lim)))
-			i += lim
 		template_values = {
 			'sponsors': sponsors,
 			'incomplete': '',
-			'nav': nav,
 			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('viewsponsors.html', template_values))
@@ -407,14 +406,14 @@ class ViewGolfers(webapp2.RequestHandler):
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
-				all_golfers.append(ViewGolfer(s, g, counter))
+				all_golfers.append(ViewGolfer(root, s, g, counter))
 				counter += 1
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
 				g = Golfer(parent = s, sequence = i, name = '', gender = '',
 						   company = '', address = '', city = '', phone = '', email = '',
 						   golf_index = '', average_score = '', ghin_number = '',
 						   shirt_size = '', dinner_choice = '')
-				all_golfers.append(ViewGolfer(s, g, counter))
+				all_golfers.append(ViewGolfer(root, s, g, counter))
 				counter += 1
 		shirt_sizes = { }
 		for g in all_golfers:

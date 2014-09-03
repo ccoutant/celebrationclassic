@@ -29,8 +29,14 @@ class Sponsor(db.Model):
 	timestamp = db.DateTimeProperty(auto_now_add = True)
 	confirmed = db.BooleanProperty(default = False) # Set after registration Step 2 completed.
 
+class Team(db.Model):
+	name = db.StringProperty(default = '')
+	starting_hole = db.StringProperty(default = 0)
+
 class Golfer(db.Model):
 	sequence = db.IntegerProperty(default = 0)
+	active = db.BooleanProperty(default = False)
+	sort_name = db.StringProperty(default = '')
 	first_name = db.StringProperty(default = '')
 	last_name = db.StringProperty(default = '')
 	gender = db.StringProperty(default = '')
@@ -43,14 +49,15 @@ class Golfer(db.Model):
 	email = db.StringProperty(default = '')
 	average_score = db.StringProperty(default = '')
 	ghin_number = db.StringProperty(default = '')
+	has_index = db.BooleanProperty(default = False)
+	handicap_index = db.FloatProperty(default = 0.0)
 	shirt_size = db.StringProperty(default = '')
 	dinner_choice = db.StringProperty(default = '')
-	foursome = db.IntegerProperty(default = 0)
-	starting_hole = db.IntegerProperty(default = 0)
-	starting_hole_ab = db.IntegerProperty(default = 1)
-	cart = db.IntegerProperty(default = 1)
+	team = db.ReferenceProperty(Team)
+	cart = db.IntegerProperty(default = 0)
 
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)
+	active = db.BooleanProperty(default = False)
 	name = db.StringProperty(default = '')
 	dinner_choice = db.StringProperty(default = '')

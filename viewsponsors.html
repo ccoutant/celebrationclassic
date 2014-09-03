@@ -15,7 +15,7 @@
 #body thead tr { border: none; border-bottom: 2px solid #c4e5c4; }
 #body tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
 #body tbody tr:hover { background-color: #e7fbe7; }
-#body th { color: #6061ab; padding: 0.5em; text-align: left; }
+#body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
 #body td { padding: 0.5em; }
 #body td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
 #body td.firstcol { padding-left: 2em; }
@@ -24,6 +24,9 @@
 h2 { text-align: center; }
 ul.viewnav { list-style: none; margin: 0; padding: 0; text-align: center; }
 ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
+ul.viewnav li {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
+}
 ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
 ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 </style>
@@ -37,20 +40,14 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<li{% if incomplete == 'unpaid' %} class="selected"{% endif %}><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li{% if incomplete == 'incomplete' %} class="selected"{% endif %}><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li{% if incomplete == 'unconfirmed' %} class="selected"{% endif %}><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
-{% if incomplete == '' %}
-	<li><a href="/admin/csv/registrations">Download CSV</a></li>
-{% endif %}
 </ul>
+{% if incomplete == '' %}
+<ul class="viewnav">
+	<li><a href="/admin/csv/registrations">Download CSV</a></li>
+</ul>
+{% endif %}
 
 <h2>{% if incomplete %}{{ incomplete|capfirst }} {% endif %}Registrations</h2>
-
-{% if nav %}
-<ul class="viewnav">
-{% for n in nav %}
-	<li>{{ n|safe }}</li>
-{% endfor %}
-</ul>
-{% endif %}
 
 {% if sponsors %}
 {% if incomplete == 'unpaid' or incomplete == 'incomplete' %}
@@ -59,11 +56,14 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 <table>
 <thead>
 	<tr valign="bottom">
-		<th>ID</th>
-		<th>Sponsor/Contact</th>
-		<th>Sponsorship</th>
-		<th># Golfers<br># Dinners</th>
-		<th>Payment</th>
+		<th align="left">ID</th>
+		<th align="left">Contact</th>
+		<th align="left">Address</th>
+		<th align="left">Email/Phone</th>
+		<th align="left">Sponsorship</th>
+		<th align="right"># Golfers</th>
+		<th align="right"># Dinners</th>
+		<th align="left">Payment</th>
 	</tr>
 </thead>
 <tbody>
@@ -71,44 +71,44 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<tr valign="baseline">
 		<td>{% if incomplete == 'unpaid' or incomplete == 'incomplete' %}<input type="checkbox" name="selected_items" value="{{ s.id }}">{% endif %}
 		<a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
+		<td>{{ s.first_name }} {{ s.last_name }}</td>
 		<td>
-		<p><b>{{ s.first_name }} {{ s.last_name }}</b></p>
-		{% if s.company %}<p class="details">{{ s.company }}</p>{% endif %}
-		{% if s.address %}<p class="details">{{ s.address }}</p>{% endif %}
-		{% if s.city %}<p class="details">{{ s.city }}</p>{% endif %}
-		{% if s.email %}<p class="details">Email: <a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
-		{% if s.phone %}<p class="details">Phone: {{ s.phone }}</p>{% endif %}
-		{% if s.fax %}<p class="details">Fax: {{ s.fax }}</p>{% endif %}
+			{% if s.company %}<p>{{ s.company }}</p>{% endif %}
+			{% if s.address %}<p>{{ s.address }}</p>{% endif %}
+			{% if s.city %}<p>{{ s.city }} {{ s.state }} {{ s.zip }}</p>{% endif %}
 		</td>
 		<td>
-		{% for ss in s.sponsorships %}
-		<p>{{ ss|get_sponsorship_name }}</p>
-		{% if forloop.last %}
-		<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
-		{% endif %}
-		{% endfor %}
-		{% if s.additional_donation %}
-		<p class="details">Additional donation: ${{ s.additional_donation }}</p>
-		{% endif %}
+			{% if s.email %}<p><a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
+			{% if s.phone %}<p>{{ s.phone }}</p>{% endif %}
+			{% if s.fax %}<p>{{ s.fax }} (fax)</p>{% endif %}
 		</td>
 		<td>
-		<p>{{ s.num_golfers }} golfer{{ s.num_golfers|pluralize }}</p>
-		<p>{{ s.adjusted_dinners }} dinner{{ s.adjusted_dinners|pluralize }}</p>
+			{% for ss in s.sponsorships %}
+			<p>{{ ss|get_sponsorship_name }}</p>
+			{% if forloop.last %}
+			<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
+			{% endif %}
+			{% endfor %}
+			{% if s.additional_donation %}
+			<p class="details">Additional donation: ${{ s.additional_donation }}</p>
+			{% endif %}
 		</td>
+		<td align="right">{{ s.num_golfers }}</td>
+		<td align="right">{{ s.adjusted_dinners }}</td>
 		<td>
-		{% if s.payment_made %}
-		<p>Paid: ${{ s.payment_made }}</p>
-		<p class="details">Payment Type: {{ s.payment_type|default:'' }}</p>
-		<p class="details">Transaction Code: {{ s.transaction_code|default:'' }}</p>
-		{% endif %}
-		{% if s.discount %}
-		<p>Discount: ${{ s.discount }}</p>
-		<p class="details">Discount Type: {{ s.discount_type|default:'' }}</p>
-		{% endif %}
-		<p>Due: ${{ s.net_due }}</p>
-		{% if capabilities.can_add_registrations and s.confirmed %}
-		<p><a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit payment info</button></a></p>
-		{% endif %}
+			{% if s.payment_made %}
+			<p>Paid: ${{ s.payment_made }}</p>
+			<p class="details">Payment Type: {{ s.payment_type|default:'' }}</p>
+			<p class="details">Transaction Code: {{ s.transaction_code|default:'' }}</p>
+			{% endif %}
+			{% if s.discount %}
+			<p>Discount: ${{ s.discount }}</p>
+			<p class="details">Discount Type: {{ s.discount_type|default:'' }}</p>
+			{% endif %}
+			<p>Due: ${{ s.net_due }}</p>
+			{% if capabilities.can_add_registrations and s.confirmed %}
+			<p><a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit payment info</button></a></p>
+			{% endif %}
 		</td>
 	</tr>
 {% endfor %}

@@ -65,6 +65,14 @@ gen_date_picker("early_bird", {{ tournament.early_bird_deadline.month }}, {{ tou
 </td>
 </tr>
 <tr>
+<td align="left">Final Deadline</td>
+<td align="left">
+<script type="text/javascript" language="javascript">
+gen_date_picker("deadline", {{ tournament.deadline.month|default:5 }}, {{ tournament.deadline.day|default:18 }}, {{ tournament.deadline.year|default:2015 }});
+</script>
+</td>
+</tr>
+<tr>
 <td align="left">Early Bird Golfer Price</td>
 <td align="left"><input type="text" size="5" name="golf_price_early" value="{{ tournament.golf_price_early }}"></td>
 </tr>

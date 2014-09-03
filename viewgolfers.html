@@ -13,16 +13,19 @@
 #body thead tr { border-bottom: 2px solid #c4e5c4; }
 #body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
 #body tbody tr.golfer:hover { background-color: #e7fbe7; }
-#body th { color: #6061ab; padding: 0.5em; text-align: left; }
+#body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
 #body td { padding: 0.5em; }
 #body tr.sponsor td { font-weight: bold; padding-top: 1em; }
 #body td.firstcol { padding-left: 2em; }
 #body td p { margin: 0; }
-#body td p.details { margin-left: 3em; font-size: 80%; color: #555; }
+#body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
 #body tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
 h2 { text-align: center; }
 ul.viewnav { list-style: none; margin: 0; padding: 0; text-align: center; }
 ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
+ul.viewnav li {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
+}
 ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
 ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 </style>
@@ -36,7 +39,9 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<li><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
-	<li><a href="/admin/csv/guests">Download CSV</a></li>
+</ul>
+<ul class="viewnav">
+	<li><a href="/admin/csv/golfers">Download CSV</a></li>
 </ul>
 
 <h2>Golfers</h2>
@@ -46,39 +51,49 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 <table>
 <thead>
 	<tr valign="bottom">
-		<th>Sponsor/Contact<br>&emsp;&emsp;Golfer</th>
-		<th>GHIN Number<br>Average Score</th>
-		<th>Shirt Size</th>
+		<th></th>
+		<th align="left">Golfer</th>
+		<th align="left">Gender</th>
+		<th align="left">Address</th>
+		<th align="left">Email/Phone</th>
+		<th align="right">GHIN #</th>
+		<th align="right">Index</th>
+		<th align="right">Avg.<br>Score</th>
+		<th align="right">Course<br>Handicap</th>
+		<th align="left">Team</th>
+		<th align="right">Starting<br>Hole</th>
+		<th align="center">Cart</th>
+		<th align="center">Shirt<br>Size</th>
+		<th align="left">Contact</th>
 	</tr>
 </thead>
 <tbody>
 {% for g in golfers %}
-	{% ifequal g.golfer.sequence 1 %}
-	<tr class="sponsor" valign="baseline">
-	<td colspan="3"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
-	</tr>
-	{% endifequal %}
 	<tr class="golfer" valign="baseline">
-		<td class="firstcol">
-		<p>{{ g.count }}.&ensp;{{ g.golfer_name }}</p>
-		{% if g.golfer.company %}<p class="details">{{ g.golfer.company }}</p>{% endif %}
-		{% if g.golfer.address %}<p class="details">{{ g.golfer.address }}</p>{% endif %}
-		{% if g.golfer.city %}<p class="details">{{ g.golfer.city }}</p>{% endif %}
-		{% if g.golfer.email %}<p class="details">Email: <a href="mailto:{{ g.golfer.email }}">{{ g.golfer.email }}</a></p>{% endif %}
-		{% if g.golfer.phone %}<p class="details">Phone: {{ g.golfer.phone }}</p>{% endif %}
-		{% if g.golfer.fax %}<p class="details">Fax: {{ g.golfer.fax }}</p>{% endif %}
+		<td align="right">{{ g.count }}</td>
+		<td>{{ g.golfer_name }}</td>
+		<td>{{ g.golfer.gender }}</td>
+		<td>
+			{% if g.golfer.company %}<p>{{ g.golfer.company }}</p>{% endif %}
+			{% if g.golfer.address %}<p>{{ g.golfer.address }}</p>{% endif %}
+			{% if g.golfer.city %}<p>{{ g.golfer.city }} {{ g.golfer.state }} {{ g.golfer.zip }}</p>{% endif %}
+			{% if g.pairing %}<p class="details">Pairing preference: {{ g.pairing }}</p>{% endif %}
 		</td>
 		<td>
-		{% if g.golfer.ghin_number %}<p>GHIN Number: {{ g.golfer.ghn_number }}</p>{% endif %}
-		{% if g.golfer.average_score %}<p>Average Score: {{ g.golfer.average_score }}</p>{% endif %}
+			{% if g.golfer.email %}<p><a href="mailto:{{ g.golfer.email }}">{{ g.golfer.email }}</a></p>{% endif %}
+			{% if g.golfer.phone %}<p>{{ g.golfer.phone }}</p>{% endif %}
+			{% if g.golfer.fax %}<p>{{ g.golfer.fax }} (fax)</p>{% endif %}
 		</td>
-		<td>{{ g.golfer.shirt_size }}</td>
+		<td align="right">{{ g.golfer.ghin_number }}</td>
+		<td align="right">{% if g.golfer.has_index %}{{ g.golfer.handicap_index }}{% endif %}</td>
+		<td align="right">{{ g.golfer.average_score }}</td>
+		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap|floatformat:1 }}{% endif %}</td>
+		<td align="left">{{ g.team }}</td>
+		<td align="right">{% if g.starting_hole %}{{ g.starting_hole }}.{{ g.golfer.starting_hole_ab }}{% endif %}</td>
+		<td align="center">{% if g.golfer.cart == 1 %}A{% elif g.golfer.cart == 2 %}B{% endif %}</td>
+		<td align="center">{{ g.golfer.shirt_size }}</td>
+		<td align="left">{% ifequal g.golfer.sequence 1 %}<a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a>{% endifequal %}</td>
 	</tr>
-	{% if g.pairing %}
-	<tr class="pairing" valign="baseline">
-	<td class="firstcol" colspan="3"><p>Pairing preference: {{ g.pairing }}</p></td>
-	</tr>
-	{% endif %}
 {% endfor %}
 </tbody>
 </table>

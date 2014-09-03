@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load humanize %}
+
 {% block title %}Registration{% endblock %}
 
 {% block head %}
@@ -15,6 +17,10 @@ window.onload = function() {
 
 {% block content %}
 <h2>Registration</h2>
+
+{% if registration_closed %}
+<p>Sorry, registration for the Celebration Classic is now closed.</p>
+{% endif %}
 
 {% if not capabilities.can_add_registrations %}
 <p>Start your online registration by filling out this form.
@@ -238,7 +244,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 <label class="right" for="checkbox_Angel">Want to be an angel
 and get some good PR for your organization at the same time?
 Check here to become an Angel sponsor for your foursome.
-For $3,000, your Angel sponsorship includes four golfers, eight banquet dinners,
+For ${{ angel.price|intcomma }}, your Angel sponsorship includes four golfers, eight banquet dinners,
 and the PR benefits of being an Angel sponsor!
 And you know that you are doing something very special for Congregation Shir Hadash!</label>
 </div>
@@ -337,7 +343,7 @@ $<input type="text" name="discount_type" value="{% if sponsor.discount_type %}{{
 {% if capabilities.can_add_registrations %}
 <input type="submit" name="save" value="Save">
 {% endif %}
-<input type="submit" name="submit" value="Continue ->">
+<input type="submit" name="submit" value="Continue ->" {% if registration_closed %}disabled{% endif %}>
 </div>
 </div>
 

@@ -28,9 +28,13 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
 	early_bird = today.date() <= root.early_bird_deadline
+	registration_closed = today.date() > root.deadline
 	early_bird_deadline = "%s %d, %d" % (root.early_bird_deadline.strftime("%B"),
 										 root.early_bird_deadline.day,
 										 root.early_bird_deadline.year)
+	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
+							  root.deadline.day,
+							  root.deadline.year)
 	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
@@ -45,7 +49,9 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'tournament': root,
 		'sponsor': s,
 		'early_bird': early_bird,
+		'registration_closed': registration_closed,
 		'early_bird_deadline': early_bird_deadline,
+		'deadline': deadline,
 		'doubleeagle': doubleeagle,
 		'holeinone': holeinone,
 		'eagle': eagle,
@@ -126,6 +132,7 @@ class Register(webapp2.RequestHandler):
 		# last until 1 am PDT.)
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
 		early_bird = today.date() <= root.early_bird_deadline
+		registration_closed = today.date() > root.deadline
 		golf_price = root.golf_price_early if early_bird else root.golf_price_late
 		dinner_price = root.dinner_price_early if early_bird else root.dinner_price_late
 		caps = capabilities.get_current_user_caps()
@@ -154,6 +161,11 @@ class Register(webapp2.RequestHandler):
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
 		s.payment_made = 0
+
+		if registration_closed and not caps.can_add_registrations:
+			messages.append('Sorry, registration is closed.')
+			show_registration_form(self.response, root, s, messages, caps, dev_server)
+			return
 
 		if not s.first_name and not s.last_name:
 			messages.append('Please enter your name.')
@@ -277,13 +289,18 @@ class Continue(webapp2.RequestHandler):
 			return
 
 		q = Golfer.all().ancestor(s.key()).order('sequence')
-		golfers = q.fetch(s.num_golfers)
+		golfers = q.fetch(limit = None)
 		for i in range(1, s.num_golfers + 1):
 			if len(golfers) < i:
 				golfers.append(Golfer(parent = s, sequence = i))
 			golfer = golfers[i-1]
+			golfer.active = True
 			golfer.first_name = self.request.get('first_name%d' % i)
 			golfer.last_name = self.request.get('last_name%d' % i)
+			if golfer.last_name:
+				golfer.sort_name = golfer.last_name + ',' + golfer.first_name
+			else:
+				golfer.sort_name = s.last_name + '#' + ("%02d" % i)
 			golfer.gender = self.request.get('gender%d' % i)
 			golfer.company = self.request.get('company%d' % i)
 			golfer.address = self.request.get('address%d' % i)
@@ -297,6 +314,13 @@ class Continue(webapp2.RequestHandler):
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
 			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
 			golfer.put()
+
+		# Mark excess golfer instances as not active, so we can filter
+		# them out when querying all golfers.
+		if len(golfers) > s.num_golfers:
+			for i in range(s.num_golfers, len(golfers)):
+				golfers[i].active = False
+				golfers[i].put()
 
 		q = DinnerGuest.all().ancestor(s.key()).order('sequence')
 		dinner_guests = q.fetch(s.num_dinners)
