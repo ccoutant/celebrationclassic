@@ -19,6 +19,7 @@ import sponsorship
 import auctionitem
 import detailpage
 import uploadedfile
+import tz
 from sponsor import Sponsor, Golfer, DinnerGuest
 
 server_software = os.environ.get('SERVER_SOFTWARE')
@@ -803,6 +804,7 @@ def show_edit_form(name, caps, response):
 				 (page.name, page.version, "yes" if page.draft else "no", "yes" if page.preview else "no"))
 	template_values = {
 		'page': page,
+		'timestamp': page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific),
 		'capabilities': caps
 		}
 	response.out.write(render_to_string('admineditpage.html', template_values))
