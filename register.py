@@ -15,6 +15,7 @@ from django.template.loader import render_to_string
 
 import tournament
 import capabilities
+import detailpage
 import sponsorship
 from sponsor import Sponsor, Golfer, DinnerGuest
 
@@ -45,6 +46,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		ss = db.get(sskey)
 		if ss:
 			selected_sponsorships.append(ss.sequence)
+	page = detailpage.get_detail_page('register', False)
 	template_values = {
 		'tournament': root,
 		'sponsor': s,
@@ -58,6 +60,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'underpar': underpar,
 		'angel': angel[0],
 		'selected': selected_sponsorships,
+		'page': page,
 		'messages': messages,
 		'capabilities': caps,
 		'debug': debug

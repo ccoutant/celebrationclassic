@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load custom_filters %}
 {% load humanize %}
 
 {% block title %}Registration{% endblock %}
@@ -23,33 +24,7 @@ window.onload = function() {
 {% endif %}
 
 {% if not capabilities.can_add_registrations %}
-<p>Start your online registration by filling out this form.
-If you would prefer to download and print a registration form to mail in with your payment,
-you can download one of the registration forms listed at the bottom of this page.</p>
-
-<p>You can register online in three easy steps:</p>
-
-<ol>
-
-<li><p>Provide your contact information,
-select a sponsorship level (if desired),
-and enter the number of golfers and dinner guests.</p>
-
-<li><p>Enter information for each golfer,
-and make your dinner selections.</p>
-
-<li><p>Make your payment online or by check.</p>
-
-</ol>
-
-<p>If you don't have all the information for the golfers in your group,
-don't worry&mdash;you can still register now and
-return to this site as often as you need to complete your registration.
-You will receive an email receipt that contains a link that you can use
-to complete your registration or modify your choices.</p>
-
-<p>If you have questions or need help with the registration process,
-email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
+{{ page.content|markdown }}
 {% endif %}
 
 {% for m in messages %}

@@ -65,7 +65,7 @@ def set_version(name, v, draft):
 	memcache.delete("2015/published_versions")
 
 def detail_page_list():
-	return ["home", "details", "raffle", "map", "sponsors", "sponsorships", "volunteer"]
+	return ["home", "details", "raffle", "map", "sponsors", "sponsorships", "volunteer", "register"]
 
 def get_detail_page(name, draft):
 	t = tournament.get_tournament()
