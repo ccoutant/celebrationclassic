@@ -49,6 +49,9 @@
 {% if capabilities.can_update_sponsorships %}
 	<li><a href="/admin/sponsorships">Edit Sponsorships</a></li>
 {% endif %}
+{% if capabilities.can_edit_tournament_properties %}
+	<li><a href="/admin/tournament">Tournament Properties</a></li>
+{% endif %}
 </ul>
 </div>
 {% endblock %}

@@ -64,21 +64,29 @@ class ManageUsers(webapp2.RequestHandler):
 			q.ancestor(root)
 			q.filter("email = ", email)
 			u = q.get()
+			must_update = False
+			if u.can_edit_tournament_properties is None:
+				u.can_edit_tournament_properties = False
+				must_update = True
 			us = True if self.request.get('us%d' % i) == 'u' else False
 			vr = True if self.request.get('vr%d' % i) == 'v' else False
 			ar = True if self.request.get('ar%d' % i) == 'a' else False
 			ua = True if self.request.get('ua%d' % i) == 'u' else False
 			ec = True if self.request.get('ec%d' % i) == 'e' else False
-			if (us != u.can_update_sponsorships or
+			et = True if self.request.get('et%d' % i) == 't' else False
+			if (must_update or
+					us != u.can_update_sponsorships or
 					vr != u.can_view_registrations or
 					ar != u.can_add_registrations or
 					ua != u.can_update_auction or
-					ec != u.can_edit_content):
+					ec != u.can_edit_content or
+					et != u.can_edit_tournament_properties):
 				u.can_update_sponsorships = us
 				u.can_view_registrations = vr
 				u.can_add_registrations = ar
 				u.can_update_auction = ua
 				u.can_edit_content = ec
+				u.can_edit_tournament_properties = et
 				u.put()
 		email = self.request.get('email')
 		us = True if self.request.get('us') == 'u' else False
@@ -86,6 +94,7 @@ class ManageUsers(webapp2.RequestHandler):
 		ar = True if self.request.get('ar') == 'a' else False
 		ua = True if self.request.get('ua') == 'u' else False
 		ec = True if self.request.get('ec') == 'e' else False
+		et = True if self.request.get('et') == 't' else False
 		if email:
 			u = capabilities.Capabilities(parent = root,
 										  email = email,
@@ -93,7 +102,8 @@ class ManageUsers(webapp2.RequestHandler):
 										  can_view_registrations = vr,
 										  can_add_registrations = ar,
 										  can_update_auction = ua,
-										  can_edit_content = ec)
+										  can_edit_content = ec,
+										  can_edit_tournament_properties = et)
 			u.put()
 		memcache.flush_all()
 		self.redirect('/admin/users')
@@ -103,11 +113,11 @@ class ManageUsers(webapp2.RequestHandler):
 class ManageTournament(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
-		if not users.is_current_user_admin():
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_tournament_properties:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		t = tournament.get_tournament()
-		caps = capabilities.get_current_user_caps()
 		template_values = {
 			'capabilities': caps,
 			'tournament': t
@@ -116,7 +126,8 @@ class ManageTournament(webapp2.RequestHandler):
 
 	# Process the submitted info.
 	def post(self):
-		if not users.is_current_user_admin():
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_tournament_properties:
 			self.redirect(users.create_login_url('/admin/tournament'))
 			return
 		q = tournament.Tournament.all()

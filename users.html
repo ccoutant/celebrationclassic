@@ -16,7 +16,15 @@ form table tr th { font-size: 75%; }
 <h2>Users</h2>
 <form action="/admin/users" method="post">
 <table border="0" cellspacing="0" cellpadding="10">
-<tr valign="bottom"><th align="left">Email</th><th>Update<br>Sponsorships</th><th>View<br>Registrations</th><th>Add<br>Registrations</th><th>Update<br>Auction</th><th>Edit<br>Content</th></tr>
+<tr valign="bottom">
+	<th align="left">Email</th>
+	<th>Update<br>Sponsorships</th>
+	<th>View<br>Registrations</th>
+	<th>Add<br>Registrations</th>
+	<th>Update<br>Auction</th>
+	<th>Edit<br>Content</th>
+	<th>Edit<br>Tournament</th>
+</tr>
 {% for u in allcaps %}
 <tr>
 	<td align="left">{{ u.email }}<input type="hidden" name="email{{ forloop.counter }}" value="{{ u.email }}"></td>
@@ -25,6 +33,7 @@ form table tr th { font-size: 75%; }
 	<td align="center"><input type="checkbox" name="ar{{ forloop.counter }}" value="a" {% if u.can_add_registrations %}checked{% endif %}></td>
 	<td align="center"><input type="checkbox" name="ua{{ forloop.counter }}" value="u" {% if u.can_update_auction %}checked{% endif %}></td>
 	<td align="center"><input type="checkbox" name="ec{{ forloop.counter }}" value="e" {% if u.can_edit_content %}checked{% endif %}></td>
+	<td align="center"><input type="checkbox" name="et{{ forloop.counter }}" value="t" {% if u.can_edit_tournament_properties %}checked{% endif %}></td>
 </tr>
 {% endfor %}
 <tr>
@@ -34,9 +43,10 @@ form table tr th { font-size: 75%; }
 	<td align="center"><input type="checkbox" name="ar" value="a"></td>
 	<td align="center"><input type="checkbox" name="ua" value="u"></td>
 	<td align="center"><input type="checkbox" name="ec" value="e"></td>
+	<td align="center"><input type="checkbox" name="et" value="e"></td>
 </tr>
 <tr>
-	<td colspan="6" align="center">
+	<td colspan="7" align="center">
 	<input type="hidden" name="count" value="{{ allcaps|length }}">
 	<input type="submit" value="Save">
 	</td>
