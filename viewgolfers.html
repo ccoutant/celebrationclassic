@@ -53,7 +53,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<tr valign="bottom">
 		<th></th>
 		<th align="left">Golfer</th>
-		<th align="left">Gender</th>
+		<th align="center">Gender</th>
 		<th align="left">Address</th>
 		<th align="left">Email/Phone</th>
 		<th align="right">GHIN #</th>
@@ -72,7 +72,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<tr class="golfer" valign="baseline">
 		<td align="right">{{ g.count }}</td>
 		<td>{{ g.golfer_name }}</td>
-		<td>{{ g.golfer.gender }}</td>
+		<td align="center">{{ g.golfer.gender }}</td>
 		<td>
 			{% if g.golfer.company %}<p>{{ g.golfer.company }}</p>{% endif %}
 			{% if g.golfer.address %}<p>{{ g.golfer.address }}</p>{% endif %}

@@ -239,7 +239,7 @@ class ViewGolfer(object):
 		if g.first_name or g.last_name:
 			self.golfer_name = g.first_name + " " + g.last_name
 		else:
-			self.golfer_name = "(%s #%d)" % (s.last_name, count)
+			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
 		if g.has_index:
@@ -260,7 +260,7 @@ class ViewDinner(object):
 		if first_name or last_name:
 			self.guest_name = first_name + " " + last_name
 		else:
-			self.guest_name = "(%s #%d)" % (s.last_name, count)
+			self.guest_name = "(%s #%d)" % (s.last_name, sequence)
 		self.dinner_choice = choice
 		self.sequence = sequence
 		self.count = count
@@ -321,7 +321,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 					no_dinners += 1
 			guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
 			for g in guests:
-				if g.name and g.dinner_choice:
+				if g.first_name and g.last_name and g.dinner_choice:
 					ndinners += 1
 			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made

@@ -59,5 +59,6 @@ class Golfer(db.Model):
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)
 	active = db.BooleanProperty(default = False)
-	name = db.StringProperty(default = '')
+	first_name = db.StringProperty(default = '')
+	last_name = db.StringProperty(default = '')
 	dinner_choice = db.StringProperty(default = '')
