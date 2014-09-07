@@ -14,6 +14,7 @@ from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
 
 import tournament
+import payments
 import capabilities
 import sponsorship
 import auctionitem
@@ -165,6 +166,39 @@ class ManageTournament(webapp2.RequestHandler):
 		memcache.flush_all()
 		tournament.set_tournament_cache(t)
 		self.redirect('/admin/tournament')
+
+# Payment Gateway
+
+class PaymentGateway(webapp2.RequestHandler):
+	# Show the form.
+	def get(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		caps = capabilities.get_current_user_caps()
+		t = tournament.get_tournament()
+		payments_info = payments.get_payments_info(t)
+		template_values = {
+			'capabilities': caps,
+			'payments': payments_info
+			}
+		self.response.out.write(render_to_string('payments.html', template_values))
+
+	# Process the submitted info.
+	def post(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		caps = capabilities.get_current_user_caps()
+		t = tournament.get_tournament()
+		payment_gateway = payments.Payments.all().ancestor(t).get()
+		if payment_gateway is None:
+			payment_gateway = payments.Payments(parent = t)
+		payment_gateway.gateway_url = self.request.get("gateway_url")
+		payment_gateway.api_login_id = self.request.get("api_login_id")
+		payment_gateway.transaction_key = self.request.get("transaction_key")
+		payment_gateway.put()
+		self.redirect('/admin/payments')
 
 # Sponsorship information.
 
@@ -919,6 +953,7 @@ class EditPageHandler(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
 							   ('/admin/tournament', ManageTournament),
+							   ('/admin/payments', PaymentGateway),
 							   ('/admin/auction', ManageAuction),
 							   ('/admin/upload-auction', UploadAuctionItem),
 							   ('/admin/upload-file', UploadFile),
