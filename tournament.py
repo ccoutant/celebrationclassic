@@ -14,8 +14,12 @@ class Tournament(db.Model):
 	dinner_price_late = db.IntegerProperty()
 	golf_sold_out = db.BooleanProperty(default = False)
 	dinner_sold_out = db.BooleanProperty(default = False)
-	course_rating = db.FloatProperty(default = 72.0)
-	course_slope = db.FloatProperty(default = 113.0)
+	red_course_rating = db.FloatProperty(default = 72.0)
+	red_course_slope = db.FloatProperty(default = 113.0)
+	white_course_rating = db.FloatProperty(default = 72.0)
+	white_course_slope = db.FloatProperty(default = 113.0)
+	blue_course_rating = db.FloatProperty(default = 72.0)
+	blue_course_slope = db.FloatProperty(default = 113.0)
 	timestamp = db.DateTimeProperty(auto_now = True)
 
 def get_tournament():
@@ -26,11 +30,11 @@ def get_tournament():
 	q.filter("name = ", "cc2015")
 	t = q.get()
 	if t is not None:
-		memcache.add("2015/tournament", t, 60*60*24)
+		set_tournament_cache(t)
 		return t
 	t = Tournament(name = "cc2015",
 				   golf_date = datetime.date(2015, 5, 18),
-				   dinner_date = datetime.date(2015, 5, 318),
+				   dinner_date = datetime.date(2015, 5, 18),
 				   early_bird_deadline = datetime.date(2015, 3, 30),
 				   deadline = datetime.date(2015, 5, 18),
 				   golf_price_early = 400,
@@ -38,7 +42,7 @@ def get_tournament():
 				   dinner_price_early = 100,
 				   dinner_price_late = 125)
 	t.put()
-	set_tournamend_cache(t)
+	set_tournament_cache(t)
 	return t
 
 def set_tournament_cache(t):
