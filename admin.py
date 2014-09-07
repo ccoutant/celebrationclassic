@@ -243,15 +243,15 @@ class ViewGolfer(object):
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
 		if g.has_index:
-			self.course_handicap = min(36.0, g.handicap_index * t.course_slope / 113.0)
+			self.course_handicap = min(36, int(round(g.handicap_index * t.course_slope / 113.0)))
 		elif g.average_score:
 			try:
-				handicap_index = float(g.average_score) * 0.8258 - 61.17
-				self.course_handicap = min(36.0, handicap_index * t.course_slope / 113.0)
+				handicap_index = float(g.average_score) * 0.8253 - 61.15
+				self.course_handicap = min(36, int(round(handicap_index * t.course_slope / 113.0)))
 			except:
-				self.course_handicap = 36.0
+				self.course_handicap = 36
 		else:
-			self.course_handicap = 0.0
+			self.course_handicap = 0
 
 class ViewDinner(object):
 	def __init__(self, s, first_name, last_name, choice, sequence, count):

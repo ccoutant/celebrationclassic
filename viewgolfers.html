@@ -87,7 +87,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 		<td align="right">{{ g.golfer.ghin_number }}</td>
 		<td align="right">{% if g.golfer.has_index %}{{ g.golfer.handicap_index }}{% endif %}</td>
 		<td align="right">{{ g.golfer.average_score }}</td>
-		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap|floatformat:1 }}{% endif %}</td>
+		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
 		<td align="left">{{ g.team }}</td>
 		<td align="right">{% if g.starting_hole %}{{ g.starting_hole }}.{{ g.golfer.starting_hole_ab }}{% endif %}</td>
 		<td align="center">{% if g.golfer.cart == 1 %}A{% elif g.golfer.cart == 2 %}B{% endif %}</td>
