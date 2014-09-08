@@ -2,6 +2,8 @@ p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 
 p.important { font-weight: bold; }
 
+.register-checklist ul { list-style: none; margin: 0 0 0.75em 1em; padding: 0; }
+
 .form { position: relative; overflow: hidden; width: 564px; }
 
 .form-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; background-color: #e7fbe7; }
@@ -22,11 +24,11 @@ p.important { font-weight: bold; }
 .form label.right { display: inline; float: none; width: auto;
 	text-align: left; margin: 0.2em 0 0 0;
 	white-space: normal; }
-.form-gender label { display: inline; float: none; width: auto; text-align: left; margin: 0.5em 0; white-space: nowrap; }
+.form-gender li label { display: inline; float: none; width: auto; text-align: left; margin: 0.5em 0; white-space: nowrap; }
 label.sold { color: #999; }
 
 .form-input { white-space: nowrap; }
-.form-input, .form-button { margin: 0 0 0.25em 8em; }
+.form-input, .form-button { margin: 0 0 0.5em 8em; }
 .form-text .form-input input { width: 15em; }
 .form-text .form-input input.form-first-name { width: 10em; }
 .form-text .form-input input.form-last-name { width: 15em; }

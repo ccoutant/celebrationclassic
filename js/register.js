@@ -25,6 +25,10 @@ function recalculate() {
 	var printednamesbox = document.getElementById("entry_printednames");
 	var totalbox = document.getElementById("entry_payment_due");
 	var totalbox_c = document.getElementById("entry_payment_due_c");
+	var creditbox = document.getElementById("entry_credits");
+	var creditbox_c = document.getElementById("entry_credits_c");
+	var netbox = document.getElementById("entry_net_payment_due");
+	var netbox_c = document.getElementById("entry_net_payment_due_c");
 
 	var early_bird = parseInt(document.getElementById("early_bird").value);
 	var golf_price_early = document.getElementById("golf_price_early").value;
@@ -119,6 +123,11 @@ function recalculate() {
 
 	totalbox.value = total;
 	totalbox_c.value = add_commas(total);
+	credits = parseInt(creditbox.value);
+	creditbox_c.value = add_commas(credits);
+	netdue = total - credits < 0 ? 0 : total - credits;
+	netbox.value = netdue;
+	netbox_c.value = add_commas(netdue);
 }
 
 function adjust_selector(e, n) {

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load humanize %}
+
 {% block title %}Registration{% endblock %}
 
 {% block head %}
@@ -22,6 +24,17 @@ as often as you wish, to change your selections.
 Just remember to save your changes each time.
 If you pay online, your registration receipt will also contain a link back to this page.</p>
 
+<div class="register-checklist">
+<p>Your registration checklist:</p>
+<ul>
+	<li>{% if has_registered %}&#10003; Registered{% else %}&#9744; Register{% endif %} for golf and dinner.</li>
+	<li>{% if has_completed_names %}&#10003; Names for all golfers entered.{% else %}&#9744; Enter names for all golfers and dinner guests.{% endif %}</li>
+	<li>{% if has_completed_handicaps %}&#10003; Handicap information for all golfers entered.{% else %}&#9744; Enter handicap information for all golfers.{% endif %}</li>
+	<li>{% if has_selected_sizes %}&#10003; Shirt sizes for all golfers selected.{% else %}&#9744; Select shirt sizes for all golfers.{% endif %}</li>
+	<li>{% if has_selected_dinners %}&#10003; Dinner entrees for all dinner guests selected.{% else %}&#9744; Select entrees for all dinner guests.{% endif %}</li>
+	<li>{% if has_paid %}&#10003; Paid.{% else %}&#9744; Pay.{% endif %}</li>
+</ul>
+
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
 {% endif %}
@@ -30,13 +43,16 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
+</div> <!-- register-checklist -->
+
 <form action="/continue" method="post" accept-charset="utf-8">
+<input type="hidden" name="id" value="{{ sponsor.id }}">
 
 <div id="continue-form" class="form">
 
 <div class="form-section">
 
-<h2>Sponsor/Contact</h2>
+<h2>Sponsor/Contact Info</h2>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
@@ -45,21 +61,28 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 </div>
 </div>
 
-<div class="form-entry-left form-text">
+<div class="form-entry form-number">
 <div class="form-input">
-<label for="entry_company">Company</label>
-<input type="text" name="company" value="{{ sponsor.company }}" id="entry_company" readonly>
+<label for="entry_num_golfers">Golfers</label>
+<input type="text" name="num_golfers" value="{{ sponsor.num_golfers }}" id="entry_num_golfers" readonly>
+<label class="right" for="entry_num_dinners">Additional Dinners</label>
+<input type="text" name="num_dinners" value="{{ sponsor.num_dinners }}" id="entry_num_dinners" readonly>
 </div>
 </div>
 
-{% if capabilities.can_add_registrations %}
-<div class="form-entry-left form-text">
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_net_payment_due">Amount Due</label>
+$<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}" id="entry_net_payment_due" readonly>
+</div>
+</div>
+
+<div class="form-entry form-text">
 <div class="form-button">
-<a href="/register?id={{ sponsor.id }}&page=1"><button type="button" name="page1">Edit Contact Information</button></a>
+<a href="/register?id={{ sponsor.id }}&page=1"><button type="button" name="page1"><- Back</button></a>
+<label class="right"><i>(Go back to modify registration details)</i></label>
 </div>
 </div>
-{% endif %}
-<input type="hidden" name="id" value="{{ sponsor.id }}">
 
 </div> <!-- form-section -->
 
@@ -101,7 +124,6 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<!--<label for="entry_city{{ golfer.sequence }}">City, State, ZIP</label>-->
 <input class="form-city" type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}" placeholder="City">
 <input class="form-state" type="text" name="state{{ golfer.sequence }}" value="{{ golfer.state }}" id="entry_state{{ golfer.sequence }}" placeholder="State">
 <input class="form-zip" type="text" name="zip{{ golfer.sequence }}" value="{{ golfer.zip }}" id="entry_zip{{ golfer.sequence }}" placeholder="ZIP">
@@ -128,11 +150,6 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <input type="text" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}">
 <label class="right" for="entry_avg{{ golfer.sequence }}"><i>OR</i> Average Score</label>
 <input type="text" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}">
-</div>
-</div>
-
-<div class="form-entry form-number">
-<div class="form-input">
 </div>
 </div>
 
@@ -224,15 +241,15 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 
 <div class="form-entry form-submit">
 <div class="form-button">
-{% ifequal sponsor.payment_made 0 %}
+{% if net_payment_due %}
 {% if capabilities.can_add_registrations %}
 <input type="submit" name="save" value="Save Changes">
 {% endif %}
-<input type="submit" name="pay_by_acceptiva" value="Pay by Credit Card ->">
+<input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
 <input type="submit" name="pay_by_check" value="Pay by Check ->">
 {% else %}
 <input type="submit" name="save" value="Save Changes">
-{% endifequal %}
+{% endif %}
 </div>
 </div>
 

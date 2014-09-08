@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load humanize %}
+
 {% block title %}Registration{% endblock %}
 
 {% block content %}
@@ -7,7 +9,7 @@
 
 <p>Your registration has been entered.</p>
 
-<p>Please mail your check for ${{ sponsor.payment_due }} to Celebration Classic,
+<p>Please mail your check for ${{ net_payment_due|intcomma }} to Celebration Classic,
 20 Cherry Blossom Lane, Los Gatos, CA 95032.</p>
 
 <p>You may <a href="/register?id={{ sponsor.id }}">return to the registration page</a>

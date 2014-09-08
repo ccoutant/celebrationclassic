@@ -256,9 +256,25 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 
 <div class="form-entry form-dollars">
 <div class="form-input">
-<label for="entry_payment_due">Payment Due</label>
+<label for="entry_payment_due">Total</label>
 $<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="entry_payment_due_c" readonly>
 <input type="hidden" name="payment_due" value="{{ sponsor.payment_due }}" id="entry_payment_due">
+</div>
+</div>
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_credits_c">Payments &amp; Credits</label>
+$<input type="text" name="credits_c" value="{{ credits }}" id="entry_credits_c" readonly>
+<input type="hidden" name="credits" value="{{ credits }}" id="entry_credits">
+</div>
+</div>
+
+<div class="form-entry form-dollars">
+<div class="form-input">
+<label for="entry_net_payment_due">Amount Due</label>
+$<input type="text" name="net_payment_due_c" value="{{ net_payment_due }}" id="entry_net_payment_due_c" readonly>
+<input type="hidden" name="net_payment_due" value="{{ net_payment_due }}" id="entry_net_payment_due">
 </div>
 </div>
 

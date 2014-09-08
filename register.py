@@ -50,6 +50,8 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	template_values = {
 		'tournament': root,
 		'sponsor': s,
+		'credits': s.payment_made + s.discount,
+		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'early_bird': early_bird,
 		'registration_closed': registration_closed,
 		'early_bird_deadline': early_bird_deadline,
@@ -70,32 +72,66 @@ def show_registration_form(response, root, s, messages, caps, debug):
 # Show the continuation form.
 
 def show_continuation_form(response, s, messages, caps, debug):
+	has_registered = s.confirmed
+	has_completed_names = True
+	has_completed_handicaps = True
+	has_selected_sizes = True
+	has_selected_dinners = True
+	has_paid = (s.payment_made + s.discount >= s.payment_due)
 	q = Golfer.all().ancestor(s.key()).order('sequence')
 	golfers = q.fetch(s.num_golfers)
-	for i in range(len(golfers) + 1, s.num_golfers + 1):
-		golfer = Golfer(parent = s, sequence = i)
-		if i == 1:
-			golfer.first_name = s.first_name
-			golfer.last_name = s.last_name
-			golfer.company = s.company
-			golfer.address = s.address
-			golfer.city = s.city
-			golfer.state = s.state
-			golfer.zip = s.zip
-			golfer.phone = s.phone
-			golfer.email = s.email
-		golfers.append(golfer)
+	for i in range(1, s.num_golfers + 1):
+		if i <= len(golfers):
+			golfer = golfers[i - 1]
+			if not golfer.first_name or not golfer.last_name or not golfer.gender:
+				has_completed_names = False
+			if golfer.ghin_number == '' and golfer.average_score == '':
+				has_completed_handicaps = False
+			if not golfer.shirt_size:
+				has_selected_sizes = False
+			if not golfer.dinner_choice:
+				has_selected_dinners = False
+		else:
+			has_completed_names = False
+			has_completed_handicaps = False
+			has_selected_sizes = False
+			has_selected_dinners = False
+			golfer = Golfer(parent = s, sequence = i)
+			if i == 1:
+				golfer.first_name = s.first_name
+				golfer.last_name = s.last_name
+				golfer.company = s.company
+				golfer.address = s.address
+				golfer.city = s.city
+				golfer.state = s.state
+				golfer.zip = s.zip
+				golfer.phone = s.phone
+				golfer.email = s.email
+			golfers.append(golfer)
 	q = DinnerGuest.all().ancestor(s.key()).order('sequence')
 	dinner_guests = q.fetch(s.num_dinners)
-	for i in range(len(dinner_guests) + 1, s.num_dinners + 1):
-		guest = DinnerGuest(parent = s, sequence = i)
-		if s.num_golfers + i == 1:
-			guest.name = s.name
-		dinner_guests.append(guest)
+	for i in range(1, s.num_dinners + 1):
+		if i <= len(dinner_guests):
+			guest = dinner_guests[i - 1]
+			if not guest.dinner_choice:
+				has_selected_dinners = False
+		else:
+			has_selected_dinners = False
+			guest = DinnerGuest(parent = s, sequence = i)
+			if s.num_golfers + i == 1:
+				guest.name = s.name
+			dinner_guests.append(guest)
 	template_values = {
 		'sponsor': s,
+		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'golfers': golfers,
 		'dinner_guests': dinner_guests,
+		'has_registered': has_registered,
+		'has_completed_names': has_completed_names,
+		'has_completed_handicaps': has_completed_handicaps,
+		'has_selected_sizes': has_selected_sizes,
+		'has_selected_dinners': has_selected_dinners,
+		'has_paid': has_paid,
 		'messages': messages,
 		'capabilities': caps,
 		'debug': debug
@@ -163,7 +199,6 @@ class Register(webapp2.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
-		s.payment_made = 0
 
 		if registration_closed and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
@@ -347,7 +382,8 @@ class Continue(webapp2.RequestHandler):
 			self.redirect('/admin/view/registrations')
 			return
 
-		if s.payment_made > 0:
+		net_payment_due = max(0, s.payment_due - s.payment_made - s.discount)
+		if net_payment_due == 0 and self.request.get('save'):
 			template_values = {
 				'sponsor': s,
 				'capabilities': caps
@@ -358,6 +394,7 @@ class Continue(webapp2.RequestHandler):
 		if self.request.get('pay_by_check'):
 			template_values = {
 				'sponsor': s,
+				'net_payment_due': net_payment_due,
 				'capabilities': caps
 			}
 			self.response.out.write(render_to_string('paybycheck.html', template_values))
@@ -374,7 +411,7 @@ class Continue(webapp2.RequestHandler):
 				 ('sponsorshiplevel', ','.join(sponsorship_names)),
 				 ('numberofgolfers', s.num_golfers),
 				 ('numberofdinnerguests', s.num_dinners),
-				 ('amount_20_20_amt', s.payment_due),
+				 ('amount_20_20_amt', net_payment_due),
 				 ('idnumberhidden', s.id),
 				 ('fname', s.first_name),
 				 ('lname', s.last_name),
@@ -408,9 +445,9 @@ class PostPayment(webapp2.RequestHandler):
 			s.payment_type = paytype
 			s.transaction_code = transcode
 			try:
-				s.payment_made = int(payment_made) // 100
+				s.payment_made += int(payment_made) // 100
 			except ValueError:
-				s.payment_made = 0
+				s.payment_made += 0
 			s.put()
 			self.response.set_status(204, 'Payment Posted')
 
