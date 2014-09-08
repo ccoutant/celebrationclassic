@@ -34,6 +34,7 @@ If you pay online, your registration receipt will also contain a link back to th
 	<li>{% if has_selected_dinners %}&#10003; Dinner entrees for all dinner guests selected.{% else %}&#9744; Select entrees for all dinner guests.{% endif %}</li>
 	<li>{% if has_paid %}&#10003; Paid.{% else %}&#9744; Pay.{% endif %}</li>
 </ul>
+</div> <!-- register-checklist -->
 
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
@@ -42,8 +43,6 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
-
-</div> <!-- register-checklist -->
 
 <form action="/continue" method="post" accept-charset="utf-8">
 <input type="hidden" name="id" value="{{ sponsor.id }}">
