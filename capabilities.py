@@ -13,6 +13,7 @@ class Capabilities(db.Model):
 	can_update_auction = db.BooleanProperty(default = False)
 	can_edit_content = db.BooleanProperty(default = False)
 	can_edit_tournament_properties = db.BooleanProperty(default = False)
+	can_edit_payment_processor = db.BooleanProperty(default = False)
 
 def get_current_user_caps():
 	user = users.get_current_user()

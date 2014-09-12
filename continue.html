@@ -12,6 +12,7 @@
 <h2>Golfer Information and Dinner Choices</h2>
 
 {% if not capabilities.can_add_registrations %}
+{% endif %}
 <p>Complete your online registration by providing the golfer information and dinner choices below.</p>
 
 <p>If you don&rsquo;t have all the information you need yet
@@ -28,7 +29,7 @@ If you pay online, your registration receipt will also contain a link back to th
 <p>Your registration checklist:</p>
 <ul>
 	<li>{% if has_registered %}&#10003; Registered{% else %}&#9744; Register{% endif %} for golf and dinner.</li>
-	<li>{% if has_completed_names %}&#10003; Names for all golfers entered.{% else %}&#9744; Enter names for all golfers and dinner guests.{% endif %}</li>
+	<li>{% if has_completed_names %}&#10003; Names for all golfers entered.{% else %}&#9744; Enter names and genders for all golfers and dinner guests.{% endif %}</li>
 	<li>{% if has_completed_handicaps %}&#10003; Handicap information for all golfers entered.{% else %}&#9744; Enter handicap information for all golfers.{% endif %}</li>
 	<li>{% if has_selected_sizes %}&#10003; Shirt sizes for all golfers selected.{% else %}&#9744; Select shirt sizes for all golfers.{% endif %}</li>
 	<li>{% if has_selected_dinners %}&#10003; Dinner entrees for all dinner guests selected.{% else %}&#9744; Select entrees for all dinner guests.{% endif %}</li>
@@ -36,9 +37,10 @@ If you pay online, your registration receipt will also contain a link back to th
 </ul>
 </div> <!-- register-checklist -->
 
+{% if not capabilities.can_add_registrations %}
+{% endif %}
 <p>If you have questions or need help with the registration process,
 email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>.</p>
-{% endif %}
 
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
@@ -76,14 +78,21 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 </div>
 </div>
 
+</div> <!-- form-section -->
+
+<div class="form-submit-section">
+
 <div class="form-entry form-text">
 <div class="form-button">
-<a href="/register?id={{ sponsor.id }}&page=1"><button type="button" name="page1"><- Back</button></a>
-<label class="right"><i>(Go back to modify registration details)</i></label>
+<input type="submit" name="back" value="<- Back to Step 1">
+{% if net_payment_due %}
+<input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
+<input type="submit" name="pay_by_check" value="Pay by Check ->">
+{% endif %}
 </div>
 </div>
 
-</div> <!-- form-section -->
+</div> <!-- form-submit-section -->
 
 {% for golfer in golfers %}
 <div class="form-section">
@@ -240,19 +249,18 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry form-submit">
 <div class="form-button">
+<input type="submit" name="back" value="<- Back to Step 1">
 {% if net_payment_due %}
-{% if capabilities.can_add_registrations %}
-<input type="submit" name="save" value="Save Changes">
-{% endif %}
 <input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
 <input type="submit" name="pay_by_check" value="Pay by Check ->">
-{% else %}
+{% endif %}
+{% if net_payment_due == 0 or capabilities.can_add_registrations %}
 <input type="submit" name="save" value="Save Changes">
 {% endif %}
 </div>
 </div>
 
-</div> <!-- form-section -->
+</div> <!-- form-submit-section -->
 
 </div> <!-- continue-form -->
 

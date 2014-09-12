@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import datetime
+import time
+import hmac
 import os
 import cgi
 import logging
@@ -14,6 +16,7 @@ from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
 
 import tournament
+import payments
 import capabilities
 import detailpage
 import sponsorship
@@ -42,10 +45,13 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	underpar = sponsorship.get_sponsorships("Under Par")
 	angel = sponsorship.get_sponsorships("Angel")
 	selected_sponsorships = []
+	non_angel_selected = False
 	for sskey in s.sponsorships:
 		ss = db.get(sskey)
 		if ss:
 			selected_sponsorships.append(ss.sequence)
+			if ss.sequence != angel[0].sequence:
+				non_angel_selected = True
 	page = detailpage.get_detail_page('register', False)
 	template_values = {
 		'tournament': root,
@@ -61,6 +67,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'eagle': eagle,
 		'underpar': underpar,
 		'angel': angel[0],
+		'non_angel_selected': non_angel_selected,
 		'selected': selected_sponsorships,
 		'page': page,
 		'messages': messages,
@@ -262,6 +269,7 @@ class Register(webapp2.RequestHandler):
 				s.payment_made = 0
 				s.payment_type = ''
 				s.transaction_code = ''
+				s.auth_code = ''
 			else:
 				try:
 					s.payment_made = int(payment_made)
@@ -270,6 +278,7 @@ class Register(webapp2.RequestHandler):
 					messages.append('You entered an invalid value in the "Payment Made" field.')
 				s.payment_type = self.request.get('paytype')
 				s.transaction_code = self.request.get('transcode')
+				s.auth_code = self.request.get('authcode')
 			discount = self.request.get('discount')
 			if discount == '':
 				s.discount = 0
@@ -382,6 +391,9 @@ class Continue(webapp2.RequestHandler):
 			self.redirect('/admin/view/registrations')
 			return
 
+		if self.request.get('back'):
+			self.redirect('/register?id=%s&page=1' % id)
+
 		net_payment_due = max(0, s.payment_due - s.payment_made - s.discount)
 		if net_payment_due == 0 and self.request.get('save'):
 			template_values = {
@@ -405,24 +417,155 @@ class Continue(webapp2.RequestHandler):
 			ss = db.get(sskey)
 			if ss:
 				sponsorship_names.append(ss.name)
-		parms = [('cst', '60605a'),
-				 ('contactname', s.first_name + " " + s.last_name),
-				 ('contactemailaddress', s.email),
-				 ('sponsorshiplevel', ','.join(sponsorship_names)),
-				 ('numberofgolfers', s.num_golfers),
-				 ('numberofdinnerguests', s.num_dinners),
-				 ('amount_20_20_amt', net_payment_due),
-				 ('idnumberhidden', s.id),
-				 ('fname', s.first_name),
-				 ('lname', s.last_name),
-				 ('address', s.address),
-				 ('city', s.city),
-				 ('state', s.state),
-				 ('zip', s.zip),
-				 ('phone', s.phone),
-				 ('email', s.email)]
-		acceptiva = 'https://secure.acceptiva.com/' if not dev_server else '/fakeacceptiva'
-		self.redirect('%s?%s' % (acceptiva, urllib.urlencode(parms)))
+
+		payments_info = payments.get_payments_info(root)
+
+		if payments_info.gateway_url and 'acceptiva' in payments_info.gateway_url:
+			parms = [('cst', '60605a'),
+					 ('contactname', s.first_name + " " + s.last_name),
+					 ('contactemailaddress', s.email),
+					 ('sponsorshiplevel', ','.join(sponsorship_names)),
+					 ('numberofgolfers', s.num_golfers),
+					 ('numberofdinnerguests', s.num_dinners),
+					 ('amount_20_20_amt', net_payment_due),
+					 ('idnumberhidden', s.id),
+					 ('fname', s.first_name),
+					 ('lname', s.last_name),
+					 ('address', s.address),
+					 ('city', s.city),
+					 ('state', s.state),
+					 ('zip', s.zip),
+					 ('phone', s.phone),
+					 ('email', s.email)]
+			self.redirect('%s?%s' % (payments_info.gateway_url, urllib.urlencode(parms)))
+
+		elif payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
+			timestamp = int(time.time())
+			fingerprint = hmac.new(payments_info.transaction_key.encode())
+			fingerprint.update(payments_info.api_login_id)
+			fingerprint.update('^')
+			fingerprint.update(str(s.id))
+			fingerprint.update('^')
+			fingerprint.update(str(timestamp))
+			fingerprint.update('^')
+			fingerprint.update(str(net_payment_due))
+			fingerprint.update('^')
+			description = "Celebration Classic Registration"
+			api_fields = [
+				('x_test_request', 'TRUE' if payments_info.test_mode else 'FALSE'),
+				('x_login', payments_info.api_login_id),
+				('x_fp_sequence', str(s.id)),
+				('x_fp_timestamp', str(timestamp)),
+				('x_fp_hash', fingerprint.hexdigest()),
+				('x_version', '3.1'),
+				('x_method', 'CC'),
+				('x_type', 'AUTH_CAPTURE'),
+				('x_cust_id', s.id),
+				('x_version', "3.1"),
+				('x_description', description),
+				('x_email_customer', 'FALSE'),
+				('x_delim_data', "FALSE"),
+				('x_relay_response', 'TRUE'),
+				('x_relay_url', payments_info.relay_url),
+				]
+			template_values = {
+				'sponsor': s,
+				'gateway_url': payments_info.gateway_url,
+				'api_fields': api_fields,
+				'net_payment_due': str(net_payment_due),
+				'capabilities': caps
+			}
+			self.response.out.write(render_to_string('paybycredit.html', template_values))
+
+		else:
+			messages.append('Sorry, we are not yet accepting credit card payments.')
+			show_continuation_form(self.response, s, messages, caps, dev_server)
+
+# Process the relay response from Authorize.net confirming payment.
+
+class RelayResponse(webapp2.RequestHandler):
+	# Process the submitted info.
+	def post(self):
+		root = tournament.get_tournament()
+		payments_info = payments.get_payments_info(root)
+		response_code = self.request.get('x_response_code')
+		reason_code = self.request.get('x_response_reason_code')
+		reason_text = self.request.get('x_response_reason_text')
+		auth_code = self.request.get('x_auth_code')
+		trans_id = self.request.get('x_trans_id')
+		id = self.request.get('x_cust_id')
+		amount = self.request.get('x_amount')
+		method = self.request.get('x_method')
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter('id = ', int(id))
+		s = q.get()
+		if s and int(response_code) == 1:
+			s.payment_type = method
+			s.transaction_code = trans_id
+			s.auth_code = auth_code
+			try:
+				s.payment_made += int(float(amount))
+			except ValueError:
+				logging.error("Could not convert amount %s to int" % amount)
+			s.put()
+		parms = [
+			('response_code', response_code),
+			('reason_code', reason_code),
+			('reason_text', reason_text),
+			('auth_code', auth_code),
+			('id', id),
+			('amount', amount),
+			]
+		receipt_url = '%s?%s' % (str(payments_info.receipt_url), urllib.urlencode(parms))
+		self.response.out.write('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"')
+		self.response.out.write('	"http://www.w3.org/TR/html4/loose.dtd">')
+		self.response.out.write('<html>')
+		self.response.out.write('<head>')
+		self.response.out.write('<noscript>')
+		self.response.out.write('<meta http-equiv="refresh" content="0;url=%s">' % receipt_url)
+		self.response.out.write('</noscript>')
+		self.response.out.write('</head>')
+		self.response.out.write('<body>')
+		self.response.out.write('<script type="text/javascript">')
+		self.response.out.write('document.location = "%s";' % receipt_url)
+		self.response.out.write('</script>')
+		self.response.out.write('</body>')
+		self.response.out.write('</html>')
+
+# Process the receipt request from Authorize.net.
+
+class Receipt(webapp2.RequestHandler):
+	# Process the submitted info.
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		response_code = self.request.get('response_code')
+		reason_code = self.request.get('reason_code')
+		reason_text = self.request.get('reason_text')
+		id = self.request.get('id')
+		amount = self.request.get('amount')
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter('id = ', int(id))
+		s = q.get()
+		if not s:
+			self.response.out.write('<html><head>\n')
+			self.response.out.write('<title>ID Not Found</title>\n')
+			self.response.out.write('</head><body>\n')
+			self.response.out.write('<h1>ID Not Found</h1>\n')
+			self.response.out.write('<p>The requested registration id %s was not found.</p>\n' % id)
+			self.response.out.write('</body></html>\n')
+			return
+		template_values = {
+			'sponsor': s,
+			'amount': int(float(amount)),
+			'response_code': int(response_code),
+			'reason_code': int(reason_code),
+			'reason_text': reason_text,
+			'capabilities': caps
+			}
+		self.response.out.write(render_to_string('receipt.html', template_values))
 
 # Process the POST request from Acceptiva confirming payment.
 
@@ -489,6 +632,8 @@ class FakeAcceptiva(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([('/register', Register),
 							   ('/continue', Continue),
-							   ('/postpayment', PostPayment),
-							   ('/fakeacceptiva', FakeAcceptiva)],
+							   ('/relayresponse', RelayResponse),
+							   ('/receipt', Receipt),
+							   ('/fakeacceptiva', FakeAcceptiva),
+							   ('/postpayment', PostPayment)],
 							  debug=dev_server)

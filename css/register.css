@@ -4,7 +4,7 @@ p.important { font-weight: bold; }
 
 .register-checklist ul { list-style: none; margin: 0 0 0.75em 1em; padding: 0; }
 
-.form { position: relative; overflow: hidden; width: 564px; }
+.form { position: relative; overflow: hidden; width: 100%; }
 
 .form-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; background-color: #e7fbe7; }
 .form-submit-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; }

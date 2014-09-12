@@ -18,15 +18,32 @@ form table tr th { font-size: 75%; }
 <table border="0" cellspacing="0" cellpadding="10">
 <tr>
 <td align="left">Gateway URL</td>
-<td align="left"><input type="text" size="30" name="gateway_url" value="{{ payments.gateway_url }}"></td>
+<td align="left"><input type="text" size="60" name="gateway_url" value="{{ payments.gateway_url }}"></td>
+</tr>
+<tr>
+<td align="left">Relay URL</td>
+<td align="left"><input type="text" size="60" name="relay_url" value="{{ payments.relay_url }}"></td>
+</tr>
+<tr>
+<td align="left">Receipt URL</td>
+<td align="left"><input type="text" size="60" name="receipt_url" value="{{ payments.receipt_url }}"></td>
 </tr>
 <tr>
 <td align="left">API Login ID</td>
-<td align="left"><input type="text" size="30" name="api_login_id" value="{{ payments.api_login_id }}"></td>
+<td align="left"><input type="text" size="20" name="api_login_id" value="{{ payments.api_login_id }}"></td>
 </tr>
 <tr>
 <td align="left">Transaction Key</td>
-<td align="left"><input type="text" size="30" name="transaction_key" value="{{ payments.transaction_key }}"></td>
+<td align="left"><input type="text" size="20" name="transaction_key" value="{{ payments.transaction_key }}"></td>
+</tr>
+<tr>
+<td align="left">Test Mode</td>
+<td align="left">
+<select name="test_mode">
+<option label="False" value="false" {% if not payments.test_mode %} selected {% endif %}>False</option>
+<option label="True" value="true" {% if payments.test_mode %} selected {% endif %}>True</option>
+</select>
+</td>
 </tr>
 <tr>
 <td></td>

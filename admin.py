@@ -75,19 +75,22 @@ class ManageUsers(webapp2.RequestHandler):
 			ua = True if self.request.get('ua%d' % i) == 'u' else False
 			ec = True if self.request.get('ec%d' % i) == 'e' else False
 			et = True if self.request.get('et%d' % i) == 't' else False
+			pp = True if self.request.get('pp%d' % i) == 'p' else False
 			if (must_update or
 					us != u.can_update_sponsorships or
 					vr != u.can_view_registrations or
 					ar != u.can_add_registrations or
 					ua != u.can_update_auction or
 					ec != u.can_edit_content or
-					et != u.can_edit_tournament_properties):
+					et != u.can_edit_tournament_properties or
+					pp != u.can_edit_payment_processor):
 				u.can_update_sponsorships = us
 				u.can_view_registrations = vr
 				u.can_add_registrations = ar
 				u.can_update_auction = ua
 				u.can_edit_content = ec
 				u.can_edit_tournament_properties = et
+				u.can_edit_payment_processor = pp
 				u.put()
 		email = self.request.get('email')
 		us = True if self.request.get('us') == 'u' else False
@@ -96,6 +99,7 @@ class ManageUsers(webapp2.RequestHandler):
 		ua = True if self.request.get('ua') == 'u' else False
 		ec = True if self.request.get('ec') == 'e' else False
 		et = True if self.request.get('et') == 't' else False
+		pp = True if self.request.get('pp') == 'p' else False
 		if email:
 			u = capabilities.Capabilities(parent = root,
 										  email = email,
@@ -104,7 +108,8 @@ class ManageUsers(webapp2.RequestHandler):
 										  can_add_registrations = ar,
 										  can_update_auction = ua,
 										  can_edit_content = ec,
-										  can_edit_tournament_properties = et)
+										  can_edit_tournament_properties = et,
+										  can_edit_payment_processor = pp)
 			u.put()
 		memcache.flush_all()
 		self.redirect('/admin/users')
@@ -172,10 +177,10 @@ class ManageTournament(webapp2.RequestHandler):
 class PaymentGateway(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
-		if not users.is_current_user_admin():
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_payment_processor:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
-		caps = capabilities.get_current_user_caps()
 		t = tournament.get_tournament()
 		payments_info = payments.get_payments_info(t)
 		template_values = {
@@ -186,17 +191,20 @@ class PaymentGateway(webapp2.RequestHandler):
 
 	# Process the submitted info.
 	def post(self):
-		if not users.is_current_user_admin():
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_edit_payment_processor:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
-		caps = capabilities.get_current_user_caps()
 		t = tournament.get_tournament()
 		payment_gateway = payments.Payments.all().ancestor(t).get()
 		if payment_gateway is None:
 			payment_gateway = payments.Payments(parent = t)
 		payment_gateway.gateway_url = self.request.get("gateway_url")
+		payment_gateway.relay_url = self.request.get("relay_url")
+		payment_gateway.receipt_url = self.request.get("receipt_url")
 		payment_gateway.api_login_id = self.request.get("api_login_id")
 		payment_gateway.transaction_key = self.request.get("transaction_key")
+		payment_gateway.test_mode = self.request.get("test_mode") == "true"
 		payment_gateway.put()
 		self.redirect('/admin/payments')
 
@@ -280,12 +288,13 @@ class ViewGolfer(object):
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
+		slope = t.red_course_slope if g.gender == "F" else t.white_course_slope
 		if g.has_index:
-			self.course_handicap = min(36, int(round(g.handicap_index * t.course_slope / 113.0)))
+			self.course_handicap = min(36, int(round(g.handicap_index * slope / 113.0)))
 		elif g.average_score:
 			try:
 				handicap_index = float(g.average_score) * 0.8253 - 61.15
-				self.course_handicap = min(36, int(round(handicap_index * t.course_slope / 113.0)))
+				self.course_handicap = min(36, int(round(handicap_index * slope / 113.0)))
 			except:
 				self.course_handicap = 36
 		else:

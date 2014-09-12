@@ -24,8 +24,8 @@ window.onload = function() {
 {% endif %}
 
 {% if not capabilities.can_add_registrations %}
-{{ page.content|markdown }}
 {% endif %}
+{{ page.content|markdown }}
 
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
@@ -102,7 +102,7 @@ window.onload = function() {
 
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if selected %}checked{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if non_angel_selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
 Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 <a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
@@ -256,7 +256,7 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 
 <div class="form-entry form-dollars">
 <div class="form-input">
-<label for="entry_payment_due">Total</label>
+<label for="entry_payment_due_c">Total</label>
 $<input type="text" name="payment_due_c" value="{{ sponsor.payment_due }}" id="entry_payment_due_c" readonly>
 <input type="hidden" name="payment_due" value="{{ sponsor.payment_due }}" id="entry_payment_due">
 </div>
@@ -272,7 +272,7 @@ $<input type="text" name="credits_c" value="{{ credits }}" id="entry_credits_c" 
 
 <div class="form-entry form-dollars">
 <div class="form-input">
-<label for="entry_net_payment_due">Amount Due</label>
+<label for="entry_net_payment_due_c">Amount Due</label>
 $<input type="text" name="net_payment_due_c" value="{{ net_payment_due }}" id="entry_net_payment_due_c" readonly>
 <input type="hidden" name="net_payment_due" value="{{ net_payment_due }}" id="entry_net_payment_due">
 </div>
@@ -303,6 +303,13 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 <div class="form-input">
 <label for="entry_transcode">Transaction Code</label>
 <input type="text" name="transcode" value="{{ sponsor.transaction_code|default:'' }}" id="entry_transcode">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_transcode">Authorization Code</label>
+<input type="text" name="authcode" value="{{ sponsor.auth_code|default:'' }}" id="entry_authcode">
 </div>
 </div>
 

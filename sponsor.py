@@ -24,6 +24,7 @@ class Sponsor(db.Model):
 	payment_made = db.IntegerProperty(default = 0)
 	payment_type = db.StringProperty(default = '')
 	transaction_code = db.StringProperty(default = '')
+	auth_code = db.StringProperty(default = '')
 	pairing = db.StringProperty(default = '')
 	dinner_seating = db.StringProperty(default = '')
 	timestamp = db.DateTimeProperty(auto_now_add = True)
