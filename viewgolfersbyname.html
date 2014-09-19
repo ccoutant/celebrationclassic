@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Golfers{% endblock %}
+{% block title %}Golfers By Name{% endblock %}
 
 {% block head %}
 <style type="text/css">
@@ -41,8 +41,8 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
 </ul>
 <ul class="viewnav">
-	<li class="selected"><a href="/admin/view/golfers">By Sponsor</a></li>
-	<li><a href="/admin/view/golfers/byname">By Name</a></li>
+	<li><a href="/admin/view/golfers">By Sponsor</a></li>
+	<li class="selected"><a href="/admin/view/golfers/byname">By Name</a></li>
 	<li><a href="/admin/view/golfers/byteam">By Team</a></li>
 	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
 	<li><a href="/admin/csv/golfers">Download CSV</a></li>
@@ -82,7 +82,6 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 			{% if g.golfer.company %}<p>{{ g.golfer.company }}</p>{% endif %}
 			{% if g.golfer.address %}<p>{{ g.golfer.address }}</p>{% endif %}
 			{% if g.golfer.city %}<p>{{ g.golfer.city }} {{ g.golfer.state }} {{ g.golfer.zip }}</p>{% endif %}
-			{% if g.pairing %}<p class="details">Pairing preference: {{ g.pairing }}</p>{% endif %}
 		</td>
 		<td>
 			{% if g.golfer.email %}<p><a href="mailto:{{ g.golfer.email }}">{{ g.golfer.email }}</a></p>{% endif %}
@@ -98,7 +97,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 		<td align="center">{% if g.starting_hole %}{{ g.starting_hole }}.{{ g.golfer.starting_hole_ab }}{% endif %}</td>
 		<td align="center">{% if g.golfer.cart == 1 %}A{% elif g.golfer.cart == 2 %}B{% endif %}</td>
 		<td align="center">{{ g.golfer.shirt_size }}</td>
-		<td align="left">{% ifequal g.golfer.sequence 1 %}<a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a>{% endifequal %}</td>
+		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
 	</tr>
 {% endfor %}
 </tbody>

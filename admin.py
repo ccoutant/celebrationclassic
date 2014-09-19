@@ -287,8 +287,17 @@ class ViewGolfer(object):
 		else:
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
-		self.pairing = s.pairing if g.sequence == s.num_golfers else ''
-		slope = t.red_course_slope if g.gender == "F" else t.white_course_slope
+		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
+		if g.tees:
+			tees = g.tees
+		elif g.gender == "F":
+			tees = 1 # Red
+		elif g.team and g.team.flight == 2:
+			tees = 3 # Blue
+		else:
+			tees = 2 # White
+		self.tees = tees
+		slope = [t.red_course_slope, t.white_course_slope, t.blue_course_slope][tees - 1]
 		if g.has_index:
 			self.course_handicap = min(36, int(round(g.handicap_index * slope / 113.0)))
 		elif g.average_score:
@@ -487,6 +496,108 @@ class ViewGolfers(webapp2.RequestHandler):
 			}
 		html = render_to_string('viewgolfers.html', template_values)
 		memcache.add('2015/admin/view/golfers', html, 60*60*24)
+		self.response.out.write(html)
+
+class ViewGolfersByName(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		all_golfers = []
+		q = Golfer.all()
+		q.ancestor(root)
+		q.filter("active =", True)
+		q.order("sort_name")
+		counter = 1
+		for g in q:
+			s = g.parent()
+			all_golfers.append(ViewGolfer(root, s, g, counter))
+			counter += 1
+		template_values = {
+			'golfers': all_golfers,
+			'capabilities': caps
+			}
+		html = render_to_string('viewgolfersbyname.html', template_values)
+		self.response.out.write(html)
+
+class ViewGolfersByTeam(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		all_golfers = []
+		counter = 1
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter("confirmed =", True)
+		q.order("timestamp")
+		for s in q:
+			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
+			for g in golfers:
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+			for i in range(len(golfers) + 1, s.num_golfers + 1):
+				g = Golfer(parent = s, sequence = i, name = '', gender = '',
+						   company = '', address = '', city = '', phone = '', email = '',
+						   golf_index = '', average_score = '', ghin_number = '',
+						   shirt_size = '', dinner_choice = '')
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+		shirt_sizes = { }
+		for g in all_golfers:
+			key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
+			if not key in shirt_sizes:
+				shirt_sizes[key] = 0
+			shirt_sizes[key] += 1
+		template_values = {
+			'golfers': all_golfers,
+			'shirt_sizes': shirt_sizes,
+			'capabilities': caps
+			}
+		html = render_to_string('viewgolfers.html', template_values)
+		self.response.out.write(html)
+
+class ViewGolfersByStart(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			self.redirect(users.create_login_url(self.request.uri))
+			return
+		all_golfers = []
+		counter = 1
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter("confirmed =", True)
+		q.order("timestamp")
+		for s in q:
+			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
+			for g in golfers:
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+			for i in range(len(golfers) + 1, s.num_golfers + 1):
+				g = Golfer(parent = s, sequence = i, name = '', gender = '',
+						   company = '', address = '', city = '', phone = '', email = '',
+						   golf_index = '', average_score = '', ghin_number = '',
+						   shirt_size = '', dinner_choice = '')
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+		shirt_sizes = { }
+		for g in all_golfers:
+			key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
+			if not key in shirt_sizes:
+				shirt_sizes[key] = 0
+			shirt_sizes[key] += 1
+		template_values = {
+			'golfers': all_golfers,
+			'shirt_sizes': shirt_sizes,
+			'capabilities': caps
+			}
+		html = render_to_string('viewgolfers.html', template_values)
 		self.response.out.write(html)
 
 class ViewDinners(webapp2.RequestHandler):
@@ -972,6 +1083,10 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/unpaid', ViewUnpaid),
 							   ('/admin/view/unconfirmed', ViewUnconfirmed),
 							   ('/admin/view/golfers', ViewGolfers),
+							   ('/admin/view/golfers/byname', ViewGolfersByName),
+							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
+							   ('/admin/view/golfers/bystart', ViewGolfersByStart),
+							   ('/admin/handicap', ViewGolfersByName),
 							   ('/admin/view/dinners', ViewDinners),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
 							   ('/admin/csv/golfers', DownloadGolfersCSV),

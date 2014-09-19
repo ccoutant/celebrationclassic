@@ -28,6 +28,12 @@ indexes:
 - kind: Golfer
   ancestor: yes
   properties:
+  - name: active
+  - name: sort_name
+
+- kind: Golfer
+  ancestor: yes
+  properties:
   - name: sequence
 
 - kind: PageVersion

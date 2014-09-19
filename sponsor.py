@@ -33,6 +33,7 @@ class Sponsor(db.Model):
 class Team(db.Model):
 	name = db.StringProperty(default = '')
 	starting_hole = db.StringProperty(default = 0)
+	flight = db.IntegerProperty(default = 1)
 
 class Golfer(db.Model):
 	sequence = db.IntegerProperty(default = 0)
@@ -56,6 +57,7 @@ class Golfer(db.Model):
 	dinner_choice = db.StringProperty(default = '')
 	team = db.ReferenceProperty(Team)
 	cart = db.IntegerProperty(default = 0)
+	tees = db.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
 
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)
