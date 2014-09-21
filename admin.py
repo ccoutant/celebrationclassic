@@ -217,8 +217,10 @@ class Sponsorships(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_sponsorships:
 			self.redirect(users.create_login_url(self.request.uri))
 			return
-		sponsorships = sponsorship.get_sponsorships("all")
+		root = tournament.get_tournament()
+		sponsorships = sponsorship.Sponsorship.all().ancestor(root).fetch(30)
 		next_seq = 1
+		last_level = "Double Eagle"
 		for s in sponsorships:
 			next_seq = s.sequence + 1
 			last_level = s.level
@@ -236,11 +238,13 @@ class Sponsorships(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_sponsorships:
 			self.redirect(users.create_login_url('/admin/sponsorships'))
 			return
+		root = tournament.get_tournament()
 		sponsorship.clear_sponsorships_cache()
 		count = int(self.request.get('count'))
 		for i in range(1, count + 1):
 			name = self.request.get('name%d' % i)
 			q = sponsorship.Sponsorship.all()
+			q.ancestor(root)
 			q.filter("name = ", name)
 			s = q.get()
 			if self.request.get('delete%d' % i) == 'd':
@@ -272,7 +276,6 @@ class Sponsorships(webapp2.RequestHandler):
 		unique = True if self.request.get('unique') == 'u' else False
 		sold = True if self.request.get('sold') == 's' else False
 		if name and sequence and price:
-			root = tournament.get_tournament()
 			s = sponsorship.Sponsorship(parent = root, name = name, level = level, sequence = int(sequence), price = int(price), golfers_included = int(golfers_included), unique = unique, sold = sold)
 			s.put()
 		self.redirect('/admin/sponsorships')

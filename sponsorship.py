@@ -29,7 +29,6 @@ def get_sponsorships(level):
 	sponsorships = q.fetch(30)
 	if not sponsorships:
 		s = Sponsorship(parent = root, name = level, level = level, sequence = 1, price = 1000, unique = False, sold = False, golfers_included = 4)
-		s.put()
 		sponsorships.append(s)
 	memcache.add('2015/' + level, sponsorships, 60*60*24)
 	return sponsorships
