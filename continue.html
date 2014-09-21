@@ -17,7 +17,7 @@
 
 <p>If you don&rsquo;t have all the information you need yet
 (or you can&rsquo;t make up your mind about what to have for dinner),
-don&rsquo;t panic&mdash;just <b><a href="/register?id={{ sponsor.id }}">bookmark this page!</a></b>
+just <b><a href="/register?id={{ sponsor.id }}">bookmark this page!</a></b>
 You can proceed to the checkout step and pay even if you
 haven&rsquo;t completed this form.
 After you&rsquo;ve paid, you can return to this page at any time,
@@ -32,7 +32,6 @@ If you pay online, your registration receipt will also contain a link back to th
 	<li>{% if has_completed_names %}&#10003; Names for all golfers entered.{% else %}&#9744; Enter names and genders for all golfers and dinner guests.{% endif %}</li>
 	<li>{% if has_completed_handicaps %}&#10003; Handicap information for all golfers entered.{% else %}&#9744; Enter handicap information for all golfers.{% endif %}</li>
 	<li>{% if has_selected_sizes %}&#10003; Shirt sizes for all golfers selected.{% else %}&#9744; Select shirt sizes for all golfers.{% endif %}</li>
-	<li>{% if has_selected_dinners %}&#10003; Dinner entrees for all dinner guests selected.{% else %}&#9744; Select entrees for all dinner guests.{% endif %}</li>
 	<li>{% if has_paid %}&#10003; Paid.{% else %}&#9744; Pay.{% endif %}</li>
 </ul>
 </div> <!-- register-checklist -->
@@ -178,14 +177,9 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_golfer_choice{{ golfer.sequence }}">Dinner Choice</label>
-<select name="golfer_choice{{ golfer.sequence }}" id="entry_golfer_choice{{ golfer.sequence }}">
-<option value="">Select one...</option>
-<option value="Beef" {% ifequal golfer.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
-<option value="Fish" {% ifequal golfer.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
-<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
-<option value="No Dinner" {% ifequal golfer.dinner_choice "No Dinner" %}selected{% endifequal %}>No Dinner</option>
-</select>
+<label for="entry_golfer_vegetarian{{ golfer.sequence }}">Dinner</label>
+<input type="checkbox" name="golfer_vegetarian{{ golfer.sequence }}" value="y" id="entry_golfer_vegetarian{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "Vegetarian" %}checked{% endifequal %}>
+<label class="right" for="entry_golfer_vegetarian{{ golfer.sequence }}">Vegetarian</label>
 </div>
 </div>
 
@@ -211,23 +205,19 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <h2>Dinner Guest #{{guest.sequence}}</h2>
 
-<div class="form-entry-left form-text">
+<div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_guest_first_name{{ guest.sequence }}">Name</label>
-<input type="text" name="guest_first_name{{ guest.sequence }}" value="{{ guest.first_name }}" id="entry_guest_first_name{{ guest.sequence }}">
-<input type="text" name="guest_last_name{{ guest.sequence }}" value="{{ guest.last_name }}" id="entry_guest_last_name{{ guest.sequence }}">
+<input class="form-first-name" type="text" name="guest_first_name{{ guest.sequence }}" value="{{ guest.first_name }}" id="entry_guest_first_name{{ guest.sequence }}" placeholder="First">
+<input class="form-last-name" type="text" name="guest_last_name{{ guest.sequence }}" value="{{ guest.last_name }}" id="entry_guest_last_name{{ guest.sequence }}" placeholder="Last">
 </div>
 </div>
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_guest_choice{{ guest.sequence }}">Dinner Choice</label>
-<select name="guest_choice{{ guest.sequence }}" id="entry_guest_choice{{ guest.sequence }}">
-<option value="">Select one...</option>
-<option value="Beef" {% ifequal guest.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
-<option value="Fish" {% ifequal guest.dinner_choice "Fish" %}selected{% endifequal %}>Fish</option>
-<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
-</select>
+<label for="entry_guest_vegetarian{{ guest.sequence }}">Dinner</label>
+<input type="checkbox" name="guest_vegetarian{{ guest.sequence }}" value="y" id="entry_guest_vegetarian{{ guest.sequence }}" {% ifequal guest.dinner_choice "Vegetarian" %}checked{% endifequal %}>
+<label class="right" for="entry_guest_vegetarian{{ guest.sequence }}">Vegetarian</label>
 </div>
 </div>
 

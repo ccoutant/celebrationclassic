@@ -83,7 +83,6 @@ def show_continuation_form(response, s, messages, caps, debug):
 	has_completed_names = True
 	has_completed_handicaps = True
 	has_selected_sizes = True
-	has_selected_dinners = True
 	has_paid = (s.payment_made + s.discount >= s.payment_due)
 	q = Golfer.all().ancestor(s.key()).order('sequence')
 	golfers = q.fetch(s.num_golfers)
@@ -96,13 +95,10 @@ def show_continuation_form(response, s, messages, caps, debug):
 				has_completed_handicaps = False
 			if not golfer.shirt_size:
 				has_selected_sizes = False
-			if not golfer.dinner_choice:
-				has_selected_dinners = False
 		else:
 			has_completed_names = False
 			has_completed_handicaps = False
 			has_selected_sizes = False
-			has_selected_dinners = False
 			golfer = Golfer(parent = s, sequence = i)
 			if i == 1:
 				golfer.first_name = s.first_name
@@ -120,10 +116,10 @@ def show_continuation_form(response, s, messages, caps, debug):
 	for i in range(1, s.num_dinners + 1):
 		if i <= len(dinner_guests):
 			guest = dinner_guests[i - 1]
-			if not guest.dinner_choice:
-				has_selected_dinners = False
+			if not guest.first_name or not guest.last_name:
+				has_completed_names = False
 		else:
-			has_selected_dinners = False
+			has_completed_names = False
 			guest = DinnerGuest(parent = s, sequence = i)
 			if s.num_golfers + i == 1:
 				guest.name = s.name
@@ -137,7 +133,6 @@ def show_continuation_form(response, s, messages, caps, debug):
 		'has_completed_names': has_completed_names,
 		'has_completed_handicaps': has_completed_handicaps,
 		'has_selected_sizes': has_selected_sizes,
-		'has_selected_dinners': has_selected_dinners,
 		'has_paid': has_paid,
 		'messages': messages,
 		'capabilities': caps,
@@ -359,7 +354,7 @@ class Continue(webapp2.RequestHandler):
 			golfer.average_score = self.request.get('avg%d' % i)
 			golfer.ghin_number = self.request.get('ghin%d' % i)
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
-			golfer.dinner_choice = self.request.get('golfer_choice%d' % i)
+			golfer.dinner_choice = "Vegetarian" if self.request.get('golfer_vegetarian%d' % i) == "y" else "Chicken/Fish"
 			golfer.put()
 
 		# Mark excess golfer instances as not active, so we can filter
@@ -377,7 +372,7 @@ class Continue(webapp2.RequestHandler):
 			guest = dinner_guests[i-1]
 			guest.first_name = self.request.get('guest_first_name%d' % i)
 			guest.last_name = self.request.get('guest_last_name%d' % i)
-			guest.dinner_choice = self.request.get('guest_choice%d' % i)
+			guest.dinner_choice = "Vegetarian" if self.request.get('guest_vegetarian%d' % i) == "y" else "Chicken/Fish"
 			guest.put()
 
 		s.pairing = self.request.get('pairing')
