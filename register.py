@@ -11,7 +11,7 @@ import urllib
 import re
 import webapp2
 from google.appengine.ext import db
-from google.appengine.api import memcache
+from google.appengine.api import memcache, mail
 from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
 
@@ -388,6 +388,7 @@ class Continue(webapp2.RequestHandler):
 
 		if self.request.get('back'):
 			self.redirect('/register?id=%s&page=1' % id)
+			return
 
 		net_payment_due = max(0, s.payment_due - s.payment_made - s.discount)
 		if net_payment_due == 0 and self.request.get('save'):
@@ -476,6 +477,47 @@ class Continue(webapp2.RequestHandler):
 			messages.append('Sorry, we are not yet accepting credit card payments.')
 			show_continuation_form(self.response, s, messages, caps, dev_server)
 
+# Send an email receipt.
+
+cc_receipt_template = """
+Dear %s,
+
+Thank you for registering for the Celebration Classic Dinner
+and Golf Tournament!
+
+We have recorded your payment as follows:
+
+Card type: %s
+Amount: $%s
+Authorization code: %s
+
+Please make sure that you have provided all of the following
+information for each golfer and dinner guest:
+
+- Name
+- GHIN number or average score (for golfers)
+- Shirt size (for golfers)
+- Dinner selection
+
+To provide any missing information or make changes, please visit
+the following URL:
+
+  http://www.celebrationclassic.org/register?id=%s
+
+If you have any questions, just reply to this email and we'll be
+glad to assist.
+"""
+
+def email_cc_receipt(s, card_type, auth_code, amount):
+	subject = "Your Celebration Classic Registration"
+	sender = "registration@celebrationclassic.org"
+	body = cc_receipt_template % (s.first_name, card_type, amount, auth_code, s.id)
+	logging.info("sending email receipt to %s (id %s)" % (s.email, s.id))
+	try:
+		mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
+	except:
+		logging.exception("Could not send email to %s" % s.email)
+
 # Process the relay response from Authorize.net confirming payment.
 
 class RelayResponse(webapp2.RequestHandler):
@@ -486,11 +528,14 @@ class RelayResponse(webapp2.RequestHandler):
 		response_code = self.request.get('x_response_code')
 		reason_code = self.request.get('x_response_reason_code')
 		reason_text = self.request.get('x_response_reason_text')
+		card_type = self.request.get('x_card_type')
 		auth_code = self.request.get('x_auth_code')
 		trans_id = self.request.get('x_trans_id')
 		id = self.request.get('x_cust_id')
 		amount = self.request.get('x_amount')
 		method = self.request.get('x_method')
+		logging.info("relay response for id %s: %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
+					 (id, int(response_code), int(reason_code), auth_code, trans_id, amount, method))
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter('id = ', int(id))
@@ -504,11 +549,14 @@ class RelayResponse(webapp2.RequestHandler):
 			except ValueError:
 				logging.error("Could not convert amount %s to int" % amount)
 			s.put()
+			if s.email:
+				email_cc_receipt(s, card_type, auth_code, amount)
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
 			('reason_text', reason_text),
 			('auth_code', auth_code),
+			('card_type', card_type),
 			('id', id),
 			('amount', amount),
 			]
@@ -538,6 +586,8 @@ class Receipt(webapp2.RequestHandler):
 		response_code = self.request.get('response_code')
 		reason_code = self.request.get('reason_code')
 		reason_text = self.request.get('reason_text')
+		card_type = self.request.get('card_type')
+		auth_code = self.request.get('auth_code')
 		id = self.request.get('id')
 		amount = self.request.get('amount')
 		q = Sponsor.all()
@@ -558,6 +608,8 @@ class Receipt(webapp2.RequestHandler):
 			'response_code': int(response_code),
 			'reason_code': int(reason_code),
 			'reason_text': reason_text,
+			'card_type': card_type,
+			'auth_code': auth_code,
 			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('receipt.html', template_values))
@@ -573,6 +625,8 @@ class PostPayment(webapp2.RequestHandler):
 		payment_made = self.request.get('amount_20_20_amt')
 		paytype = self.request.get('paytype')
 		transcode = self.request.get('transcode')
+		logging.info("post payment for id %s: amount %s, paytype %s, transcode %s" %
+					 (id, payment_made, paytype, transcode))
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter('id = ', int(id))
@@ -587,6 +641,8 @@ class PostPayment(webapp2.RequestHandler):
 			except ValueError:
 				s.payment_made += 0
 			s.put()
+			if s.email:
+				email_cc_receipt(s, paytype, transcode, payment_made)
 			self.response.set_status(204, 'Payment Posted')
 
 # Simulate the acceptiva page (for testing).

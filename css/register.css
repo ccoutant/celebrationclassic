@@ -35,6 +35,7 @@ label.sold { color: #999; }
 .form-text .form-input input.form-city { width: 10em; }
 .form-text .form-input input.form-state { width: 5em; }
 .form-text .form-input input.form-zip { width: 5em; }
+.form-text .form-input input.form-prefs { width: 25em; }
 .form-phone .form-input input { width: 10em; }
 .form-number .form-input input { width: 5em; }
 .form-dollars .form-input input { width: 6em; }

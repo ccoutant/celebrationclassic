@@ -2,14 +2,14 @@
 
 {% load humanize %}
 
-{% block title %}Registration{% endblock %}
+{% block title %}Registration Step 2{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="css/register.css" type="text/css">
 {% endblock %}
 
 {% block content %}
-<h2>Golfer Information and Dinner Choices</h2>
+<h2>Golfers and Dinner Guests</h2>
 
 {% if not capabilities.can_add_registrations %}
 {% endif %}
@@ -29,7 +29,7 @@ If you pay online, your registration receipt will also contain a link back to th
 <p>Your registration checklist:</p>
 <ul>
 	<li>{% if has_registered %}&#10003; Registered{% else %}&#9744; Register{% endif %} for golf and dinner.</li>
-	<li>{% if has_completed_names %}&#10003; Names for all golfers entered.{% else %}&#9744; Enter names and genders for all golfers and dinner guests.{% endif %}</li>
+	<li>{% if has_completed_names %}&#10003; Names for all golfers and dinner guests entered.{% else %}&#9744; Enter names for all golfers and dinner guests, and genders for all golfers.{% endif %}</li>
 	<li>{% if has_completed_handicaps %}&#10003; Handicap information for all golfers entered.{% else %}&#9744; Enter handicap information for all golfers.{% endif %}</li>
 	<li>{% if has_selected_sizes %}&#10003; Shirt sizes for all golfers selected.{% else %}&#9744; Select shirt sizes for all golfers.{% endif %}</li>
 	<li>{% if has_paid %}&#10003; Paid.{% else %}&#9744; Pay.{% endif %}</li>
@@ -177,9 +177,8 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_golfer_vegetarian{{ golfer.sequence }}">Dinner</label>
 <input type="checkbox" name="golfer_vegetarian{{ golfer.sequence }}" value="y" id="entry_golfer_vegetarian{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "Vegetarian" %}checked{% endifequal %}>
-<label class="right" for="entry_golfer_vegetarian{{ golfer.sequence }}">Vegetarian</label>
+<label class="right" for="entry_golfer_vegetarian{{ golfer.sequence }}">Check here for a vegetarian entree</label>
 </div>
 </div>
 
@@ -190,8 +189,8 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry form-text">
 <div class="form-input">
-<label class="above" for="entry_pairing">Pairing preferences:</label>
-<input type="text" name="pairing" value="{{ sponsor.pairing }}" id="entry_pairing">
+<label class="above" for="entry_pairing">Golfer pairing preferences:</label>
+<input class="form-prefs" type="text" name="pairing" value="{{ sponsor.pairing }}" id="entry_pairing">
 </div>
 </div>
 
@@ -215,9 +214,8 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_guest_vegetarian{{ guest.sequence }}">Dinner</label>
 <input type="checkbox" name="guest_vegetarian{{ guest.sequence }}" value="y" id="entry_guest_vegetarian{{ guest.sequence }}" {% ifequal guest.dinner_choice "Vegetarian" %}checked{% endifequal %}>
-<label class="right" for="entry_guest_vegetarian{{ guest.sequence }}">Vegetarian</label>
+<label class="right" for="entry_guest_vegetarian{{ guest.sequence }}">Check here for a vegetarian entree</label>
 </div>
 </div>
 
@@ -229,7 +227,7 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry form-text">
 <div class="form-input">
 <label class="above" for="entry_seating">Dinner seating preferences:</label>
-<input type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating">
+<input class="form-prefs" type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating">
 </div>
 </div>
 
