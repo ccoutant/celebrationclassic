@@ -12,6 +12,7 @@
   <th align="left">Page</th>
   <th>Published<br>Version</th>
   <th>Draft<br>Version</th>
+  <th>Last<br>Modified</th>
   <th></th>
 </tr>
 </thead>
@@ -21,6 +22,7 @@
   <td align="left"><a href="/{{ page.path }}">{{ page.name }}</a></td>
   <td align="center">{{ page.published_version }}</td>
   <td align="center">{% if page.is_draft %}{{ page.draft_version }}{% endif %}</td>
+  <td align="center">{% if page.draft_version > 0 %}{{ page.last_modified|date:"Y/m/d h:i A" }}{% endif %}</td>
   <td align="center"><input type="submit" name="edit{{ page.name }}" value="Edit"></td>
 </tr>
 {% endfor %}

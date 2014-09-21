@@ -18,9 +18,9 @@ class Capabilities(db.Model):
 def get_current_user_caps():
 	user = users.get_current_user()
 	if not user:
-		return Capabilities(email = 'nobody@example.com')
-	email = users.get_current_user().email()
-	caps = memcache.get('2015/' + email)
+		return Capabilities(email = None)
+	email = user.email()
+	caps = memcache.get('2015/caps/' + email)
 	if caps is not None:
 		return caps
 	else:
@@ -29,5 +29,5 @@ def get_current_user_caps():
 		q.ancestor(t)
 		q.filter("email = ", email)
 		caps = q.get()
-		memcache.add('2015/' + email, caps, 60*60)
+		memcache.add('2015/caps/' + email, caps, 60*60)
 		return caps

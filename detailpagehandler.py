@@ -26,6 +26,7 @@ class PageHandler(webapp2.RequestHandler):
 	def get(self, name):
 		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
+		user_signed_in = True if caps.email else False
 		if name == "":
 			name = "home"
 		page = detailpage.get_detail_page(name, False)
@@ -40,7 +41,7 @@ class PageHandler(webapp2.RequestHandler):
 			return
 		last_modified = max(page.last_modified, t.timestamp)
 		modified = True
-		if 'If-Modified-Since' in self.request.headers:
+		if not user_signed_in and 'If-Modified-Since' in self.request.headers:
 			try:
 				last_seen = datetime.datetime.strptime(self.request.headers['If-Modified-Since'].strip(), HTTP_DATE_FMT)
 				if last_seen >= last_modified.replace(microsecond=0):

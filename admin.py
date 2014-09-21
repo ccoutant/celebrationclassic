@@ -993,14 +993,16 @@ class EditPageHandler(webapp2.RequestHandler):
 			path = name if name != "home" else ""
 			published_version = detailpage.get_published_version(name)
 			draft_version = detailpage.get_draft_version(name)
-			page = {
+			page = detailpage.get_detail_page(name, True)
+			page_info = {
 				'name': name,
 				'path': path,
 				'published_version': published_version,
 				'draft_version': draft_version,
-				'is_draft': draft_version > published_version
+				'is_draft': draft_version > published_version,
+				'last_modified': page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific)
 				}
-			pages.append(page)
+			pages.append(page_info)
 		photos = []
 		files = []
 		q = uploadedfile.UploadedFile.all()
