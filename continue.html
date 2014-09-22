@@ -15,15 +15,18 @@
 {% endif %}
 <p>Complete your online registration by providing the golfer information and dinner choices below.</p>
 
+{% if not registration_closed %}
 <p>If you don&rsquo;t have all the information you need yet
-(or you can&rsquo;t make up your mind about what to have for dinner),
-just <b><a href="/register?id={{ sponsor.id }}">bookmark this page!</a></b>
+(or you haven&rsquo;t yet decided what to have for dinner),
+just <b><a href="/register?id={{ sponsor.id }}">bookmark this page</a></b>
+so you can come back to it later.
 You can proceed to the checkout step and pay even if you
 haven&rsquo;t completed this form.
-After you&rsquo;ve paid, you can return to this page at any time,
-as often as you wish, to change your selections.
+After you&rsquo;ve paid, you can return to this page as often as you wish,
+up to the registration deadline of {{ deadline }}, to change your selections.
 Just remember to save your changes each time.
-If you pay online, your registration receipt will also contain a link back to this page.</p>
+If you pay online, your email receipt will also contain a link back to this page.</p>
+{% endif %}
 
 <div class="register-checklist">
 <p>Your registration checklist:</p>

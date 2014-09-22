@@ -78,7 +78,14 @@ def show_registration_form(response, root, s, messages, caps, debug):
 
 # Show the continuation form.
 
-def show_continuation_form(response, s, messages, caps, debug):
+def show_continuation_form(response, root, s, messages, caps, debug):
+	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
+	# last until 1 am PDT.)
+	today = datetime.datetime.now() - datetime.timedelta(hours=8)
+	registration_closed = today.date() > root.deadline
+	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
+							  root.deadline.day,
+							  root.deadline.year)
 	has_registered = s.confirmed
 	has_completed_names = True
 	has_completed_handicaps = True
@@ -125,6 +132,8 @@ def show_continuation_form(response, s, messages, caps, debug):
 				guest.name = s.name
 			dinner_guests.append(guest)
 	template_values = {
+		'deadline': deadline,
+		'registration_closed': registration_closed,
 		'sponsor': s,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'golfers': golfers,
@@ -159,7 +168,7 @@ class Register(webapp2.RequestHandler):
 				if self.request.get('page') == '1':
 					show_registration_form(self.response, root, s, messages, caps, dev_server)
 				else:
-					show_continuation_form(self.response, s, messages, caps, dev_server)
+					show_continuation_form(self.response, root, s, messages, caps, dev_server)
 				return
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 		s = Sponsor(sponsorships = [])
@@ -475,7 +484,7 @@ class Continue(webapp2.RequestHandler):
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			show_continuation_form(self.response, s, messages, caps, dev_server)
+			show_continuation_form(self.response, root, s, messages, caps, dev_server)
 
 # Send an email receipt.
 
