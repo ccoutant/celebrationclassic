@@ -466,10 +466,9 @@ class Continue(webapp2.RequestHandler):
 				('x_method', 'CC'),
 				('x_type', 'AUTH_CAPTURE'),
 				('x_cust_id', s.id),
-				('x_version', "3.1"),
 				('x_description', description),
 				('x_email_customer', 'FALSE'),
-				('x_delim_data', "FALSE"),
+				('x_delim_data', 'FALSE'),
 				('x_relay_response', 'TRUE'),
 				('x_relay_url', payments_info.relay_url),
 				]
