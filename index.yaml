@@ -53,11 +53,6 @@ indexes:
   - name: timestamp
 
 - kind: Sponsorship
-  properties:
-  - name: level
-  - name: sequence
-
-- kind: Sponsorship
   ancestor: yes
   properties:
   - name: level
