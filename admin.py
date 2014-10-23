@@ -218,7 +218,7 @@ class Sponsorships(webapp2.RequestHandler):
 			self.redirect(users.create_login_url(self.request.uri))
 			return
 		root = tournament.get_tournament()
-		sponsorships = sponsorship.Sponsorship.all().ancestor(root).fetch(30)
+		sponsorships = sponsorship.Sponsorship.all().ancestor(root).order("sequence").fetch(30)
 		next_seq = 1
 		last_level = "Double Eagle"
 		for s in sponsorships:
