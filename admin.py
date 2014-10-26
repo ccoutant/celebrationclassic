@@ -1075,6 +1075,40 @@ class EditPageHandler(webapp2.RequestHandler):
 		else:
 			self.response.set_status(204, 'No submit button pressed')
 
+class DeleteHandler(webapp2.RequestHandler):
+	def get(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url('/admin/delete-registrations'))
+			return
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.order("timestamp")
+		sponsors = q.fetch(limit = None)
+		template_values = {
+			'sponsors': sponsors,
+			'capabilities': caps
+			}
+		self.response.out.write(render_to_string('deleteregistrations.html', template_values))
+
+	def post(self):
+		if not users.is_current_user_admin():
+			self.redirect(users.create_login_url('/admin/delete-registrations'))
+			return
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if self.request.get('delete'):
+			ids_to_delete = self.request.get_all('selected_items')
+			for id in ids_to_delete:
+				s = Sponsor.all().ancestor(root).filter('id =', int(id)).get()
+				golfers = Golfer.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
+				db.delete(golfers)
+				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
+				db.delete(guests)
+				s.delete()
+		self.redirect('/admin/delete-registrations')
+
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
 							   ('/admin/tournament', ManageTournament),
@@ -1098,5 +1132,6 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/csv/dinners', DownloadDinnersCSV),
 							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
+							   ('/admin/delete-registrations', DeleteHandler),
 							   ('/admin/logout', Logout)],
 							  debug=dev_server)
