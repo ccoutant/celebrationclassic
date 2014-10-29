@@ -391,6 +391,14 @@ class Continue(webapp2.RequestHandler):
 		memcache.delete('2015/admin/view/golfers')
 		memcache.delete('2015/admin/view/dinners')
 
+		# Mark unique sponsorships as sold.
+		for k in s.sponsorships:
+			ss = db.get(k)
+			if ss and ss.unique:
+				ss.sold = True;
+				ss.put()
+				sponsorship.clear_sponsorships_cache()
+
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/admin/view/registrations')
 			return
