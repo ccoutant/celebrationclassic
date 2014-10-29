@@ -11,7 +11,7 @@
 <h2>Receipt</h2>
 
 <p>Thank you! Your registration has been entered
-and your payment for ${{ amount|intcomma }} has been received.</p>
+and your payment of ${{ amount|intcomma }} has been received.</p>
 
 <p>Card: {{ card_type }}
 <br>Authorization Code: {{ auth_code }}</p>
@@ -20,12 +20,24 @@ and your payment for ${{ amount|intcomma }} has been received.</p>
 <p>A copy of this receipt has been mailed to you at {{ sponsor.email }}.</p>
 {% endif %}
 
+{% elif response_code == 2 %}
+
+<h2>Error</h2>
+
+<p>Sorry, your payment of ${{ amount|intcomma }} could not be processed:
+{{ reason_text }}
+(Error code {{ response_code }}-{{ reason_code }}.)</p>
+
+<p>Please contact <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>
+for assistance.</p>
+
 {% else %}
 
 <h2>Error</h2>
 
 <p>Sorry, there was a problem with your payment:
-{{ reason_text }} (code {{ response_code }}-{{ reason_code }})</p>
+{{ reason_text }}
+(Error code {{ response_code }}-{{ reason_code }}.)</p>
 
 <p>Please contact <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</a>
 for assistance.</p>
