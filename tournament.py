@@ -14,6 +14,7 @@ class Tournament(db.Model):
 	dinner_price_late = db.IntegerProperty()
 	golf_sold_out = db.BooleanProperty(default = False)
 	dinner_sold_out = db.BooleanProperty(default = False)
+	go_discount_codes = db.StringProperty()
 	red_course_rating = db.FloatProperty(default = 72.0)
 	red_course_slope = db.FloatProperty(default = 113.0)
 	white_course_rating = db.FloatProperty(default = 72.0)

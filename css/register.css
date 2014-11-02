@@ -30,6 +30,7 @@ label.sold { color: #999; }
 .form-input { white-space: nowrap; }
 .form-input, .form-button { margin: 0 0 0.5em 8em; }
 .form-text .form-input input { width: 15em; }
+.form-text .form-input input.form-submit { width: auto; }
 .form-text .form-input input.form-first-name { width: 10em; }
 .form-text .form-input input.form-last-name { width: 15em; }
 .form-text .form-input input.form-city { width: 10em; }

@@ -234,6 +234,26 @@ $<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="e
 
 </div> <!-- form-section -->
 
+<div class="form-section">
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="show_go_campaign" id="checkbox_show_go_campaign" value="y" {% if sponsor.go_discount_code %}checked{% endif %}></div>
+<label class="right" for="checkbox_show_go_campaign">Check here if you are a Shir Hadash GO campaign member.</label>
+</div>
+</div>
+<div class="form-entry form-text" id="go_campaign">
+<div class="form-input">
+<label for="entry_discount_code">Discount Code</label>
+<input type="text" name="discount_code" value="{{ sponsor.go_discount_code|default:'' }}" id="entry_discount_code">
+<input class="form-submit" type="submit" name="apply_discount" value="Apply">
+<input type="hidden" name="go_golfers" value="{{ sponsor.go_golfers|default:0 }}" id="entry_go_golfers">
+<br><label class="right" for="entry_discount_code"><i>Enter your GO campaign discount code here.
+<a href="mailto:gordon@shirhadash.org">Contact Gordon Gladstone</a> if you haven't received one.</i></label>
+</div>
+</div>
+</div> <!-- form-section -->
+
+
 <div id="sponsor_agree" class="form-section">
 
 <div class="form-entry form-checkbox">

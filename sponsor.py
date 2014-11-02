@@ -21,6 +21,8 @@ class Sponsor(db.Model):
 	payment_due = db.IntegerProperty(default = 0)
 	discount = db.IntegerProperty(default = 0)
 	discount_type = db.StringProperty(default = '')
+	go_golfers = db.IntegerProperty(default = 0)
+	go_discount_code = db.StringProperty(default = '')
 	payment_made = db.IntegerProperty(default = 0)
 	payment_type = db.StringProperty(default = '')
 	transaction_code = db.StringProperty(default = '')

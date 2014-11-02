@@ -216,6 +216,24 @@ class Register(webapp2.RequestHandler):
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
+		if self.request.get('show_go_campaign'):
+			discount_code = self.request.get('discount_code')
+			if discount_code and s.discount == 0:
+				codes = [ pair.split(':') for pair in root.go_discount_codes.split(',') ]
+				codes = dict(codes)
+				if discount_code in codes:
+					s.go_discount_code = discount_code
+					s.go_golfers = int(codes[discount_code])
+					if s.go_golfers != int(self.request.get('go_golfers')):
+						messages.append('Your GO campaign discount has been applied.')
+				else:
+					messages.append('The discount code you entered is not valid.')
+			if messages or self.request.get('apply_discount'):
+				show_registration_form(self.response, root, s, messages, caps, dev_server)
+				return
+
+		go_golfers = s.go_golfers or 0
+
 		if not s.first_name and not s.last_name:
 			messages.append('Please enter your name.')
 		elif not s.first_name or not s.last_name:
@@ -254,6 +272,7 @@ class Register(webapp2.RequestHandler):
 				s.payment_due += ss.price
 				golfers_included += ss.golfers_included
 		dinners_included = golfers_included
+		golfers_included += go_golfers
 		if s.num_golfers > golfers_included:
 			s.payment_due += golf_price * (s.num_golfers - golfers_included)
 		else:
@@ -261,7 +280,7 @@ class Register(webapp2.RequestHandler):
 		if s.num_dinners > dinners_included:
 			s.payment_due += dinner_price * (s.num_dinners - dinners_included)
 		s.payment_due += s.additional_donation
-		if s.payment_due <= 0:
+		if s.num_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
 		if s.payment_due != form_payment_due:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
@@ -295,7 +314,7 @@ class Register(webapp2.RequestHandler):
 					messages.append('You entered an invalid value in the "Discount" field.')
 				s.discount_type = self.request.get('discount_type')
 
-		if messages:
+		if messages or self.request.get('apply_discount'):
 			if root.golf_sold_out:
 				s.num_golfers = 0
 			if root.dinner_sold_out:
@@ -386,7 +405,8 @@ class Continue(webapp2.RequestHandler):
 
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
-		s.confirmed = True
+		if not self.request.get('back'):
+			s.confirmed = True
 		s.put()
 		memcache.delete('2015/admin/view/golfers')
 		memcache.delete('2015/admin/view/dinners')

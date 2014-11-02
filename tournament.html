@@ -97,6 +97,10 @@ gen_date_picker("deadline", {{ tournament.deadline.month|default:5 }}, {{ tourna
 <td align="left"><input type="checkbox" name="dinner_sold_out" value="y" {% if tournament.dinner_sold_out %}checked{% endif %}></td>
 </tr>
 <tr>
+<td align="left">GO Discount Codes</td>
+<td align="left"><input type="text" size="20" name="go_discount_codes" value="{{ tournament.go_discount_codes|default:"" }}"></td>
+</tr>
+<tr>
 <td align="left">Red Tees</td>
 <td align="left">Rating <input type="text" size="5" name="red_course_rating" value="{{ tournament.red_course_rating }}">
 Slope <input type="text" size="5" name="red_course_slope" value="{{ tournament.red_course_slope }}"></td>

@@ -12,12 +12,15 @@ function add_commas(str) {
 
 function recalculate() {
 	var sponsorship_choices = document.getElementById("sponsorship_choices");
+	var go_campaign_div = document.getElementById("go_campaign");
 	var checkboxes = sponsorship_choices.getElementsByTagName("input");
 	var show_sponsorships_box = document.getElementById("checkbox_show_sponsorships");
+	var show_go_campaign_box = document.getElementById("checkbox_show_go_campaign");
 	var angel = document.getElementById("angel");
 	var angelbox = angel.getElementsByTagName("input")[0];
 	var otherbox = document.getElementById("entry_other");
 	var golferbox = document.getElementById("entry_num_golfers");
+	var go_golferbox = document.getElementById("entry_go_golfers");
 	var dinnerbox = document.getElementById("entry_num_dinners");
 	var includes_span = document.getElementById("included_text");
 	var sponsor_agree_div = document.getElementById("sponsor_agree");
@@ -46,6 +49,12 @@ function recalculate() {
 		for (var i = 0; i < checkboxes.length; i++)
 			checkboxes[i].checked = false;
 	}
+
+	// Show or hide the GO campaign box.
+	if (show_go_campaign_box.checked)
+		go_campaign_div.style.display = "block";
+	else
+		go_campaign_div.style.display = "none";
 
 	// Calculate total cost of sponsorships and number of golfers/dinners included.
 	var total = 0;
@@ -101,6 +110,8 @@ function recalculate() {
 		sponsor_agree_div.style.display = "block";
 	else
 		sponsor_agree_div.style.display = "none";
+
+	golfers_included += parseInt(go_golferbox.value);
 
 	// Calculate price for additional golfers and dinners.
 	golfers -= golfers_included;
@@ -181,4 +192,6 @@ function install_recalculate_hooks() {
 	selectbox.onchange = recalculate;
 	selectbox = document.getElementById("entry_num_dinners");
 	selectbox.onchange = recalculate;
+	var show_go_campaign_box = document.getElementById("checkbox_show_go_campaign");
+	show_go_campaign_box.onchange = recalculate;
 }
