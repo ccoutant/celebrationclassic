@@ -216,6 +216,7 @@ class Register(webapp2.RequestHandler):
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
+		discount_applied = False
 		if self.request.get('show_go_campaign'):
 			discount_code = self.request.get('discount_code')
 			if discount_code and s.discount == 0:
@@ -225,14 +226,17 @@ class Register(webapp2.RequestHandler):
 					s.go_discount_code = discount_code
 					s.go_golfers = int(codes[discount_code])
 					if s.go_golfers != int(self.request.get('go_golfers')):
+						discount_applied = True
 						messages.append('Your GO campaign discount has been applied.')
 				else:
 					messages.append('The discount code you entered is not valid.')
-			if messages or self.request.get('apply_discount'):
-				show_registration_form(self.response, root, s, messages, caps, dev_server)
-				return
 
-		go_golfers = s.go_golfers or 0
+		if s.go_golfers > 12:
+			go_discount = s.go_golfers
+			go_golfers = 0
+		else:
+			go_discount = 0
+			go_golfers = s.go_golfers
 
 		if not s.first_name and not s.last_name:
 			messages.append('Please enter your name.')
@@ -269,7 +273,8 @@ class Register(webapp2.RequestHandler):
 			if k in selected:
 				s.sponsorships.append(ss.key())
 				sponsorship_names.append(ss.name)
-				s.payment_due += ss.price
+				if ss.price != go_discount:
+					s.payment_due += ss.price
 				golfers_included += ss.golfers_included
 		dinners_included = golfers_included
 		golfers_included += go_golfers
@@ -282,7 +287,7 @@ class Register(webapp2.RequestHandler):
 		s.payment_due += s.additional_donation
 		if s.num_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
-		if s.payment_due != form_payment_due:
+		if s.payment_due != form_payment_due and not discount_applied:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
 			logging.info('Payment Due from form was %d, calculated %d instead' % (form_payment_due, s.payment_due))
 

@@ -56,6 +56,15 @@ function recalculate() {
 	else
 		go_campaign_div.style.display = "none";
 
+	// The discount code can represent either a number of golfers or the value
+	// of a sponsorship.
+	var go_discount = parseInt(go_golferbox.value);
+	var go_golfers = 0;
+	if (go_discount <= 12) {
+		go_golfers = go_discount;
+		go_discount = 0;
+	}
+
 	// Calculate total cost of sponsorships and number of golfers/dinners included.
 	var total = 0;
 	var golfers_included = 0;
@@ -100,7 +109,8 @@ function recalculate() {
 		var tuple = angelbox.value.split(":");
 		var price = parseInt(tuple[2]);
 		var included = parseInt(tuple[3]);
-		total += price;
+		if (price != go_discount)
+			total += price;
 		golfers_included += included;
 		dinners_included += included;
 	}
@@ -111,7 +121,7 @@ function recalculate() {
 	else
 		sponsor_agree_div.style.display = "none";
 
-	golfers_included += parseInt(go_golferbox.value);
+	golfers_included += go_golfers;
 
 	// Calculate price for additional golfers and dinners.
 	golfers -= golfers_included;
