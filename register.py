@@ -129,7 +129,8 @@ def show_continuation_form(response, root, s, messages, caps, debug):
 			has_completed_names = False
 			guest = DinnerGuest(parent = s, sequence = i)
 			if s.num_golfers + i == 1:
-				guest.name = s.name
+				guest.first_name = s.first_name
+				guest.last_name = s.last_name
 			dinner_guests.append(guest)
 	template_values = {
 		'deadline': deadline,
