@@ -68,6 +68,8 @@ def detail_page_list():
 	return ["home", "details", "raffle", "map", "sponsors", "sponsorships", "volunteer", "register"]
 
 def get_detail_page(name, draft):
+	if not name in detail_page_list():
+		return None
 	t = tournament.get_tournament()
 	v = get_draft_version(name) if draft else get_published_version(name)
 	if v is None:

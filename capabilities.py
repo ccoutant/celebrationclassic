@@ -29,5 +29,7 @@ def get_current_user_caps():
 		q.ancestor(t)
 		q.filter("email = ", email)
 		caps = q.get()
-		memcache.add('2015/caps/' + email, caps, 60*60)
-		return caps
+		if caps:
+			memcache.add('2015/caps/' + email, caps, 60*60)
+			return caps
+		return Capabilities(email = None)
