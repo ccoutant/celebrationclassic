@@ -28,6 +28,19 @@ dev_server = True if server_software and server_software.startswith("Development
 
 # Logout
 
+def show_login_page(out, redirect_url):
+	email = None
+	user = users.get_current_user()
+	if user:
+		email = user.email()
+		logging.info("User %s (%s) does not have required capability" % (email, user.nickname()))
+	template_values = {
+		'email': email,
+		'login_url': users.create_login_url(redirect_url),
+		'logout_url': users.create_logout_url(redirect_url)
+		}
+	out.write(render_to_string('login.html', template_values))
+
 class Logout(webapp2.RequestHandler):
 	def get(self):
 		self.redirect(users.create_logout_url('/'))
@@ -38,7 +51,7 @@ class ManageUsers(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
 		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
@@ -55,7 +68,7 @@ class ManageUsers(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url('/admin/users'))
+			show_login_page(self.response.out, '/admin/users')
 			return
 		root = tournament.get_tournament()
 		count = int(self.request.get('count'))
@@ -121,7 +134,7 @@ class ManageTournament(webapp2.RequestHandler):
 	def get(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_tournament_properties:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament()
 		template_values = {
@@ -134,7 +147,7 @@ class ManageTournament(webapp2.RequestHandler):
 	def post(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_tournament_properties:
-			self.redirect(users.create_login_url('/admin/tournament'))
+			show_login_page(self.response.out, '/admin/tournament')
 			return
 		q = tournament.Tournament.all()
 		q.filter("name = ", "cc2015")
@@ -180,7 +193,7 @@ class PaymentGateway(webapp2.RequestHandler):
 	def get(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_payment_processor:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament()
 		payments_info = payments.get_payments_info(t)
@@ -194,7 +207,7 @@ class PaymentGateway(webapp2.RequestHandler):
 	def post(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_payment_processor:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament()
 		payment_gateway = payments.Payments.all().ancestor(t).get()
@@ -216,7 +229,7 @@ class Sponsorships(webapp2.RequestHandler):
 	def get(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_sponsorships:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		root = tournament.get_tournament()
 		sponsorships = sponsorship.Sponsorship.all().ancestor(root).order("sequence").fetch(30)
@@ -237,7 +250,7 @@ class Sponsorships(webapp2.RequestHandler):
 	def post(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_sponsorships:
-			self.redirect(users.create_login_url('/admin/sponsorships'))
+			show_login_page(self.response.out, '/admin/sponsorships')
 			return
 		root = tournament.get_tournament()
 		sponsorship.clear_sponsorships_cache()
@@ -331,7 +344,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -360,7 +373,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -404,7 +417,7 @@ class ViewUnpaid(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -437,7 +450,7 @@ class ViewUnconfirmed(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -463,7 +476,7 @@ class ViewGolfers(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		html = memcache.get('2015/admin/view/golfers')
 		if html:
@@ -507,7 +520,7 @@ class ViewGolfersByName(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		all_golfers = []
 		q = Golfer.all()
@@ -531,7 +544,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		all_golfers = []
 		counter = 1
@@ -570,7 +583,7 @@ class ViewGolfersByStart(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		all_golfers = []
 		counter = 1
@@ -609,7 +622,7 @@ class ViewDinners(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		html = memcache.get('2015/admin/view/dinners')
 		if html:
@@ -661,7 +674,7 @@ class DownloadRegistrationsCSV(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -694,7 +707,7 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -728,7 +741,7 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		q = Sponsor.all()
 		q.ancestor(root)
@@ -767,45 +780,55 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 incomplete_email_template = """
 Dear %s,
 
-Thank you for registering for the Celebration Classic Dinner and Golf Tournament!
-In order to prepare for this event, we need a little more information from you.
-Please visit the following URL:
+Thank you for registering for the Celebration Classic Dinner and
+Golf Tournament! In order to prepare for this event, we need a
+little more information from you. Please visit the following URL:
 
     http://www.celebrationclassic.org/register?id=%s
 
-and check to make sure that you have provided all of the following information
-for each golfer and dinner guest:
+and check to make sure that you have provided all of the
+following information for each golfer and dinner guest:
 
 - Name
 - GHIN number or average score (for golfers)
 - Shirt size (for golfers)
 - Dinner selection
 
-If you have any questions, just reply to this email and we'll be glad to assist.
+If you have any questions, just reply to this email and we'll be
+glad to assist.
 """
 
 unpaid_email_template = """
 Dear %s,
 
-Thank you for registering for the Celebration Classic Dinner and Golf Tournament!
-Our records show that you have not yet paid for this event.  Please visit the
-following URL:
+Thank you for registering for the Celebration Classic Dinner and
+Golf Tournament! Our records show that you have not yet paid for
+this event.  Please visit the following URL:
 
     http://www.celebrationclassic.org/register?id=%s
 
-and choose a payment method at the bottom of the page. If you have already paid
-by other means, or if we should cancel this registration, please reply to this
-message and let us know.
+and choose a payment method at the bottom of the page. If you
+have already paid by other means, or if we should cancel this
+registration, please reply to this message and let us know.
 
-Please also check to make sure that you have provided all of the following
-information for each golfer and dinner guest:
+If you are a GO campaign member, click the "Back to Step 1"
+button to return to the first page, then check the GO box, enter
+your discount code, and click "Apply".
+
+Please also check to make sure that you have provided all of the
+following information for each golfer and dinner guest:
 
 - Name
 - GHIN number or average score (for golfers)
 - Shirt size (for golfers)
 - Dinner selection
 
-If you have any questions, just reply to this email and we'll be glad to assist.
+If you have any questions, just reply to this email and we'll be
+glad to assist.
+
+Thank you for your participation and contribution to this event
+which is so important to Shir Hadash. I look forward to seeing
+you at the event.
 """
 
 class SendEmail(webapp2.RequestHandler):
@@ -813,7 +836,7 @@ class SendEmail(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		subject = "Your Celebration Classic Registration"
 		sender = users.get_current_user().email()
@@ -855,7 +878,7 @@ class ManageAuction(webapp2.RequestHandler):
 	def get(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_auction:
-			self.redirect(users.create_login_url(self.request.uri))
+			show_login_page(self.response.out, self.request.uri)
 			return
 		if self.request.get('key'):
 			key = self.request.get('key')
@@ -895,7 +918,7 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_auction:
-			self.redirect(users.create_login_url('/admin/auction'))
+			show_login_page(self.response.out, '/admin/auction')
 			return
 		auctionitem.clear_auction_item_cache()
 		key = self.request.get('key')
@@ -930,7 +953,7 @@ class DeleteFile(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
-			self.redirect(users.create_login_url('/admin/edit'))
+			show_login_page(self.response.out, '/admin/edit')
 			return
 		if self.request.get('delete-photos'):
 			items_to_delete = self.request.get_all('delete-photo')
@@ -951,7 +974,7 @@ class UploadFile(blobstore_handlers.BlobstoreUploadHandler):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
-			self.redirect(users.create_login_url('/admin/edit'))
+			show_login_page(self.response.out, '/admin/edit')
 			return
 		upload_files = self.get_uploads('file')
 		if upload_files:
@@ -987,7 +1010,7 @@ class EditPageHandler(webapp2.RequestHandler):
 		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
-			self.redirect(users.create_login_url('/admin/edit'))
+			show_login_page(self.response.out, '/admin/edit')
 			return
 		pages = []
 		for name in detailpage.detail_page_list():
@@ -1058,7 +1081,7 @@ class EditPageHandler(webapp2.RequestHandler):
 	def post(self):
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
-			self.redirect(users.create_login_url('/admin/edit'))
+			show_login_page(self.response.out, '/admin/edit')
 			return
 		for name in detailpage.detail_page_list():
 			if self.request.get('edit' + name):
@@ -1079,7 +1102,7 @@ class EditPageHandler(webapp2.RequestHandler):
 class DeleteHandler(webapp2.RequestHandler):
 	def get(self):
 		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url('/admin/delete-registrations'))
+			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
@@ -1095,7 +1118,7 @@ class DeleteHandler(webapp2.RequestHandler):
 
 	def post(self):
 		if not users.is_current_user_admin():
-			self.redirect(users.create_login_url('/admin/delete-registrations'))
+			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()

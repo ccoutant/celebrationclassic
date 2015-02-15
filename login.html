@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Authorization Required{% endblock %}
+
+{% block content %}
+<h2>Login</h2>
+
+{% if email %}
+
+<p>You are currently signed in as {{ email }}, but you are not authorized to access the page.
+To sign in as a different user, click the button to sign out, then sign in again.</p>
+
+<p><a href="{{ logout_url }}"><button type="button" name="logout">Sign Out</button></a></p>
+
+{% else %}
+
+<p>Please sign in to access the page.</p>
+
+<p><a href="{{ login_url }}"><button type="button" name="logout">Sign In</button></a></p>
+
+{% endif %}
+
+{% endblock %}
