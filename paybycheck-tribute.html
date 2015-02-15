@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% load humanize %}
+
+{% block title %}Registration{% endblock %}
+
+{% block content %}
+<h2>Thank You!</h2>
+
+<p>Your tribute ad has been entered.</p>
+
+<p>Please mail your check for ${{ net_payment_due|intcomma }} to Celebration Classic,
+20 Cherry Blossom Lane, Los Gatos, CA 95032.</p>
+{% endblock %}

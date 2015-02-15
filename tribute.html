@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="css/register.css" type="text/css">
+<script type="text/javascript" language="javascript">
+function ignore_enter(e) {
+	e = e || event;
+	var key = e.keyCode || event.which || event.charCode;
+	if( key == 13 ) {
+		e.cancelBubble = true;
+		e.returnValue = false;
+		if (e.stopPropagation) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+		this.blur();
+	}
+}
+function recalculate() {
+	var ad_size_selector = document.getElementById("entry_ad_size");
+	var one_line_div = document.getElementById("oneline");
+	var contact_you_div = document.getElementById("contact_you");
+	ad_size = parseInt(ad_size_selector.value);
+	if (ad_size == 1)
+		one_line_div.style.display = "block";
+	else
+		one_line_div.style.display = "none";
+	if (ad_size > 1)
+		contact_you_div.style.display = "block";
+	else
+		contact_you_div.style.display = "none";
+}
+function install_recalculate_hooks() {
+	var ad_size_selector = document.getElementById("entry_ad_size");
+	ad_size_selector.onchange = recalculate;
+	var one_line_div = document.getElementById("oneline");
+	one_line_div.onkeypress = ignore_enter;
+}
+window.onload = function() {
+	install_recalculate_hooks();
+	recalculate();
+};
+</script>
+{% endblock %}
+
+{% block content %}
+{{ page.content|markdown }}
+
+{% for m in messages %}
+<p class="message">{{ m|escape }}</p>
+{% endfor %}
+
+<form action="/tribute" method="post" accept-charset="utf-8">
+
+<input type="hidden" name="id" value="{{ tribute_id }}">
+
+<div id="register-form" class="form">
+
+<div class="form-section">
+
+<div class="form-entry form-text">
+<div class="form-input">
+<label for="entry_first_name">* Name</label>
+<input class="form-first-name" type="text" name="first_name" value="{{ first_name }}" id="entry_first_name" placeholder="First">
+<input class="form-last-name" type="text" name="last_name" value="{{ last_name }}" id="entry_last_name" placeholder="Last">
+</div>
+</div>
+
+<div class="form-entry-left form-text">
+<div class="form-input">
+<label for="entry_email">* Email</label>
+<input type="text" name="email" value="{{ email }}" id="entry_email" placeholder="Email">
+</div>
+</div>
+
+<div class="form-entry-left form-phone">
+<div class="form-input">
+<label for="entry_phone">* Phone</label>
+<input type="text" name="phone" value="{{ phone }}" id="entry_phone" placeholder="Phone">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-section">
+
+<div class="form-entry">
+<div class="form-input">
+<label for="entry_ad_size">Size of Ad</label>
+<select id="entry_ad_size" name="ad_size">
+<option value="0" {% ifequal ad_size 0 %} selected {% endifequal %}>Select one...</option>
+<option value="1" {% ifequal ad_size 1 %} selected {% endifequal %}>$18: Tribute (one line)</option>
+<option value="2" {% ifequal ad_size 2 %} selected {% endifequal %}>$50: Business Card (3 &times; 2)</option>
+<option value="3" {% ifequal ad_size 3 %} selected {% endifequal %}>$100: &frac14; Page (2&frac12; &times; 4)</option>
+<option value="4" {% ifequal ad_size 4 %} selected {% endifequal %}>$200: &frac12; Page (5 &times; 4)</option>
+<option value="5" {% ifequal ad_size 5 %} selected {% endifequal %}>$400: Full Page (5 &times; 8)</option>
+<option value="6" {% ifequal ad_size 6 %} selected {% endifequal %}>$500: Inside Cover (5 &times; 8)</option>
+</select>
+</div>
+</div>
+
+<div id="oneline" class="form-entry form-text">
+<div class="form-input">
+<label class="above" for="entry_printednames"><i>Please enter your name(s) exactly as they should appear:</i></label>
+<input class="form-prefs" type="text" name="printed_names" value="{{ printed_names }}" id="entry_printednames">
+</div>
+</div>
+
+<div id="contact_you" class="form-entry form-text">
+<p><i>We will contact you for your ad content.</i></p>
+</div>
+
+</div> <!-- form-section -->
+
+<div class="form-submit-section">
+
+<div class="form-entry form-submit">
+<div class="form-button">
+<input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
+<input type="submit" name="pay_by_check" value="Pay by Check ->">
+</div>
+</div>
+
+</div> <!-- form-section -->
+
+</div> <!-- register_form -->
+
+</form>
+
+{% endblock %}

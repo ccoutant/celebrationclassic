@@ -20,7 +20,7 @@ import payments
 import capabilities
 import detailpage
 import sponsorship
-from sponsor import Sponsor, Golfer, DinnerGuest
+from sponsor import Sponsor, Golfer, DinnerGuest, TributeAd
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -293,6 +293,7 @@ class Register(webapp2.RequestHandler):
 			logging.info('Payment Due from form was %d, calculated %d instead' % (form_payment_due, s.payment_due))
 
 		if caps.can_add_registrations:
+			s.confirmed = True
 			payment_made = self.request.get('payment_made')
 			if payment_made == '':
 				s.payment_made = 0
@@ -340,7 +341,7 @@ class Register(webapp2.RequestHandler):
 		s.put()
 		memcache.delete('2015/admin/view/golfers')
 		memcache.delete('2015/admin/view/dinners')
-		if caps.can_add_registrations and (s.payment_made > 0 or s.discount > 0) and self.request.get('save'):
+		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/register')
 			return
 		self.redirect('/register?id=%d' % s.id)
@@ -560,6 +561,32 @@ def email_cc_receipt(s, card_type, auth_code, amount):
 	except:
 		logging.exception("Could not send email to %s" % s.email)
 
+cc_tribute_receipt_template = """
+Dear %s,
+
+Thank you for your tribute ad for the Celebration Classic Dinner
+and Golf Tournament!
+
+We have recorded your payment as follows:
+
+Card type: %s
+Amount: $%s
+Authorization code: %s
+
+If you have any questions, just reply to this email and we'll be
+glad to assist.
+"""
+
+def email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount):
+	subject = "Your Celebration Classic Tribute Ad"
+	sender = "registration@celebrationclassic.org"
+	body = cc_tribute_receipt_template % (ad.first_name, card_type, amount, auth_code)
+	logging.info("sending email receipt to %s (tribute id %s)" % (ad.email, tribute_id))
+	try:
+		mail.send_mail(sender=sender, to=ad.email, subject=subject, body=body)
+	except:
+		logging.exception("Could not send email to %s" % ad.email)
+
 # Process the relay response from Authorize.net confirming payment.
 
 class RelayResponse(webapp2.RequestHandler):
@@ -578,21 +605,38 @@ class RelayResponse(webapp2.RequestHandler):
 		method = self.request.get('x_method')
 		logging.info("relay response for id %s: %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
 					 (id, int(response_code), int(reason_code), auth_code, trans_id, amount, method))
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter('id = ', int(id))
-		s = q.get()
-		if s and int(response_code) == 1:
-			s.payment_type = method
-			s.transaction_code = trans_id
-			s.auth_code = auth_code
-			try:
-				s.payment_made += int(float(amount))
-			except ValueError:
-				logging.error("Could not convert amount %s to int" % amount)
-			s.put()
-			if s.email:
-				email_cc_receipt(s, card_type, auth_code, amount)
+		pat = re.compile(r'T(\d+)$')
+		m = pat.match(id)
+		if m:
+			tribute_id = int(m.group(1))
+			ad = TributeAd.get_by_id(tribute_id, parent = root)
+			if ad and int(response_code) == 1:
+				ad.payment_type = method
+				ad.transaction_code = trans_id
+				ad.auth_code = auth_code
+				try:
+					ad.payment_made += int(float(amount))
+				except ValueError:
+					logging.error("Could not convert amount %s to int" % amount)
+				ad.put()
+				if ad.email:
+					email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount)
+		else:
+			q = Sponsor.all()
+			q.ancestor(root)
+			q.filter('id = ', int(id))
+			s = q.get()
+			if s and int(response_code) == 1:
+				s.payment_type = method
+				s.transaction_code = trans_id
+				s.auth_code = auth_code
+				try:
+					s.payment_made += int(float(amount))
+				except ValueError:
+					logging.error("Could not convert amount %s to int" % amount)
+				s.put()
+				if s.email:
+					email_cc_receipt(s, card_type, auth_code, amount)
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
@@ -632,29 +676,54 @@ class Receipt(webapp2.RequestHandler):
 		auth_code = self.request.get('auth_code')
 		id = self.request.get('id')
 		amount = self.request.get('amount')
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter('id = ', int(id))
-		s = q.get()
-		if not s:
-			self.response.out.write('<html><head>\n')
-			self.response.out.write('<title>ID Not Found</title>\n')
-			self.response.out.write('</head><body>\n')
-			self.response.out.write('<h1>ID Not Found</h1>\n')
-			self.response.out.write('<p>The requested registration id %s was not found.</p>\n' % id)
-			self.response.out.write('</body></html>\n')
-			return
-		template_values = {
-			'sponsor': s,
-			'amount': int(float(amount)),
-			'response_code': int(response_code),
-			'reason_code': int(reason_code),
-			'reason_text': reason_text,
-			'card_type': card_type,
-			'auth_code': auth_code,
-			'capabilities': caps
-			}
-		self.response.out.write(render_to_string('receipt.html', template_values))
+		pat = re.compile(r'T(\d+)$')
+		m = pat.match(id)
+		if m:
+			tribute_id = int(m.group(1))
+			ad = TributeAd.get_by_id(tribute_id, parent = root)
+			if not ad:
+				self.response.out.write('<html><head>\n')
+				self.response.out.write('<title>ID Not Found</title>\n')
+				self.response.out.write('</head><body>\n')
+				self.response.out.write('<h1>ID Not Found</h1>\n')
+				self.response.out.write('<p>The requested tribute id %s was not found.</p>\n' % id)
+				self.response.out.write('</body></html>\n')
+				return
+			template_values = {
+				'email': ad.email,
+				'amount': int(float(amount)),
+				'response_code': int(response_code),
+				'reason_code': int(reason_code),
+				'reason_text': reason_text,
+				'card_type': card_type,
+				'auth_code': auth_code,
+				'capabilities': caps
+				}
+			self.response.out.write(render_to_string('receipt-tribute.html', template_values))
+		else:
+			q = Sponsor.all()
+			q.ancestor(root)
+			q.filter('id = ', int(id))
+			s = q.get()
+			if not s:
+				self.response.out.write('<html><head>\n')
+				self.response.out.write('<title>ID Not Found</title>\n')
+				self.response.out.write('</head><body>\n')
+				self.response.out.write('<h1>ID Not Found</h1>\n')
+				self.response.out.write('<p>The requested registration id %s was not found.</p>\n' % id)
+				self.response.out.write('</body></html>\n')
+				return
+			template_values = {
+				'sponsor': s,
+				'amount': int(float(amount)),
+				'response_code': int(response_code),
+				'reason_code': int(reason_code),
+				'reason_text': reason_text,
+				'card_type': card_type,
+				'auth_code': auth_code,
+				'capabilities': caps
+				}
+			self.response.out.write(render_to_string('receipt.html', template_values))
 
 # Process the POST request from Acceptiva confirming payment.
 
@@ -723,10 +792,166 @@ class FakeAcceptiva(webapp2.RequestHandler):
 		self.response.out.write('<p><a href="/register?id=%s">Continue registration...</a></p>\n' % id)
 		self.response.out.write('</body></html>\n')
 
+# Handle a request for a tribute ad.
+
+class Tribute(webapp2.RequestHandler):
+	def show_form(self, root, first_name, last_name, email, phone, ad_size, printed_names, tribute_id, messages):
+		page = detailpage.get_detail_page('tribute', False)
+		caps = capabilities.get_current_user_caps()
+		template_values = {
+			'capabilities': caps,
+			'page': page,
+			'messages': messages,
+			'first_name': first_name,
+			'last_name': last_name,
+			'email': email,
+			'phone': phone,
+			'ad_size': ad_size,
+			'printed_names': printed_names,
+			'tribute_id': tribute_id
+			}
+		self.response.out.write(render_to_string('tribute.html', template_values))
+
+	def get(self):
+		root = tournament.get_tournament()
+		messages = []
+		id_parm = self.request.get('id')
+		if id_parm:
+			try:
+				ad = TributeAd.get_by_id(int(id_parm), parent = root)
+				if ad:
+					self.show_form(root, ad.first_name, ad.last_name, ad.email, ad.phone,
+								   ad.ad_size, ad.printed_names, id_parm, messages)
+					return
+				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
+			except:
+				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
+		self.show_form(root, "", "", "", "", 0, "", "", messages)
+
+	def post(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		messages = []
+		id_parm = self.request.get('id') or ""
+		first_name = self.request.get('first_name')
+		last_name = self.request.get('last_name')
+		email = self.request.get('email')
+		phone = self.request.get('phone')
+		ad_size = int(self.request.get('ad_size'))
+		printed_names = self.request.get('printed_names')
+		price_list = [ 0, 18, 50, 100, 200, 400, 500 ]
+		net_payment_due = price_list[ad_size] if ad_size >= 1 and ad_size <= 6 else 0
+		ad = None
+
+		if id_parm:
+			try:
+				ad = TributeAd.get_by_id(int(id_parm), parent = root)
+			except:
+				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
+
+		if not ad:
+			ad = TributeAd(parent = root)
+
+		ad.first_name = first_name
+		ad.last_name = last_name
+		ad.email = email
+		ad.phone = phone
+		ad.ad_size = ad_size
+		ad.printed_names = printed_names
+		ad.payment_due = net_payment_due
+
+		if not ad.first_name and not ad.last_name:
+			messages.append('Please enter your name.')
+		elif not ad.first_name or not ad.last_name:
+			messages.append('Please enter both first and last name.')
+		if ad.email == '':
+			messages.append('Please enter your email address.')
+		if ad.phone == '':
+			messages.append('Please enter your phone number.')
+		if net_payment_due == 0:
+			messages.append('Please select an ad size.')
+
+		if messages:
+			self.show_form(root, first_name, last_name, email, phone,
+						   ad.ad_size, ad.printed_names, id_parm, messages)
+			return
+
+		if self.request.get('pay_by_check'):
+			ad.payment_type = 'check'
+		else:
+			ad.payment_type = 'credit'
+
+		ad.put()
+		tribute_id = ad.key().id()
+		logging.info("Tribute ad for %s %s, amount due $%d, pay by %s" %
+					 (ad.first_name, ad.last_name, ad.payment_due, ad.payment_type))
+		cust_id = 'T%d' % tribute_id
+
+		if ad.payment_type == 'check':
+			template_values = {
+				'tribute_id': str(tribute_id),
+				'first_name': first_name,
+				'last_name': last_name,
+				'email': email,
+				'phone': phone,
+				'net_payment_due': net_payment_due,
+				'capabilities': caps
+			}
+			self.response.out.write(render_to_string('paybycheck-tribute.html', template_values))
+			return
+
+		payments_info = payments.get_payments_info(root)
+
+		if payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
+			timestamp = int(time.time())
+			fingerprint = hmac.new(payments_info.transaction_key.encode())
+			fingerprint.update(payments_info.api_login_id)
+			fingerprint.update('^')
+			fingerprint.update(cust_id)
+			fingerprint.update('^')
+			fingerprint.update(str(timestamp))
+			fingerprint.update('^')
+			fingerprint.update(str(net_payment_due))
+			fingerprint.update('^')
+			description = "Celebration Classic Tribute Ad"
+			api_fields = [
+				('x_test_request', 'TRUE' if payments_info.test_mode else 'FALSE'),
+				('x_login', payments_info.api_login_id),
+				('x_fp_sequence', cust_id),
+				('x_fp_timestamp', str(timestamp)),
+				('x_fp_hash', fingerprint.hexdigest()),
+				('x_version', '3.1'),
+				('x_method', 'CC'),
+				('x_type', 'AUTH_CAPTURE'),
+				('x_cust_id', cust_id),
+				('x_description', description),
+				('x_email_customer', 'FALSE'),
+				('x_delim_data', 'FALSE'),
+				('x_relay_response', 'TRUE'),
+				('x_relay_url', payments_info.relay_url),
+				]
+			template_values = {
+				'tribute_id': str(tribute_id),
+				'first_name': first_name,
+				'last_name': last_name,
+				'email': email,
+				'phone': phone,
+				'gateway_url': payments_info.gateway_url,
+				'api_fields': api_fields,
+				'net_payment_due': str(net_payment_due),
+				'capabilities': caps
+			}
+			self.response.out.write(render_to_string('paybycredit-tribute.html', template_values))
+
+		else:
+			messages.append('Sorry, we are not yet accepting credit card payments.')
+			self.show_form(root, first_name, last_name, email, phone, ad_size, printed_names, str(tribute_id), messages)
+
 app = webapp2.WSGIApplication([('/register', Register),
 							   ('/continue', Continue),
 							   ('/relayresponse', RelayResponse),
 							   ('/receipt', Receipt),
 							   ('/fakeacceptiva', FakeAcceptiva),
-							   ('/postpayment', PostPayment)],
+							   ('/postpayment', PostPayment),
+							   ('/tribute', Tribute)],
 							  debug=dev_server)

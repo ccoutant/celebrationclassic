@@ -11,14 +11,11 @@
 {% block content %}
 <h2>Pay with Credit Card</h2>
 
-<p>Thank you! Your registration has been entered.</p>
+<p>Thank you! Your tribute ad has been entered.</p>
 
 <p>Please use this form to submit your payment.
 Your credit card information will be transmitted securely directly to our payment processor,
 and will not be stored on our server.</p>
-
-<p>You may return to the <a href="/register?id={{ sponsor.id }}">registration page</a>
-any time to complete your registration.</p>
 
 <form action="{{ gateway_url }}" method="post" accept-charset="utf-8">
 
@@ -35,44 +32,44 @@ any time to complete your registration.</p>
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="first_name">Name</label>
-<input class="form-first-name" type="text" name="x_first_name" value="{{ sponsor.first_name }}" id="first_name" placeholder="First">
-<input class="form-last-name" type="text" name="x_last_name" value="{{ sponsor.last_name }}" id="last_name" placeholder="Last">
+<input class="form-first-name" type="text" name="x_first_name" value="{{ first_name }}" id="first_name" placeholder="First">
+<input class="form-last-name" type="text" name="x_last_name" value="{{ last_name }}" id="last_name" placeholder="Last">
 </div>
 </div>
 
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_company">Company</label>
-<input type="text" name="x_company" value="{{ sponsor.company }}" id="entry_company" placeholder="Company">
+<input type="text" name="x_company" value="" id="entry_company" placeholder="Company">
 </div>
 </div>
 
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_address">Address</label>
-<input type="text" name="x_address" value="{{ sponsor.address }}" id="entry_address" placeholder="Street">
+<input type="text" name="x_address" value="{{ address }}" id="entry_address" placeholder="Street">
 </div>
 </div>
 
 <div class="form-entry form-text">
 <div class="form-input">
-<input class="form-city" type="text" name="x_city" value="{{ sponsor.city }}" id="entry_city" placeholder="City">
-<input class="form-state" type="text" name="x_state" value="{{ sponsor.state }}" id="entry_state" placeholder="State">
-<input class="form-zip" type="text" name="x_zip" value="{{ sponsor.zip }}" id="entry_zip" placeholder="ZIP">
+<input class="form-city" type="text" name="x_city" value="{{ city }}" id="entry_city" placeholder="City">
+<input class="form-state" type="text" name="x_state" value="{{ state }}" id="entry_state" placeholder="State">
+<input class="form-zip" type="text" name="x_zip" value="{{ zip }}" id="entry_zip" placeholder="ZIP">
 </div>
 </div>
 
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_email">Email</label>
-<input type="text" name="x_email" value="{{ sponsor.email }}" id="entry_email" placeholder="Email">
+<input type="text" name="x_email" value="{{ email }}" id="entry_email" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry form-phone">
 <div class="form-input">
 <label for="entry_phone">Phone</label>
-<input type="text" name="x_phone" value="{{ sponsor.phone }}" id="entry_phone" placeholder="Phone">
+<input type="text" name="x_phone" value="{{ phone }}" id="entry_phone" placeholder="Phone">
 </div>
 </div>
 
@@ -109,7 +106,7 @@ $<input type="text" id="entry_net_payment_due" name="x_amount" value="{{ net_pay
 
 <div class="form-entry form-submit">
 <div class="form-button">
-<a href="/register?id={{ sponsor.id }}"><button type="button" name="back">&lt;- Back</button></a>
+<a href="/tribute?id={{ tribute_id }}"><button type="button" name="back">&lt;- Back</button></a>
 <input type="submit" name="buy_button" value="Submit Payment">
 </div>
 </div>

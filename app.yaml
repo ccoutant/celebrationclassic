@@ -24,7 +24,7 @@ handlers:
 - url: /js
   static_dir: js
 
-- url: /(register|continue|relayresponse|receipt|postpayment|fakeacceptiva)
+- url: /(register|continue|relayresponse|receipt|postpayment|fakeacceptiva|tribute)
   script: register.app
 
 - url: /admin/.*
