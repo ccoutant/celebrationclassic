@@ -8,6 +8,7 @@ class Tournament(db.Model):
 	dinner_date = db.DateProperty()
 	early_bird_deadline = db.DateProperty()
 	deadline = db.DateProperty()
+	tribute_deadline = db.DateProperty()
 	golf_price_early = db.IntegerProperty()
 	golf_price_late = db.IntegerProperty()
 	dinner_price_early = db.IntegerProperty()

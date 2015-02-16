@@ -54,6 +54,9 @@ window.onload = function() {
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
+{% if past_deadline %}
+<p class="message">Sorry, the deadline for submitting tribute ads has passed.</p>
+{% else %}
 <form action="/tribute" method="post" accept-charset="utf-8">
 
 <input type="hidden" name="id" value="{{ tribute_id }}">
@@ -130,5 +133,5 @@ window.onload = function() {
 </div> <!-- register_form -->
 
 </form>
-
+{% endif %}
 {% endblock %}

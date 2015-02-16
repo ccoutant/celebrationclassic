@@ -796,6 +796,8 @@ class FakeAcceptiva(webapp2.RequestHandler):
 
 class Tribute(webapp2.RequestHandler):
 	def show_form(self, root, first_name, last_name, email, phone, ad_size, printed_names, tribute_id, messages):
+		today = datetime.datetime.now() - datetime.timedelta(hours=8)
+		past_deadline = today.date() > root.tribute_deadline
 		page = detailpage.get_detail_page('tribute', False)
 		caps = capabilities.get_current_user_caps()
 		template_values = {
@@ -808,7 +810,8 @@ class Tribute(webapp2.RequestHandler):
 			'phone': phone,
 			'ad_size': ad_size,
 			'printed_names': printed_names,
-			'tribute_id': tribute_id
+			'tribute_id': tribute_id,
+			'past_deadline': past_deadline
 			}
 		self.response.out.write(render_to_string('tribute.html', template_values))
 
@@ -830,6 +833,8 @@ class Tribute(webapp2.RequestHandler):
 
 	def post(self):
 		root = tournament.get_tournament()
+		today = datetime.datetime.now() - datetime.timedelta(hours=8)
+		past_deadline = today.date() > root.tribute_deadline
 		caps = capabilities.get_current_user_caps()
 		messages = []
 		id_parm = self.request.get('id') or ""
@@ -871,7 +876,7 @@ class Tribute(webapp2.RequestHandler):
 		if net_payment_due == 0:
 			messages.append('Please select an ad size.')
 
-		if messages:
+		if messages or past_deadline:
 			self.show_form(root, first_name, last_name, email, phone,
 						   ad.ad_size, ad.printed_names, id_parm, messages)
 			return
