@@ -206,6 +206,7 @@ class Register(webapp2.RequestHandler):
 		s.fax = self.request.get('fax')
 		s.email = self.request.get('email')
 		s.anonymous = False if self.request.get('agree') == 'y' else True
+		s.ok_to_share_email = True if self.request.get('share_email') == 'y' else False
 		s.printed_names = self.request.get('printed_names')
 		s.sponsorships = []
 		s.num_golfers = int(self.request.get('num_golfers'))

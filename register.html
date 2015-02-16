@@ -300,6 +300,22 @@ $<input type="text" name="net_payment_due_c" value="{{ net_payment_due }}" id="e
 
 </div> <!-- form-section -->
 
+<div class="form-section">
+
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="share_email" value="y" {% if sponsor.ok_to_share_email %} checked {% endif %} id="entry_share_email"></div>
+<label class="right" for="entry_agree"><i>The Celebration Classic sponsors
+have generously contributed money to the tournament.
+Some of the sponsors are interested in contacting golfers and dinner participants
+to see if there may be interest in their products.
+If you would be willing to share your email address with interested sponsors, check this box.
+If you do not check the box, your email address will not be given to anyone.</i></label>
+</div>
+</div>
+
+</div> <!-- form-section -->
+
 {% if capabilities.can_add_registrations %}
 <div class="form-section">
 

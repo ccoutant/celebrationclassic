@@ -31,6 +31,7 @@ class Sponsor(db.Model):
 	dinner_seating = db.StringProperty(default = '')
 	timestamp = db.DateTimeProperty(auto_now_add = True)
 	confirmed = db.BooleanProperty(default = False) # Set after registration Step 2 completed.
+	ok_to_share_email = db.BooleanProperty(default = False)
 
 class Team(db.Model):
 	name = db.StringProperty(default = '')
