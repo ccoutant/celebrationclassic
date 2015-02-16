@@ -375,9 +375,9 @@ class Continue(webapp2.RequestHandler):
 			golfer.first_name = self.request.get('first_name%d' % i)
 			golfer.last_name = self.request.get('last_name%d' % i)
 			if golfer.last_name:
-				golfer.sort_name = golfer.last_name + ',' + golfer.first_name
+				golfer.sort_name = golfer.last_name.lower() + ',' + golfer.first_name.lower()
 			else:
-				golfer.sort_name = s.last_name + '@' + ("%02d" % i)
+				golfer.sort_name = s.last_name.lower() + '@' + ("%02d" % i)
 			golfer.gender = self.request.get('gender%d' % i)
 			golfer.company = self.request.get('company%d' % i)
 			golfer.address = self.request.get('address%d' % i)
