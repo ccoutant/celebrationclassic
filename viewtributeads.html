@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% block title %}Tribute Ads{% endblock %}
+
+{% block head %}
+<style type="text/css">
+#body { width: 95%; }
+#body #header { margin-left: auto; margin-right: auto; }
+#body #footer { margin-left: auto; margin-right: auto; }
+#body #nav { display: none; }
+#body #content { float: none; width: 100%; margin: 1em 0 3em; }
+#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body thead tr { border-bottom: 2px solid #c4e5c4; }
+#body tbody tr.ad { border-top: 1px solid #c4e5c4; }
+#body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
+#body td { padding: 0.5em; }
+#body td.firstcol { padding-left: 2em; }
+#body td.printednames { width: 33%; }
+#body td p { margin: 0; }
+#body td p.details { display: none; margin-left: 1em; font-size: 80%; color: #555; }
+.hastooltip { color: #00A11B; cursor: help; }
+h2 { text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Tribute Ads</h2>
+
+{% if ads %}
+
+<table>
+<thead>
+	<tr valign="bottom">
+		<th align="left">Name</th>
+		<th align="left">Email</th>
+		<th align="left">Phone</th>
+		<th align="left">Ad Size</th>
+		<th align="left">Print Names as</th>
+		<th align="left">Payment</th>
+	</tr>
+</thead>
+<tbody>
+{% for ad in ads %}
+	<tr class="ad" valign="baseline">
+		<td>{{ ad.first_name }} {{ ad.last_name }}</td>
+		<td>{% if ad.email %}<p><a href="mailto:{{ ad.email }}">{{ ad.email }}</a></p>{% endif %}</td>
+		<td>{% if ad.phone %}<p>{{ ad.phone }}</p>{% endif %}</td>
+		<td>{{ ad.ad_size|get_ad_size }}</td>
+		<td class="printednames">{{ ad.printed_names }}</td>
+		<td>
+			{% if ad.payment_made %}
+			<p><span class="hastooltip" title="Payment Type: {{ ad.payment_type|default:'' }} &#13;Transaction Code: {{ ad.transaction_code|default:'' }} &#13;Authorization Code: {{ ad.auth_code|default:'' }}">Paid:</span> ${{ ad.payment_made }}</p>
+			<p class="details">Payment Type: {{ ad.payment_type|default:'' }}</p>
+			<p class="details">Transaction Code: {{ ad.transaction_code|default:'' }}</p>
+			<p class="details">Authorization Code: {{ ad.auth_code|default:'' }}</p>
+			{% endif %}
+			<p>Due: $<script type="text/javascript" language="javascript">document.write({{ ad.payment_due }} - {{ ad.payment_made }});</script></p>
+		</td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% else %}
+
+<p>No tribute ads.</p>
+
+{% endif %}
+{% endblock %}

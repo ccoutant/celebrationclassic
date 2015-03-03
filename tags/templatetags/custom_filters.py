@@ -14,3 +14,8 @@ def get_sponsorship_name(value):
 @register.filter
 def markdown(value):
 	return mark_safe(markdown2.markdown(value))
+
+@register.filter
+def get_ad_size(value):
+	ad_sizes = [ '', 'Tribute', 'Business Card', 'Quarter Page', 'Half Page', 'Full Page', 'Inside Cover' ]
+	return ad_sizes[value]

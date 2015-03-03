@@ -21,7 +21,7 @@ import auctionitem
 import detailpage
 import uploadedfile
 import tz
-from sponsor import Sponsor, Golfer, DinnerGuest
+from sponsor import Sponsor, Golfer, DinnerGuest, TributeAd
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -669,6 +669,23 @@ class ViewDinners(webapp2.RequestHandler):
 		memcache.add('2015/admin/view/dinners', html, 60*60*24)
 		self.response.out.write(html)
 
+class ViewTributeAds(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		q = TributeAd.all()
+		q.ancestor(root)
+		q.order("timestamp")
+		ads = q.fetch(limit = None)
+		template_values = {
+			'ads': ads,
+			'capabilities': caps
+			}
+		self.response.out.write(render_to_string('viewtributeads.html', template_values))
+
 def csv_encode(val):
 	val = re.sub(r'"', '""', str(val or ''))
 	return '"%s"' % val
@@ -1153,11 +1170,12 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/golfers/byname', ViewGolfersByName),
 							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
 							   ('/admin/view/golfers/bystart', ViewGolfersByStart),
-							   ('/admin/handicap', ViewGolfersByName),
 							   ('/admin/view/dinners', ViewDinners),
+							   ('/admin/view/tribute', ViewTributeAds),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
 							   ('/admin/csv/golfers', DownloadGolfersCSV),
 							   ('/admin/csv/dinners', DownloadDinnersCSV),
+							   ('/admin/handicap', ViewGolfersByName),
 							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
 							   ('/admin/delete-registrations', DeleteHandler),
