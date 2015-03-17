@@ -623,21 +623,27 @@ class RelayResponse(webapp2.RequestHandler):
 				if ad.email:
 					email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount)
 		else:
-			q = Sponsor.all()
-			q.ancestor(root)
-			q.filter('id = ', int(id))
-			s = q.get()
-			if s and int(response_code) == 1:
-				s.payment_type = method
-				s.transaction_code = trans_id
-				s.auth_code = auth_code
-				try:
-					s.payment_made += int(float(amount))
-				except ValueError:
-					logging.error("Could not convert amount %s to int" % amount)
-				s.put()
-				if s.email:
-					email_cc_receipt(s, card_type, auth_code, amount)
+			sponsor_id = None
+			try:
+				sponsor_id = int(id)
+			except ValueError:
+				logging.error("Invalid id \"%s\"" % id)
+			if sponsor_id is not None:
+				q = Sponsor.all()
+				q.ancestor(root)
+				q.filter('id = ', sponsor_id)
+				s = q.get()
+				if s and int(response_code) == 1:
+					s.payment_type = method
+					s.transaction_code = trans_id
+					s.auth_code = auth_code
+					try:
+						s.payment_made += int(float(amount))
+					except ValueError:
+						logging.error("Could not convert amount %s to int" % amount)
+					s.put()
+					if s.email:
+						email_cc_receipt(s, card_type, auth_code, amount)
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
