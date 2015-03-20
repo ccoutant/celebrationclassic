@@ -6,28 +6,29 @@
 
 {% block head %}
 <style type="text/css">
-#auctionitems { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 1em; }
-#auctionitems tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
-#auctionitems td.photo { padding: 1em 0; width: 200px; }
-#auctionitems td.photo img { margin: 0; }
-#auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
-#auctionitems td.description { padding: 1em 0 1em 2em; }
-#auctionitems td p { margin: 0 0 0.5em 0; }
-#auctionitems td p.edit { text-align: center; }
+.auctionitems { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 1em; }
+.auctionitems tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
+.auctionitems td.photo { padding: 1em 0; width: 200px; }
+.auctionitems td.photo img { margin: 0; }
+.auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
+.auctionitems td.description { padding: 1em 0 1em 2em; }
+.auctionitems td p { margin: 0 0 0.5em 0; }
+.auctionitems td p.edit { text-align: center; }
 #content { margin-bottom: 3em; }
 #newbutton { text-align: center; }
 </style>
 {% endblock %}
 
 {% block content %}
-<h2>Auction Items</h2>
+<h2>Live Auction</h2>
 
-{% if auction_items %}
+{% if live_auction_items %}
 
-<table id="auctionitems">
+<table id="liveauctionitems" class="auctionitems">
 <tbody>
-{% for item in auction_items %}
+{% for item in live_auction_items %}
 	<tr valign="top">
+{% if item.sequence > 0 %}
 		<td class="photo">
 		{% if item.thumbnail_id %}
 		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
@@ -36,8 +37,12 @@
 		{% endif %}
 		</td>
 		<td class="description">
+{% else %}
+		<td class="description" colspan="2">
+{% endif %}
+
 		{{ item.description|markdown }}
-		<p class="edit"><a href="/admin/auction?key={{ item.key }}"><input type="button" name="edit" value="Edit"></a></p>
+		<p class="edit"><a href="/admin/auction?key={{ item.key }}&which_auction=l"><input type="button" name="edit" value="Edit"></a></p>
 		</td>
 	</tr>
 {% endfor %}
@@ -46,9 +51,45 @@
 
 {% else %}
 
-<p>No auction items yet.</p>
+<p>No live auction items yet.</p>
 
 {% endif %}
 
-<p id="newbutton"><a href="/admin/auction?new=y"><input type="button" name="add" value="Add a New Item"></a></p>
+<p id="newbutton"><a href="/admin/auction?new=y&which_auction=l"><input type="button" name="add" value="Add a New Live Auction Item"></a></p>
+
+<h2>Silent Auction</h2>
+
+{% if silent_auction_items %}
+
+<table id="silentauctionitems" class="auctionitems">
+<tbody>
+{% for item in silent_auction_items %}
+	<tr valign="top">
+{% if item.sequence > 0 %}
+		<td class="photo">
+		{% if item.thumbnail_id %}
+		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		{% else %}
+		<p>(No photo available)</p>
+		{% endif %}
+		</td>
+		<td class="description">
+{% else %}
+		<td class="description" colspan="2">
+{% endif %}
+		{{ item.description|markdown }}
+		<p class="edit"><a href="/admin/auction?key={{ item.key }}&which_auction=s"><input type="button" name="edit" value="Edit"></a></p>
+		</td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% else %}
+
+<p>No silent auction items yet.</p>
+
+{% endif %}
+
+<p id="newbutton"><a href="/admin/auction?new=y&which_auction=s"><input type="button" name="add" value="Add a New Silent Auction Item"></a></p>
 {% endblock %}

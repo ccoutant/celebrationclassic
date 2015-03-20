@@ -901,18 +901,26 @@ class ManageAuction(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_auction:
 			show_login_page(self.response.out, self.request.uri)
 			return
+		which_auction = self.request.get('which_auction')
 		if self.request.get('key'):
 			key = self.request.get('key')
-			item = auctionitem.AuctionItem.get(key)
+			if which_auction == 'l':
+				item = auctionitem.AuctionItem.get(key)
+			else:
+				item = auctionitem.SilentAuctionItem.get(key)
 			template_values = {
 				'item': item,
+				'which_auction': which_auction,
 				'key': key,
 				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		elif self.request.get('new'):
-			auction_items = auctionitem.get_auction_items()
+			if which_auction == 'l':
+				auction_items = auctionitem.get_auction_items()
+			else:
+				auction_items = auctionitem.get_silent_auction_items()
 			if auction_items:
 				seq = auction_items[-1].sequence + 1
 			else:
@@ -920,15 +928,18 @@ class ManageAuction(webapp2.RequestHandler):
 			item = auctionitem.AuctionItem(sequence = seq)
 			template_values = {
 				'item': item,
+				'which_auction': which_auction,
 				'key': '',
 				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		else:
-			auction_items = auctionitem.get_auction_items()
+			live_auction_items = auctionitem.get_auction_items()
+			silent_auction_items = auctionitem.get_silent_auction_items()
 			template_values = {
-				'auction_items': auction_items,
+				'live_auction_items': live_auction_items,
+				'silent_auction_items': silent_auction_items,
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('adminauction.html', template_values))
@@ -942,11 +953,18 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 			show_login_page(self.response.out, '/admin/auction')
 			return
 		auctionitem.clear_auction_item_cache()
+		which_auction = self.request.get('which_auction')
 		key = self.request.get('key')
-		if key:
-			item = auctionitem.AuctionItem.get(key)
+		if which_auction == 'l':
+			if key:
+				item = auctionitem.AuctionItem.get(key)
+			else:
+				item = auctionitem.AuctionItem(parent = root)
 		else:
-			item = auctionitem.AuctionItem(parent = root)
+			if key:
+				item = auctionitem.SilentAuctionItem.get(key)
+			else:
+				item = auctionitem.SilentAuctionItem(parent = root)
 		item.sequence = int(self.request.get('sequence'))
 		desc = self.request.get('description')
 		desc = desc.replace('\r\n', '\n')

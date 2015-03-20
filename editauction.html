@@ -15,7 +15,7 @@ p.description { margin-bottom: 0.5em; }
 {% endblock %}
 
 {% block content %}
-<h2>{% if key %}Edit{% else %}New{% endif %} Auction Item</h2>
+<h2>{% if key %}Edit{% else %}New{% endif %} {% if which_auction == 'l' %}Live{% else %}Silent{% endif %} Auction Item</h2>
 
 <form action="{{ upload_url }}" method="post" enctype="multipart/form-data" accept-charset="utf-8">
 
@@ -46,6 +46,7 @@ p.description { margin-bottom: 0.5em; }
 <span class="hints">(Use this to control the order of the auction items.)</span></p>
 
 <input type="hidden" name="key" value="{{ key }}">
+<input type="hidden" name="which_auction" value="{{ which_auction }}">
 
 <p><input type="submit" name="save" value="Save"></p>
 

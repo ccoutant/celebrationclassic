@@ -2,35 +2,31 @@
 
 {% load custom_filters %}
 
-{% block title %}Live Auction{% endblock %}
+{% block title %}Live and Silent Auctions{% endblock %}
 
 {% block head %}
 <style type="text/css">
 .intro { font-style: italic; }
-#auctionitems { width: 100%; border: none; border-collapse: collapse; border-top: 2px solid #c4e5c4; }
-#auctionitems tbody tr { border: none; border-top: 1px solid #c4e5c4; }
-#auctionitems td.photo { padding: 1em 0; width: 200px; }
-#auctionitems td.photo img { margin: 0; }
-#auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
-#auctionitems td.description { padding: 1em 0 1em 2em; }
-#auctionitems td p { margin: 0 0 0.5em 0; }
+.auctionitems { width: 100%; border: none; border-collapse: collapse; border-top: 2px solid #c4e5c4; }
+.auctionitems tbody tr { border: none; border-top: 1px solid #c4e5c4; }
+.auctionitems td.photo { padding: 1em 0; width: 200px; }
+.auctionitems td.photo img { margin: 0; }
+.auctionitems td.photo p { margin: 0; font-size: 80%; color: #484848; text-align: center; }
+.auctionitems td.description { padding: 1em 0 1em 2em; }
+.auctionitems td p { margin: 0 0 0.5em 0; }
 </style>
 {% endblock %}
 
 {% block content %}
 <h2>Live Auction</h2>
 
-{% if auction_items %}
+{% if live_auction_items %}
 
-<p class="intro">The Celebration Classic Live Auction
-will feature many fantastic items&mdash;including
-some genuine once-in-a-lifetime offerings!
-The auction will begin after dinner on {{ dinner_date }}.
-Here is just a smattering of what you can expect&hellip;</p>
+<div class="intro">{{ live_intro|markdown }}</div>
 
-<table id="auctionitems">
+<table id="liveauctionitems" class="auctionitems">
 <tbody>
-{% for item in auction_items %}
+{% for item in live_auction_items %}
 	<tr valign="top">
 		<td class="photo">
 		{% if item.thumbnail_id %}
@@ -49,8 +45,40 @@ Here is just a smattering of what you can expect&hellip;</p>
 
 {% else %}
 
-<p>Coming soon: a preview of some of the items that will be available for auction
-following dinner on {{ dinner_date }}.</p>
+<p>Coming soon: a preview of some of the items that will be available at the live auction
+on {{ dinner_date }}.</p>
+
+{% endif %}
+
+<h2>Silent Auction</h2>
+
+{% if silent_auction_items %}
+
+<div class="intro">{{ silent_intro|markdown }}</div>
+
+<table id="silentauctionitems" class="auctionitems">
+<tbody>
+{% for item in silent_auction_items %}
+	<tr valign="top">
+		<td class="photo">
+		{% if item.thumbnail_id %}
+		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		{% else %}
+		<p>(No photo available)</p>
+		{% endif %}
+		</td>
+		<td class="description">
+		{{ item.description|markdown }}
+		</td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% else %}
+
+<p>Coming soon: a preview of some of the items that will be available at the silent auction
+on {{ dinner_date }}.</p>
 
 {% endif %}
 {% endblock %}

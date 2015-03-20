@@ -41,6 +41,11 @@ indexes:
   properties:
   - name: name
 
+- kind: SilentAuctionItem
+  ancestor: yes
+  properties:
+  - name: sequence
+
 - kind: Sponsor
   ancestor: yes
   properties:

@@ -18,10 +18,22 @@ class Auction(webapp2.RequestHandler):
 		t = tournament.get_tournament()
 		dinner_date = "%s, %s %d, %d" % (t.dinner_date.strftime("%A"), t.dinner_date.strftime("%B"),
 										 t.dinner_date.day, t.dinner_date.year)
-		auction_items = auctionitem.get_auction_items()
+		live_auction_items = auctionitem.get_auction_items()
+		live_intro = ""
+		if live_auction_items and live_auction_items[0].sequence == 0:
+			live_intro = live_auction_items[0].description
+			live_auction_items = live_auction_items[1:]
+		silent_auction_items = auctionitem.get_silent_auction_items()
+		silent_intro = ""
+		if silent_auction_items and silent_auction_items[0].sequence == 0:
+			silent_intro = silent_auction_items[0].description
+			silent_auction_items = silent_auction_items[1:]
 		caps = capabilities.get_current_user_caps()
 		template_values = {
-			'auction_items': auction_items,
+			'live_intro': live_intro,
+			'live_auction_items': live_auction_items,
+			'silent_intro': silent_intro,
+			'silent_auction_items': silent_auction_items,
 			'dinner_date': dinner_date,
 			'capabilities': caps
 			}
