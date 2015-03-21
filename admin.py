@@ -819,7 +819,7 @@ If you have any questions, just reply to this email and we'll be
 glad to assist.
 """
 
-unpaid_email_template = """
+unpaid_email_template_part1 = """
 Dear %s,
 
 Thank you for registering for the Celebration Classic Dinner and
@@ -835,7 +835,14 @@ registration, please reply to this message and let us know.
 If you are a GO campaign member, click the "Back to Step 1"
 button to return to the first page, then check the GO box, enter
 your discount code, and click "Apply".
+"""
 
+unpaid_email_template_part2 = """
+Remember the last day to take advantage of the early-bird rate
+is %s.
+"""
+
+unpaid_email_template_part3 = """
 Please also check to make sure that you have provided all of the
 following information for each golfer and dinner guest:
 
@@ -864,7 +871,14 @@ class SendEmail(webapp2.RequestHandler):
 		if what == 'incomplete':
 			body_template = incomplete_email_template
 		elif what == 'unpaid':
-			body_template = unpaid_email_template
+			today = datetime.datetime.now() - datetime.timedelta(hours=8)
+			body_template = unpaid_email_template_part1
+			if today.date() <= root.early_bird_deadline:
+				early_bird_deadline = "%s %d, %d" % (root.early_bird_deadline.strftime("%B"),
+													 root.early_bird_deadline.day,
+													 root.early_bird_deadline.year)
+				body_template += unpaid_email_template_part2 % early_bird_deadline
+			body_template += unpaid_email_template_part3
 		else:
 			self.error(404)
 			self.response.out.write('<html><head>\n')
@@ -885,6 +899,8 @@ class SendEmail(webapp2.RequestHandler):
 				body = body_template % (s.first_name, s.id)
 				logging.info("sending mail to %s (id %s)" % (s.email, s.id))
 				mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
+				if dev_server:
+					logging.info(body)
 				num_sent += 1
 		template_values = {
 			'capabilities': caps,
