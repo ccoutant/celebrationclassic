@@ -309,6 +309,7 @@ class ViewGolfer(object):
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
+		self.team_name = g.team.name if g.team else ''
 		if g.tees:
 			tees = g.tees
 		elif g.gender == "F":
@@ -390,7 +391,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 			ndinners = 0
 			no_dinners = 0
 			for g in golfers:
-				if g.first_name and g.last_name and (g.ghin_number or g.average_score) and g.shirt_size:
+				if g.first_name and g.last_name and g.gender and (g.ghin_number or g.average_score) and g.shirt_size:
 					golfers_complete += 1
 				if g.dinner_choice:
 					ndinners += 1
@@ -737,17 +738,20 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
 							 'address', 'city', 'state', 'zip', 'email', 'phone',
-							 'ghin_number', 'avg_score', 'shirt_size',
-							 'contact_first_name', 'contact_last_name']))
+							 'ghin_number', 'avg_score', 'course_handicap',
+							 'shirt_size', 'team', 'contact_first_name', 'contact_last_name']))
+		counter = 1
 		for s in q:
 			q = Golfer.all().ancestor(s.key())
 			golfers = q.fetch(s.num_golfers)
 			for g in golfers:
+				vg = ViewGolfer(root, s, g, counter)
+				counter += 1
 				csv.append(','.join([csv_encode(x)
 									 for x in [g.first_name, g.last_name, g.gender, g.company,
 											   g.address, g.city, g.state, g.zip, g.email, g.phone,
-											   g.ghin_number, g.average_score, g.shirt_size,
-											   s.first_name, s.last_name]]))
+											   g.ghin_number, g.average_score, vg.course_handicap,
+											   g.shirt_size, vg.team_name, s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
 				csv.append(','.join([csv_encode(x)
 									 for x in ['n/a', 'n/a', '', '', '', '', '', '', '', '',
@@ -812,7 +816,7 @@ following information for each golfer and dinner guest:
 
 - Name
 - GHIN number or average score (for golfers)
-- Shirt size (for golfers)
+- Gender (for golfers)
 - Dinner selection
 
 If you have any questions, just reply to this email and we'll be
@@ -848,7 +852,7 @@ following information for each golfer and dinner guest:
 
 - Name
 - GHIN number or average score (for golfers)
-- Shirt size (for golfers)
+- Gender (for golfers)
 - Dinner selection
 
 If you have any questions, just reply to this email and we'll be

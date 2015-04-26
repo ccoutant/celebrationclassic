@@ -93,8 +93,8 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 		<td align="right">{{ g.golfer.average_score }}</td>
 		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
-		<td align="left">{{ g.team }}</td>
-		<td align="center">{% if g.starting_hole %}{{ g.starting_hole }}.{{ g.golfer.starting_hole_ab }}{% endif %}</td>
+		<td align="left">{% if g.golfer.team %}{{ g.golfer.team.name }}{% endif %}</td>
+		<td align="center">{% if g.golfer.team %}{{ g.golfer.team.starting_hole }}{% endif %}</td>
 		<td align="center">{% if g.golfer.cart == 1 %}A{% elif g.golfer.cart == 2 %}B{% endif %}</td>
 		<td align="center">{{ g.golfer.shirt_size }}</td>
 		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
@@ -109,10 +109,4 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 
 {% endif %}
 
-<p><b>Total shirts by size:</b></p>
-<ul>
-{% for key, value in shirt_sizes.items %}
-	<li>{{ key }}: {{ value }}</li>
-{% endfor %}
-</ul>
 {% endblock %}
