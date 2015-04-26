@@ -4,6 +4,7 @@ class Sponsor(db.Model):
 	id = db.IntegerProperty(default = 0)
 	first_name = db.StringProperty(default = '')
 	last_name = db.StringProperty(default = '')
+	sort_name = db.StringProperty(default = '')
 	company = db.StringProperty(default = '')
 	address = db.StringProperty(default = '')
 	city = db.StringProperty(default = '')

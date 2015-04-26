@@ -50,6 +50,12 @@ indexes:
   ancestor: yes
   properties:
   - name: confirmed
+  - name: sort_name
+
+- kind: Sponsor
+  ancestor: yes
+  properties:
+  - name: confirmed
   - name: timestamp
 
 - kind: Sponsor

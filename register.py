@@ -197,6 +197,7 @@ class Register(webapp2.RequestHandler):
 			s = Sponsor(parent=root)
 		s.first_name = self.request.get('first_name')
 		s.last_name = self.request.get('last_name')
+		s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
 		s.company = self.request.get('company')
 		s.address = self.request.get('address')
 		s.city = self.request.get('city')

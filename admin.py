@@ -354,7 +354,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		sponsors = q.fetch(limit = None)
 		for s in sponsors:
 			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
@@ -383,7 +383,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		sponsors = []
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
@@ -427,7 +427,7 @@ class ViewUnpaid(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		sponsors = []
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
@@ -492,7 +492,7 @@ class ViewGolfers(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
@@ -556,7 +556,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
@@ -595,7 +595,7 @@ class ViewGolfersByStart(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
@@ -638,7 +638,7 @@ class ViewDinners(webapp2.RequestHandler):
 		q = Sponsor.all()
 		q.ancestor(root)
 		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q.order("sort_name")
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
@@ -1192,6 +1192,33 @@ class DeleteHandler(webapp2.RequestHandler):
 				s.delete()
 		self.redirect('/admin/delete-registrations')
 
+class UpgradeHandler(webapp2.RequestHandler):
+	def get(self):
+		start = int(self.request.get('start') or 0)
+		count = self.request.get('count')
+		self.response.out.write('<html><head><title>Upgrade</title></head>')
+		if count:
+			self.response.out.write('<p>Upgraded %s records.</p>' % count)
+		self.response.out.write('<body><form action="/admin/upgrade" method="post">')
+		self.response.out.write('<input type="text" name="start" value="%d">' % start)
+		self.response.out.write('<input type="submit" name="upgrade" value="Upgrade">')
+		self.response.out.write('</form></body></html>')
+
+	def post(self):
+		if not users.is_current_user_admin():
+			show_login_page(self.response.out, '/admin/delete-registrations')
+			return
+		root = tournament.get_tournament()
+		start = int(self.request.get('start'))
+		q = Sponsor.all().ancestor(root).order("timestamp")
+		sponsors = q.fetch(offset = start, limit = 20)
+		for s in sponsors:
+			s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
+			s.put()
+		count = len(sponsors)
+		logging.info("Upgraded registrations %d through %d" % (start, start + count - 1))
+		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, count))
+
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
 							   ('/admin/tournament', ManageTournament),
@@ -1217,5 +1244,6 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
 							   ('/admin/delete-registrations', DeleteHandler),
-							   ('/admin/logout', Logout)],
+							   ('/admin/logout', Logout),
+							   ('/admin/upgrade', UpgradeHandler)],
 							  debug=dev_server)
