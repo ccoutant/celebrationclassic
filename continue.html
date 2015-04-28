@@ -185,6 +185,13 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry">
 <div class="form-input">
+<input type="checkbox" name="golfer_nodinner{{ golfer.sequence }}" value="y" id="entry_golfer_vegetarian{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "No Dinner" %}checked{% endifequal %}>
+<label class="right" for="entry_golfer_nodinner{{ golfer.sequence }}">Check here if golfer will not be having dinner</label>
+</div>
+</div>
+
+<div class="form-entry">
+<div class="form-input">
 <input type="checkbox" name="golfer_vegetarian{{ golfer.sequence }}" value="y" id="entry_golfer_vegetarian{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "Vegetarian" %}checked{% endifequal %}>
 <label class="right" for="entry_golfer_vegetarian{{ golfer.sequence }}">Check here for a vegetarian entree</label>
 </div>

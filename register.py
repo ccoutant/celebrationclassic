@@ -391,7 +391,12 @@ class Continue(webapp2.RequestHandler):
 			golfer.average_score = self.request.get('avg%d' % i)
 			golfer.ghin_number = self.request.get('ghin%d' % i)
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
-			golfer.dinner_choice = "Vegetarian" if self.request.get('golfer_vegetarian%d' % i) == "y" else "Chicken/Fish"
+			if self.request.get('golfer_nodinner%d' % i) == "y":
+				golfer.dinner_choice = "No Dinner"
+			elif self.request.get('golfer_vegetarian%d' % i) == "y":
+				golfer.dinner_choice = "Vegetarian"
+			else:
+				golfer.dinner_choice = "Chicken/Fish"
 			golfer.put()
 
 		# Mark excess golfer instances as not active, so we can filter

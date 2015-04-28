@@ -405,7 +405,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
-			if (s.net_due == 0 and
+			if (s.net_due <= 0 and
 				  (golfers_complete < s.num_golfers or ndinners < s.num_golfers + s.num_dinners)):
 				sponsors.append(s)
 		nav = []
