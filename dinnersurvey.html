@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% block title %}Dinner Survey{% endblock %}
+
+{% block head %}
+<style type="text/css">
+#body { width: 95%; }
+#body #header { margin-left: auto; margin-right: auto; }
+#body #footer { margin-left: auto; margin-right: auto; }
+#body #nav { display: none; }
+#body #content { float: none; width: 100%; margin: 1em 0 3em; }
+#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body thead tr { border: none; border-bottom: 2px solid #c4e5c4; }
+#body tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
+#body tbody tr:hover { background-color: #e7fbe7; }
+#body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
+#body td { padding: 0.5em; }
+#body td.sponsor { background-color: white; font-weight: bold; padding-top: 1em; }
+#body td.firstcol { padding-left: 2em; }
+#body td p { margin: 0; }
+#body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
+h2 { text-align: center; }
+ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
+ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
+ul.viewnav li {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
+}
+ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
+ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<ul class="viewnav">
+	<li><a href="/admin/view/registrations">All</a></li>
+	<li><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/dinners">Dinners</a></li>
+	<li><a href="/admin/view/unpaid">Unpaid</a></li>
+	<li><a href="/admin/view/incomplete">Incomplete</a></li>
+	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
+</ul>
+
+<h2>Dinner Survey</h2>
+
+{% if sponsors %}
+<form action="/admin/mail/dinnersurvey" method="post" accept-charset="utf-8">
+<table>
+<thead>
+	<tr valign="bottom">
+		<th align="left">ID</th>
+		<th align="left">Contact</th>
+		<th align="left">Email</th>
+		<th align="right"># Golfers</th>
+		<th align="right"># Dinners</th>
+	</tr>
+</thead>
+<tbody>
+{% for s in sponsors %}
+	<tr valign="baseline">
+		<td><input type="checkbox" name="selected_items" value="{{ s.id }}">
+		<a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
+		<td>{{ s.first_name }} {{ s.last_name }}</td>
+		<td>
+			{% if s.email %}<p><a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
+		</td>
+		<td align="right">{{ s.num_golfers }}</td>
+		<td align="right">{{ s.num_dinners }}</td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<p>Send dinner survey e-mails to selected registrants:
+<input type="submit" name="send" value="Send email"></p>
+</form>
+
+{% else %}
+
+<p>No registrations to display.</p>
+
+{% endif %}
+{% endblock %}

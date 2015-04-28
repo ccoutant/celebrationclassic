@@ -450,6 +450,29 @@ class ViewUnpaid(webapp2.RequestHandler):
 			}
 		self.response.out.write(render_to_string('viewsponsors.html', template_values))
 
+class ViewDinnerSurvey(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter("confirmed =", True)
+		q.order("sort_name")
+		sponsors = []
+		for s in q:
+			if s.num_golfers > 0 and s.email:
+				sponsors.append(s)
+		nav = []
+		template_values = {
+			'sponsors': sponsors,
+			'nav': nav,
+			'capabilities': caps
+			}
+		self.response.out.write(render_to_string('dinnersurvey.html', template_values))
+
 class ViewUnconfirmed(webapp2.RequestHandler):
 	def get(self):
 		root = tournament.get_tournament()
@@ -863,6 +886,27 @@ which is so important to Shir Hadash. I look forward to seeing
 you at the event.
 """
 
+dinner_survey_template = """
+Dear %s,
+
+As you know, part of your golf package includes participation in
+the dinner event immediately following the tournament. Please let
+us know if you or anyone else in your foursome will not be
+staying for the dinner. We will assume that you will be attending
+the dinner unless you respond to this email to tell us that you
+will not.
+
+Thank you and we look forward to seeing you on May 18th.
+
+If you would like to update any information you provided with
+your registration, please visit the following URL:
+
+    http://www.celebrationclassic.org/register?id=%s
+
+If you have any questions, just reply to this email and we'll be
+glad to assist.
+"""
+
 class SendEmail(webapp2.RequestHandler):
 	def post(self, what):
 		root = tournament.get_tournament()
@@ -883,6 +927,8 @@ class SendEmail(webapp2.RequestHandler):
 													 root.early_bird_deadline.year)
 				body_template += unpaid_email_template_part2 % early_bird_deadline
 			body_template += unpaid_email_template_part3
+		elif what == 'dinnersurvey':
+			body_template = dinner_survey_template
 		else:
 			self.error(404)
 			self.response.out.write('<html><head>\n')
@@ -1231,6 +1277,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/incomplete', ViewIncomplete),
 							   ('/admin/view/unpaid', ViewUnpaid),
 							   ('/admin/view/unconfirmed', ViewUnconfirmed),
+							   ('/admin/view/dinnersurvey', ViewDinnerSurvey),
 							   ('/admin/view/golfers', ViewGolfers),
 							   ('/admin/view/golfers/byname', ViewGolfersByName),
 							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
