@@ -117,7 +117,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in doubleeagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% elif sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -128,7 +128,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in holeinone %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% elif sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -143,7 +143,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in eagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% elif sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>
@@ -154,7 +154,7 @@ Double Eagle, Hole-in-One, Eagle, or Under Par sponsor for this event.
 {% for sponsorship in underpar %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
-<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% endif %} {% if sponsorship.sold %}disabled{% endif %}></div>
+<div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% elif sponsorship.sold %}disabled{% endif %}></div>
 <label class="right {% if sponsorship.sold %}sold{% endif %}" for="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}">{{ sponsorship.name }} ({% if sponsorship.sold %}SOLD{% else %}$<script type="text/javascript" language="javascript">document.write(add_commas({{ sponsorship.price }}));</script>{% endif%})</label>
 </div>
 </div>

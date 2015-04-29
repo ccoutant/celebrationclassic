@@ -29,7 +29,24 @@ ul.viewnav li {
 }
 ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
 ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
+div.payment-details { display: none; }
+span.disclosure { font-size: 80%; font-style: italic; margin-left: 0.5em; cursor: pointer; }
+span.details { font-size: 80%; font-style: italic; margin-left: 0.5em; }
+td button { margin-left: 0.5em; }
 </style>
+<script type="text/javascript" language="javascript">
+function toggle_display(i) {
+	var div = document.getElementById('payment-details-' + i);
+	if (div) {
+		var disp_style = div.style.display;
+		if (disp_style == 'block')
+			disp_style = 'none';
+		else
+			disp_style = 'block';
+		div.style.display = disp_style;
+	}
+};
+</script>
 {% endblock %}
 
 {% block content %}
@@ -69,7 +86,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 <tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
-		<td>{% if incomplete == 'unpaid' or incomplete == 'incomplete' %}<input type="checkbox" name="selected_items" value="{{ s.id }}">{% endif %}
+		<td nowrap>{% if incomplete == 'unpaid' or incomplete == 'incomplete' %}<input type="checkbox" name="selected_items" value="{{ s.id }}">{% endif %}
 		<a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
 		<td>{{ s.first_name }} {{ s.last_name }}</td>
 		<td>
@@ -83,6 +100,9 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 			{% if s.fax %}<p>{{ s.fax }} (fax)</p>{% endif %}
 		</td>
 		<td>
+			{% if s.go_discount_code %}
+			<p>GO campaign {% if s.go_golfers > 12 %}(Angel){% else %}({{ s.go_golfers }} golfers){% endif %}</p>
+			{% endif %}
 			{% for ss in s.sponsorships %}
 			<p>{{ ss|get_sponsorship_name }}</p>
 			{% if forloop.last %}
@@ -90,25 +110,30 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 			{% endif %}
 			{% endfor %}
 			{% if s.additional_donation %}
-			<p class="details">Additional donation: ${{ s.additional_donation }}</p>
+			<p>Additional donation: ${{ s.additional_donation }}</p>
 			{% endif %}
 		</td>
 		<td align="right">{{ s.num_golfers }}</td>
 		<td align="right">{{ s.adjusted_dinners }}</td>
-		<td>
+		<td nowrap>
+			<p>Total: ${{ s.payment_due }}
+			{% if capabilities.can_add_registrations and s.confirmed %}
+			<a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit Payment</button></a>
+			{% endif %}
+			</p>
+			{% if s.discount %}
+			<p>Discount: ${{ s.discount }} {% if s.discount_type %}<span class="details">({{ s.discount_type }})</span>{% endif %}</p>
+			{% endif %}
 			{% if s.payment_made %}
-			<p>Paid: ${{ s.payment_made }}</p>
+			<p>Paid: ${{ s.payment_made }} <span class="disclosure"><a onclick="toggle_display({{ forloop.counter }});">details</a></span></p>
+			<div id="payment-details-{{ forloop.counter }}" class="payment-details">
 			<p class="details">Payment Type: {{ s.payment_type|default:'' }}</p>
 			<p class="details">Transaction Code: {{ s.transaction_code|default:'' }}</p>
 			<p class="details">Authorization Code: {{ s.auth_code|default:'' }}</p>
+			</div>
 			{% endif %}
-			{% if s.discount %}
-			<p>Discount: ${{ s.discount }}</p>
-			<p class="details">Discount Type: {{ s.discount_type|default:'' }}</p>
-			{% endif %}
-			<p>Due: ${{ s.net_due }}</p>
-			{% if capabilities.can_add_registrations and s.confirmed %}
-			<p><a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit payment info</button></a></p>
+			{% if s.net_due %}
+			<p><b>Due: ${{ s.net_due }}</b></p>
 			{% endif %}
 		</td>
 	</tr>

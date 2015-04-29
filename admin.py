@@ -366,6 +366,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
+			s.net_due = max(0, s.net_due)
 		template_values = {
 			'sponsors': sponsors,
 			'incomplete': '',
@@ -405,7 +406,8 @@ class ViewIncomplete(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
-			if (s.net_due <= 0 and
+			s.net_due = max(0, s.net_due)
+			if (s.net_due == 0 and
 				  (golfers_complete < s.num_golfers or ndinners < s.num_golfers + s.num_dinners)):
 				sponsors.append(s)
 		nav = []
@@ -439,6 +441,7 @@ class ViewUnpaid(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
+			s.net_due = max(0, s.net_due)
 			if s.net_due > 0:
 				sponsors.append(s)
 		nav = []
@@ -490,6 +493,7 @@ class ViewUnconfirmed(webapp2.RequestHandler):
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
+			s.net_due = max(0, s.net_due)
 		nav = []
 		template_values = {
 			'sponsors': sponsors,
