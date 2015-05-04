@@ -62,6 +62,7 @@ class Golfer(db.Model):
 	team = db.ReferenceProperty(Team)
 	cart = db.IntegerProperty(default = 0)
 	tees = db.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
+	index_info_modified = db.BooleanProperty(default = False)
 
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)

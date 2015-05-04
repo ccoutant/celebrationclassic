@@ -321,10 +321,12 @@ class ViewGolfer(object):
 		self.tees = tees
 		slope = [t.red_course_slope, t.white_course_slope, t.blue_course_slope][tees - 1]
 		if g.has_index:
+			self.computed_index = ''
 			self.course_handicap = min(36, int(round(g.handicap_index * slope / 113.0)))
 		elif g.average_score:
 			try:
 				handicap_index = float(g.average_score) * 0.8253 - 61.15
+				self.computed_index = '%.1f' % handicap_index
 				self.course_handicap = min(36, int(round(handicap_index * slope / 113.0)))
 			except:
 				self.course_handicap = 36
@@ -571,6 +573,97 @@ class ViewGolfersByName(webapp2.RequestHandler):
 		html = render_to_string('viewgolfersbyname.html', template_values)
 		self.response.out.write(html)
 
+class ViewGolfersHandicap(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		start = 1
+		if self.request.get('start'):
+			start = int(self.request.get('start'))
+		all_golfers = []
+		q = Golfer.all()
+		q.ancestor(root)
+		q.filter("active =", True)
+		q.order("sort_name")
+		golfers = q.fetch(offset = start - 1, limit = 21)
+		prev_page_offset = 0 if start == 1 else max(1, start - 20)
+		next_page_offset = 0
+		if len(golfers) == 21:
+			next_page_offset = start + 20
+			golfers = golfers[:20]
+		counter = start
+		for g in golfers:
+			s = g.parent()
+			all_golfers.append(ViewGolfer(root, s, g, counter))
+			counter += 1
+		template_values = {
+			'golfers': all_golfers,
+			'prev_page_offset': prev_page_offset,
+			'this_page_offset': start,
+			'next_page_offset': next_page_offset,
+			'count': len(golfers),
+			'capabilities': caps
+			}
+		html = render_to_string('viewgolfers-index.html', template_values)
+		self.response.out.write(html)
+
+	def post(self):
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, '/admin/view/golfers/handicap')
+			return
+		prev_page_offset = int(self.request.get('prev_page_offset'))
+		this_page_offset = int(self.request.get('this_page_offset'))
+		next_page_offset = int(self.request.get('next_page_offset'))
+		count = int(self.request.get('count'))
+		for i in range(this_page_offset, this_page_offset + count):
+			logging.info("Processing golfer #%d" % i)
+			key = self.request.get('key_%d' % i)
+			try:
+				g = Golfer.get(key)
+			except:
+				logging.error("Invalid key '%s'" % key)
+				continue
+			modified = False
+			ghin_number = self.request.get('ghin_%d' % i)
+			handicap_index = self.request.get('index_%d' % i)
+			average_score = self.request.get('avg_score_%d' % i)
+			modified_checkbox = self.request.get('modified_%d' % i)
+			if ghin_number != g.ghin_number:
+				g.ghin_number = ghin_number
+				modified = True
+			if handicap_index:
+				try:
+					val = float(handicap_index)
+					if not g.has_index or val != g.handicap_index:
+						g.handicap_index = val
+						g.has_index = True
+						modified = True
+				except ValueError:
+					logging.error("Invalid handicap index '%s'" % handicap_index)
+			if handicap_index == '' and g.handicap_index:
+				g.handicap_index = 0
+				g.has_index = False
+				modified = True
+			if average_score != g.average_score:
+				g.average_score = average_score
+				modified = True
+			if g.index_info_modified and not modified_checkbox:
+				modified = True
+			if modified:
+				logging.info("Updating handicap info")
+				g.index_info_modified = False
+				g.put()
+		if self.request.get('prevpage'):
+			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
+		elif self.request.get('nextpage'):
+			self.redirect('/admin/view/golfers/handicap?start=%d' % next_page_offset)
+		else:
+			self.redirect('/admin/view/golfers/handicap?start=%d' % this_page_offset)
+
 class ViewGolfersByTeam(webapp2.RequestHandler):
 	def get(self):
 		root = tournament.get_tournament()
@@ -765,24 +858,37 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
 							 'address', 'city', 'state', 'zip', 'email', 'phone',
-							 'ghin_number', 'avg_score', 'course_handicap',
-							 'shirt_size', 'team', 'contact_first_name', 'contact_last_name']))
+							 'ghin_number', 'index', 'avg_score', 'course_handicap',
+							 'shirt_size', 'team', 'starting_hole', 'cart',
+							 'contact_first_name', 'contact_last_name']))
 		counter = 1
 		for s in q:
-			q = Golfer.all().ancestor(s.key())
-			golfers = q.fetch(s.num_golfers)
+			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
 				vg = ViewGolfer(root, s, g, counter)
+				starting_hole = ''
+				if g.team:
+					starting_hole = g.team.starting_hole
+				cart = ''
+				if g.cart:
+					cart = 'A' if g.cart == 1 else 'B'
+				handicap_index = ''
+				if g.has_index:
+					handicap_index = g.handicap_index
 				counter += 1
 				csv.append(','.join([csv_encode(x)
 									 for x in [g.first_name, g.last_name, g.gender, g.company,
 											   g.address, g.city, g.state, g.zip, g.email, g.phone,
-											   g.ghin_number, g.average_score, vg.course_handicap,
-											   g.shirt_size, vg.team_name, s.first_name, s.last_name]]))
+											   g.ghin_number, handicap_index, g.average_score, vg.course_handicap,
+											   g.shirt_size, vg.team_name, starting_hole, cart,
+											   s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
 				csv.append(','.join([csv_encode(x)
-									 for x in ['n/a', 'n/a', '', '', '', '', '', '', '', '',
-											   '', '', '', '', s.first_name, s.last_name]]))
+									 for x in ['n/a', 'n/a', '', '',
+											   '', '', '', '', '', '',
+											   '', '', '', '',
+											   '', '', '', '',
+											   s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 		self.response.headers['Content-Disposition'] = 'attachment;filename=golfers.csv'
 		self.response.out.write('\n'.join(csv))
@@ -800,7 +906,7 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 		q.filter("confirmed =", True)
 		q.order("timestamp")
 		csv = []
-		csv.append(','.join(['first_name', 'last_name', 'dinner_choice',
+		csv.append(','.join(['first_name', 'last_name', 'dinner_choice', 'seating_pref',
 							 'contact_first_name', 'contact_last_name']))
 		for s in q:
 			q = Golfer.all().ancestor(s.key())
@@ -808,19 +914,18 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 			for g in golfers:
 				if g.dinner_choice != 'No Dinner':
 					csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
-																 g.dinner_choice,
+																 g.dinner_choice, s.dinner_seating,
 																 s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '',
+				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
 															 s.first_name, s.last_name]]))
-			q = DinnerGuest.all().ancestor(s.key())
-			guests = q.fetch(s.num_dinners)
+			guests = DinnerGuest.all().ancestor(s.key()).order("sequence").fetch(s.num_dinners)
 			for g in guests:
 				csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
-															 g.dinner_choice,
+															 g.dinner_choice, s.dinner_seating,
 															 s.first_name, s.last_name]]))
 			for i in range(len(guests) + 1, s.num_dinners + 1):
-				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '',
+				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
 															 s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 		self.response.headers['Content-Disposition'] = 'attachment;filename=dinners.csv'
@@ -1286,6 +1391,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/golfers/byname', ViewGolfersByName),
 							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
 							   ('/admin/view/golfers/bystart', ViewGolfersByStart),
+							   ('/admin/view/golfers/handicap', ViewGolfersHandicap),
 							   ('/admin/view/dinners', ViewDinners),
 							   ('/admin/view/tribute', ViewTributeAds),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),

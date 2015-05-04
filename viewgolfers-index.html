@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Handicapping{% endblock %}
+
+{% block head %}
+<style type="text/css">
+#body { width: 95%; }
+#body #header { margin-left: auto; margin-right: auto; }
+#body #footer { margin-left: auto; margin-right: auto; }
+#body #nav { display: none; }
+#body #content { float: none; width: 100%; margin: 1em 0 3em; }
+#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body thead tr { border-bottom: 2px solid #c4e5c4; }
+#body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
+#body tbody tr.golfer:hover { background-color: #e7fbe7; }
+#body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
+#body td { padding: 0.5em; }
+#body tr.sponsor td { font-weight: bold; padding-top: 1em; }
+#body td.firstcol { padding-left: 2em; }
+#body td p { margin: 0; }
+#body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
+#body tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
+h2 { text-align: center; }
+ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
+ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
+ul.viewnav li {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
+}
+ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
+ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
+.buttons { text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<ul class="viewnav">
+	<li><a href="/admin/view/registrations">All</a></li>
+	<li class="selected"><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/dinners">Dinners</a></li>
+	<li><a href="/admin/view/unpaid">Unpaid</a></li>
+	<li><a href="/admin/view/incomplete">Incomplete</a></li>
+	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
+</ul>
+<ul class="viewnav">
+	<li><a href="/admin/view/golfers">By Sponsor</a></li>
+	<li><a href="/admin/view/golfers/byname">By Name</a></li>
+	<li><a href="/admin/view/golfers/byteam">By Team</a></li>
+	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
+	<li class="selected"><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/csv/golfers">Download CSV</a></li>
+</ul>
+
+<h2>Golfers</h2>
+
+<form action="/admin/view/golfers/handicap" method="post" accept-charset="utf-8">
+<input type="hidden" name="prev_page_offset" value="{{ prev_page_offset }}">
+<input type="hidden" name="this_page_offset" value="{{ this_page_offset }}">
+<input type="hidden" name="next_page_offset" value="{{ next_page_offset }}">
+<input type="hidden" name="count" value="{{ count }}">
+
+{% if golfers %}
+
+<table>
+<thead>
+	<tr valign="bottom">
+		<th></th>
+		<th align="left">Golfer</th>
+		<th align="center">Gender</th>
+		<th align="left">Email/Phone</th>
+		<th align="center">Modified</th>
+		<th align="right">GHIN #</th>
+		<th align="right">Index</th>
+		<th align="right">Avg.<br>Score</th>
+		<th align="right">Computed<br>Index</th>
+		<th align="right">Course<br>Handicap</th>
+		<th align="center">Tees</th>
+		<th align="left">Contact</th>
+	</tr>
+</thead>
+<tbody>
+{% for g in golfers %}
+	<tr class="golfer" valign="baseline">
+		<td align="right">{{ g.count }}<input type="hidden" name="key_{{ g.count }}" value="{{ g.golfer.key }}"></td>
+		<td>{{ g.golfer_name }}</td>
+		<td align="center">{{ g.golfer.gender }}</td>
+		<td>
+			{% if g.golfer.email %}<p><a href="mailto:{{ g.golfer.email }}">{{ g.golfer.email }}</a></p>{% endif %}
+			{% if g.golfer.phone %}<p>{{ g.golfer.phone }}</p>{% endif %}
+		</td>
+		<td align="center">{% if g.golfer.index_info_modified %}<input type="checkbox" name="modified_{{ g.count }}" value="*" checked>{% endif %}</td>
+		<td align="right"><input type="text" size="8" name="ghin_{{ g.count }}" value="{{ g.golfer.ghin_number }}"></td>
+		<td align="right"><input type="text" size="8" name="index_{{ g.count }}" value="{% if g.golfer.has_index %}{{ g.golfer.handicap_index }}{% endif %}"></td>
+		<td align="right"><input type="text" size="8" name="avg_score_{{ g.count }}" value="{{ g.golfer.average_score }}"></td>
+		<td align="right">{{ g.computed_index }}</td>
+		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
+		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
+		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% else %}
+
+<p>No golfers.</p>
+
+{% endif %}
+
+<div class="buttons">
+{% if prev_page_offset %}<input type="submit" name="prevpage" value="&lt;- Previous Page">{% endif %}
+<input type="submit" name="save" value="Save">
+{% if next_page_offset %}<input type="submit" name="nextpage" value="Next Page -&gt;">{% endif %}
+</div>
+
+</form>
+
+{% endblock %}

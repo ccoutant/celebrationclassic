@@ -389,8 +389,15 @@ class Continue(webapp2.RequestHandler):
 			golfer.zip = self.request.get('zip%d' % i)
 			golfer.phone = self.request.get('phone%d' % i)
 			golfer.email = self.request.get('email%d' % i)
-			golfer.average_score = self.request.get('avg%d' % i)
-			golfer.ghin_number = self.request.get('ghin%d' % i)
+			golfer.index_info_modified = False
+			average_score = self.request.get('avg%d' % i)
+			if average_score != golfer.average_score:
+				golfer.index_info_modified = True
+			golfer.average_score = average_score
+			ghin_number = self.request.get('ghin%d' % i)
+			if ghin_number != golfer.ghin_number:
+				golfer.index_info_modified = True
+			golfer.ghin_number = ghin_number
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
 			if self.request.get('golfer_nodinner%d' % i) == "y":
 				golfer.dinner_choice = "No Dinner"
