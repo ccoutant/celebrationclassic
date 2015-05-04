@@ -340,6 +340,7 @@ class Register(webapp2.RequestHandler):
 				result = q.get()
 				if not result: break
 				logging.info('ID collision for %d; retrying...' % s.id)
+		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
 		s.put()
 		memcache.delete('2015/admin/view/golfers')
 		memcache.delete('2015/admin/view/dinners')
@@ -421,6 +422,7 @@ class Continue(webapp2.RequestHandler):
 		s.dinner_seating = self.request.get('dinner_seating')
 		if not self.request.get('back'):
 			s.confirmed = True
+		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
 		memcache.delete('2015/admin/view/golfers')
 		memcache.delete('2015/admin/view/dinners')
@@ -456,6 +458,7 @@ class Continue(webapp2.RequestHandler):
 				'net_payment_due': net_payment_due,
 				'capabilities': caps
 			}
+			logging.info('Pay by check, ID %d' % s.id)
 			self.response.out.write(render_to_string('paybycheck.html', template_values))
 			return
 
@@ -484,6 +487,7 @@ class Continue(webapp2.RequestHandler):
 					 ('zip', s.zip),
 					 ('phone', s.phone),
 					 ('email', s.email)]
+			logging.info('Pay by acceptiva, ID %d' % s.id)
 			self.redirect('%s?%s' % (payments_info.gateway_url, urllib.urlencode(parms)))
 
 		elif payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
@@ -521,6 +525,7 @@ class Continue(webapp2.RequestHandler):
 				'net_payment_due': str(net_payment_due),
 				'capabilities': caps
 			}
+			logging.info('Pay by authorize.net, ID %d' % s.id)
 			self.response.out.write(render_to_string('paybycredit.html', template_values))
 
 		else:
@@ -693,13 +698,17 @@ class Receipt(webapp2.RequestHandler):
 		m = pat.match(id)
 		if m:
 			tribute_id = int(m.group(1))
-			ad = TributeAd.get_by_id(tribute_id, parent = root)
+			ad = None
+			try:
+				ad = TributeAd.get_by_id(tribute_id, parent = root)
+			except:
+				logging.error("Invalid tribute_id \"%s\"" % id)
 			if not ad:
 				self.response.out.write('<html><head>\n')
 				self.response.out.write('<title>ID Not Found</title>\n')
 				self.response.out.write('</head><body>\n')
 				self.response.out.write('<h1>ID Not Found</h1>\n')
-				self.response.out.write('<p>The requested tribute id %s was not found.</p>\n' % id)
+				self.response.out.write('<p>The requested tribute id &quot;%s&quot; was not found.</p>\n' % id)
 				self.response.out.write('</body></html>\n')
 				return
 			template_values = {
@@ -714,16 +723,23 @@ class Receipt(webapp2.RequestHandler):
 				}
 			self.response.out.write(render_to_string('receipt-tribute.html', template_values))
 		else:
-			q = Sponsor.all()
-			q.ancestor(root)
-			q.filter('id = ', int(id))
-			s = q.get()
+			sponsor_id = None
+			s = None
+			try:
+				sponsor_id = int(id)
+			except ValueError:
+				logging.error("Invalid id \"%s\"" % id)
+			if sponsor_id is not None:
+				q = Sponsor.all()
+				q.ancestor(root)
+				q.filter('id = ', sponsor_id)
+				s = q.get()
 			if not s:
 				self.response.out.write('<html><head>\n')
 				self.response.out.write('<title>ID Not Found</title>\n')
 				self.response.out.write('</head><body>\n')
 				self.response.out.write('<h1>ID Not Found</h1>\n')
-				self.response.out.write('<p>The requested registration id %s was not found.</p>\n' % id)
+				self.response.out.write('<p>The requested registration id &quot;%s&quot; was not found.</p>\n' % id)
 				self.response.out.write('</body></html>\n')
 				return
 			template_values = {
