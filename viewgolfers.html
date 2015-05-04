@@ -45,6 +45,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<li><a href="/admin/view/golfers/byname">By Name</a></li>
 	<li><a href="/admin/view/golfers/byteam">By Team</a></li>
 	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
+	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
 	<li><a href="/admin/csv/golfers">Download CSV</a></li>
 </ul>
 
@@ -63,6 +64,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 		<th align="right">GHIN #</th>
 		<th align="right">Index</th>
 		<th align="right">Avg.<br>Score</th>
+		<th align="right">Tourn.<br>Index</th>
 		<th align="right">Course<br>Handicap</th>
 		<th align="center">Tees</th>
 		<th align="left">Team</th>
@@ -90,8 +92,9 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 			{% if g.golfer.fax %}<p>{{ g.golfer.fax }} (fax)</p>{% endif %}
 		</td>
 		<td align="right">{{ g.golfer.ghin_number }}</td>
-		<td align="right">{% if g.golfer.has_index %}{{ g.golfer.handicap_index }}{% endif %}</td>
+		<td align="right">{{ g.handicap_index_str }}</td>
 		<td align="right">{{ g.golfer.average_score }}</td>
+		<td align="right">{% if g.golfer.has_index %}{{ g.handicap_index_str }}{% elif g.golfer.average_score %}{{ g.computed_index }}{% endif %}</td>
 		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
 		<td align="left">{% if g.golfer.team %}{{ g.golfer.team.name }}{% endif %}</td>

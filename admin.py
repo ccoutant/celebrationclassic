@@ -7,6 +7,7 @@ import cgi
 import logging
 import webapp2
 import datetime
+import hashlib
 from google.appengine.ext import db, blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from google.appengine.api import users, memcache, images, mail
@@ -321,9 +322,11 @@ class ViewGolfer(object):
 		self.tees = tees
 		slope = [t.red_course_slope, t.white_course_slope, t.blue_course_slope][tees - 1]
 		if g.has_index:
+			self.handicap_index_str = "%.1f" % g.handicap_index
 			self.computed_index = ''
 			self.course_handicap = min(36, int(round(g.handicap_index * slope / 113.0)))
 		elif g.average_score:
+			self.handicap_index_str = ''
 			try:
 				handicap_index = float(g.average_score) * 0.8253 - 61.15
 				self.computed_index = '%.1f' % handicap_index
@@ -331,6 +334,7 @@ class ViewGolfer(object):
 			except:
 				self.course_handicap = 36
 		else:
+			self.handicap_index_str = ''
 			self.course_handicap = 0
 
 class ViewDinner(object):
@@ -597,7 +601,14 @@ class ViewGolfersHandicap(webapp2.RequestHandler):
 		counter = start
 		for g in golfers:
 			s = g.parent()
-			all_golfers.append(ViewGolfer(root, s, g, counter))
+			vg = ViewGolfer(root, s, g, counter)
+			h = hashlib.md5()
+			h.update(g.ghin_number or '-')
+			h.update(vg.handicap_index_str or '-')
+			h.update(g.average_score or '-')
+			h.update('t' if g.index_info_modified else 'f')
+			vg.index_hash = h.hexdigest()
+			all_golfers.append(vg)
 			counter += 1
 		template_values = {
 			'golfers': all_golfers,
@@ -620,43 +631,41 @@ class ViewGolfersHandicap(webapp2.RequestHandler):
 		next_page_offset = int(self.request.get('next_page_offset'))
 		count = int(self.request.get('count'))
 		for i in range(this_page_offset, this_page_offset + count):
-			logging.info("Processing golfer #%d" % i)
 			key = self.request.get('key_%d' % i)
+			index_hash = self.request.get('hash_%d' % i)
+			ghin_number = self.request.get('ghin_%d' % i)
+			handicap_index = self.request.get('index_%d' % i)
+			average_score = self.request.get('avg_score_%d' % i)
+			modified_checkbox = self.request.get('modified_%d' % i)
+			h = hashlib.md5()
+			h.update(ghin_number or '-')
+			h.update(handicap_index or '-')
+			h.update(average_score or '-')
+			h.update('t' if modified_checkbox else 'f')
+			if h.hexdigest() == index_hash:
+				continue
 			try:
 				g = Golfer.get(key)
 			except:
 				logging.error("Invalid key '%s'" % key)
 				continue
-			modified = False
-			ghin_number = self.request.get('ghin_%d' % i)
-			handicap_index = self.request.get('index_%d' % i)
-			average_score = self.request.get('avg_score_%d' % i)
-			modified_checkbox = self.request.get('modified_%d' % i)
-			if ghin_number != g.ghin_number:
-				g.ghin_number = ghin_number
-				modified = True
+			logging.info("Updating handicap info for golfer #%d" % i)
+			g.ghin_number = ghin_number
 			if handicap_index:
 				try:
 					val = float(handicap_index)
 					if not g.has_index or val != g.handicap_index:
 						g.handicap_index = val
 						g.has_index = True
-						modified = True
 				except ValueError:
 					logging.error("Invalid handicap index '%s'" % handicap_index)
-			if handicap_index == '' and g.handicap_index:
+			else:
 				g.handicap_index = 0
 				g.has_index = False
-				modified = True
-			if average_score != g.average_score:
-				g.average_score = average_score
-				modified = True
-			if g.index_info_modified and not modified_checkbox:
-				modified = True
-			if modified:
-				logging.info("Updating handicap info")
-				g.index_info_modified = False
-				g.put()
+			g.average_score = average_score
+			g.index_info_modified = False
+			g.put()
+		memcache.delete('2015/admin/view/golfers')
 		if self.request.get('prevpage'):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
 		elif self.request.get('nextpage'):
@@ -858,7 +867,7 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
 							 'address', 'city', 'state', 'zip', 'email', 'phone',
-							 'ghin_number', 'index', 'avg_score', 'course_handicap',
+							 'ghin_number', 'index', 'avg_score', 'tournament_index', 'course_handicap',
 							 'shirt_size', 'team', 'starting_hole', 'cart',
 							 'contact_first_name', 'contact_last_name']))
 		counter = 1
@@ -873,20 +882,26 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 				if g.cart:
 					cart = 'A' if g.cart == 1 else 'B'
 				handicap_index = ''
+				tournament_index = ''
 				if g.has_index:
-					handicap_index = g.handicap_index
+					handicap_index = "%.1f" % g.handicap_index
+					tournament_index = handicap_index
+				elif g.average_score:
+					tournament_index = vg.computed_index
 				counter += 1
 				csv.append(','.join([csv_encode(x)
 									 for x in [g.first_name, g.last_name, g.gender, g.company,
 											   g.address, g.city, g.state, g.zip, g.email, g.phone,
-											   g.ghin_number, handicap_index, g.average_score, vg.course_handicap,
+											   g.ghin_number, handicap_index, g.average_score,
+											   tournament_index, vg.course_handicap,
 											   g.shirt_size, vg.team_name, starting_hole, cart,
 											   s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
 				csv.append(','.join([csv_encode(x)
 									 for x in ['n/a', 'n/a', '', '',
 											   '', '', '', '', '', '',
-											   '', '', '', '',
+											   '', '', '',
+											   '', '',
 											   '', '', '', '',
 											   s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
