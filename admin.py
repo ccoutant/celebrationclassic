@@ -660,7 +660,7 @@ class ViewGolfersHandicap(webapp2.RequestHandler):
 				except ValueError:
 					logging.error("Invalid handicap index '%s'" % handicap_index)
 			else:
-				g.handicap_index = 0
+				g.handicap_index = 0.0
 				g.has_index = False
 			g.average_score = average_score
 			g.index_info_modified = False
