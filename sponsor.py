@@ -36,7 +36,7 @@ class Sponsor(db.Model):
 
 class Team(db.Model):
 	name = db.StringProperty(default = '')
-	starting_hole = db.StringProperty(default = 0)
+	starting_hole = db.StringProperty(default = '')
 	flight = db.IntegerProperty(default = 1)
 
 class Golfer(db.Model):
