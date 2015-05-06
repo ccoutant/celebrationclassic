@@ -193,8 +193,12 @@ class Register(webapp2.RequestHandler):
 			q.ancestor(root)
 			q.filter('id = ', id)
 			s = q.get()
+			orig_num_golfers = s.num_golfers
+			orig_num_dinners = s.num_dinners
 		else:
 			s = Sponsor(parent=root)
+			orig_num_golfers = 0
+			orig_num_dinners = 0
 		s.first_name = self.request.get('first_name')
 		s.last_name = self.request.get('last_name')
 		s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
@@ -214,7 +218,7 @@ class Register(webapp2.RequestHandler):
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
 
-		if registration_closed and not caps.can_add_registrations:
+		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
@@ -254,9 +258,9 @@ class Register(webapp2.RequestHandler):
 				messages.append('Please enter your email address.')
 			if s.phone == '':
 				messages.append('Please enter your phone number.')
-			if root.golf_sold_out and s.num_golfers > 0:
+			if root.golf_sold_out and s.num_golfers > orig_num_golfers:
 				messages.append('Sorry, the golf tournament is sold out.')
-			if root.dinner_sold_out and s.num_dinners > 0:
+			if root.dinner_sold_out and s.num_dinners > orig_num_dinners:
 				messages.append('Sorry, the dinner is sold out.')
 
 		form_payment_due = int(self.request.get('payment_due'))
@@ -324,10 +328,10 @@ class Register(webapp2.RequestHandler):
 				s.discount_type = self.request.get('discount_type')
 
 		if messages or self.request.get('apply_discount'):
-			if root.golf_sold_out:
-				s.num_golfers = 0
-			if root.dinner_sold_out:
-				s.num_dinners = 0
+			if root.golf_sold_out and s.num_golfers > orig_num_golfers:
+				s.num_golfers = orig_num_golfers
+			if root.dinner_sold_out and s.num_dinners > orig_num_dinners:
+				s.num_dinners = orig_num_dinners
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
