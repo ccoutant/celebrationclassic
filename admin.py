@@ -676,25 +676,31 @@ class UpdateHandicap(webapp2.RequestHandler):
 		else:
 			self.redirect('/admin/view/golfers/handicap?start=%d' % this_page_offset)
 
-class FormTeams(webapp2.RequestHandler):
-	def get(self):
-		root = tournament.get_tournament()
-		caps = capabilities.get_current_user_caps()
-		if caps is None or not caps.can_view_registrations:
-			show_login_page(self.response.out, self.request.uri)
-			return
-		golfers = []
-		groups = []
-		teams = []
-		teams_by_id = {}
-		golfers_by_team = []
-		golfer_nums_by_id = {}
-		teams_by_golfer_id_fwd = {}
-		teams_by_golfer_id_rev = {}
-		q = Team.all().ancestor(root).order("name")
+class JsonBuilder:
+	def __init__(self, root):
+		self.root = root
+		self.build_teams()
+		self.build_golfers_and_groups()
+		self.check_consistency()
+
+	def build_teams(self):
+		"""
+		Build the list of teams, along with side data structures mapping golfers
+		to teams and teams to golfers.
+		golfers_by_team is an array indexed by (team_num - 1), where each element
+		is an array of golfer IDs.
+		teams_by_golfer_id_fwd is a table that maps each golfer id to a team,
+		based on the forward links from the Team entity to Golfer entities.
+		"""
+		self.teams = []
+		self.teams_by_id = {}
+		self.golfers_by_team = []
+		self.golfer_nums_by_id = {}
+		self.teams_by_golfer_id_fwd = {}
+		q = Team.all().ancestor(self.root).order("name")
 		for t in q:
 			t_id = t.key().id()
-			team_num = len(teams) + 1
+			team_num = len(self.teams) + 1
 			team = {
 				'team_num': team_num,
 				'key': t_id,
@@ -702,28 +708,39 @@ class FormTeams(webapp2.RequestHandler):
 				'golfer_nums': [],
 				'pairing_prefs': t.pairing or ''
 			}
-			teams.append(team)
-			teams_by_id[t_id] = team_num
+			self.teams.append(team)
+			self.teams_by_id[t_id] = team_num
 			golfer_ids = []
 			if t.golfers:
 				for g_key in t.golfers:
 					g_id = g_key.id()
 					golfer_ids.append(g_id)
-					if g_id in teams_by_golfer_id_fwd:
-						other_team_num = teams_by_golfer_id_fwd[g_id]
+					if g_id in self.teams_by_golfer_id_fwd:
+						other_team_num = self.teams_by_golfer_id_fwd[g_id]
 						other_team = teams[other_team_num - 1]
 						logging.warning("Golfer %d is contained by teams \"%s\" and \"%s\"" % (g_id, other_team['name'], t.name))
 					else:
-						teams_by_golfer_id_fwd[g_id] = team_num
-			golfers_by_team.append(golfer_ids)
-		q = Sponsor.all().ancestor(root).filter("confirmed =", True).order("sort_name")
+						self.teams_by_golfer_id_fwd[g_id] = team_num
+			self.golfers_by_team.append(golfer_ids)
+
+	def build_golfers_and_groups(self):
+		"""
+		Build the list of golfers and the list of groups, along with a side data
+		structure mapping golfers to teams.
+		teams_by_golfer_id_rev is a table that maps each golfer id to a team,
+		based on the reverse links from each Golfer entities to a Team entity.
+		When there is disagreement, we use this mapping as the "truth".
+		"""
+		self.golfers = []
+		self.groups = []
+		self.teams_by_golfer_id_rev = {}
+		q = Sponsor.all().ancestor(self.root).filter("confirmed =", True).order("sort_name")
 		for s in q:
 			q = Golfer.all().ancestor(s.key()).order("sequence")
 			group_golfer_nums = []
 			for g in q.fetch(s.num_golfers):
 				g_id = g.key().id()
-				golfer_num = len(golfers) + 1
-				golfer_nums_by_id[g_id] = golfer_num
+				golfer_num = len(self.golfers) + 1
 				t = None
 				team_num = 0
 				try:
@@ -732,26 +749,26 @@ class FormTeams(webapp2.RequestHandler):
 					logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.id))
 					g.team = None
 					g.put()
-				vg = ViewGolfer(root, s, g, golfer_num)
+				vg = ViewGolfer(self.root, s, g, golfer_num)
 				if t:
 					t_id = t.key().id()
-					team_num = teams_by_id[t_id]
-					if not g_id in teams_by_golfer_id_fwd:
+					team_num = self.teams_by_id[t_id]
+					if not g_id in self.teams_by_golfer_id_fwd:
 						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.id, t.name))
-					elif teams_by_golfer_id_fwd[g_id] != team_num:
-						other_team_num = teams_by_golfer_id_fwd[g_id]
-						other_team = teams[other_team_num - 1]
+					elif self.teams_by_golfer_id_fwd[g_id] != team_num:
+						other_team_num = self.teams_by_golfer_id_fwd[g_id]
+						other_team = self.teams[other_team_num - 1]
 						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.id, t.name, other_team['name']))
-				teams_by_golfer_id_rev[g_id] = team_num
-				if g_id in teams_by_golfer_id_fwd:
-					team_num = teams_by_golfer_id_fwd[g_id]
+				self.teams_by_golfer_id_rev[g_id] = team_num
+				if g_id in self.teams_by_golfer_id_fwd:
+					team_num = self.teams_by_golfer_id_fwd[g_id]
 				else:
 					team_num = 0
 				h = hashlib.md5()
 				h.update("%d:%d" % (team_num, g.cart))
 				golfer = {
 					'golfer_num': golfer_num,
-					'group_num': len(groups) + 1,
+					'group_num': len(self.groups) + 1,
 					'team_num': team_num,
 					'key': g_id,
 					'golfer_name': vg.golfer_name,
@@ -760,13 +777,13 @@ class FormTeams(webapp2.RequestHandler):
 					'md5': h.hexdigest()
 				}
 				if team_num:
-					team = teams[team_num - 1]
+					team = self.teams[team_num - 1]
 					team['golfer_nums'].append(golfer_num)
 				else:
 					group_golfer_nums.append(golfer_num)
-				golfers.append(golfer)
+				self.golfers.append(golfer)
 			group = {
-				'group_num': len(groups) + 1,
+				'group_num': len(self.groups) + 1,
 				'key': s.key().id(),
 				'id': str(s.id),
 				'first_name': s.first_name,
@@ -774,19 +791,156 @@ class FormTeams(webapp2.RequestHandler):
 				'golfer_nums': group_golfer_nums,
 				'pairing_prefs': s.pairing
 			}
-			groups.append(group)
-		for t in range(1, len(teams) + 1):
-			team = teams[t - 1]
-			for g_id in golfers_by_team[t - 1]:
-				if teams_by_golfer_id_rev[g_id] != t:
+			self.groups.append(group)
+
+	def check_consistency(self):
+		for t in range(1, len(self.teams) + 1):
+			team = self.teams[t - 1]
+			for g_id in self.golfers_by_team[t - 1]:
+				if self.teams_by_golfer_id_rev[g_id] != t:
 					logging.warning("Team %d \"%s\" (%d) contains golfer %d (sponsor id %d), but golfer does not refer to team" % (t, team['name'], team['key'], g_id, s.id))
 			if not team['golfer_nums']:
 				logging.warning("Empty team \"%s\" (%d)" % (team['name'], team['key']))
+
+	def groups_json(self):
+		return json.dumps(self.groups)
+
+	def teams_json(self):
+		return json.dumps(self.teams)
+
+	def golfers_json(self):
+		return json.dumps(self.golfers)
+
+class TeamsUpdater:
+	def __init__(self, root, golfers_json, groups_json, teams_json):
+		self.root = root
+		self.golfers = json.loads(golfers_json)
+		self.groups = json.loads(groups_json)
+		self.teams = json.loads(teams_json)
+
+	def update_teams_pass1(self):
+		self.team_entities = []
+		self.golfers_by_id = {}
+		for t in self.teams:
+			team_id = t['key']
+			if team_id:
+				team = Team.get_by_id(int(team_id), parent = self.root)
+				if not team:
+					logging.error("no team with id %s" % team_id)
+					continue
+			else:
+				team = Team(parent = self.root)
+			team.name = t['name']
+			team.pairing = t['pairing_prefs']
+			self.team_entities.append((t['team_num'], team))
+			for golfer_num in t['golfer_nums']:
+				g_id = self.golfers[golfer_num - 1]['key']
+				self.golfers_by_id[g_id] = (None, False)
+				# logging.debug("Update teams pass 1: team %d golfer %d" % (t['team_num'], g_id))
+
+	def update_golfers_pass1(self):
+		for g in self.golfers:
+			g_id = g['key']
+			h = hashlib.md5()
+			h.update("%d:%d" % (g['team_num'], g['cart']))
+			modified = h.hexdigest() != g['md5']
+			# logging.debug("Update golfers pass 1: team %d golfer %d (%s)" % (g['team_num'], g_id, "modified" if modified else "not modified"))
+			if modified or g_id in self.golfers_by_id:
+				group_num = g['group_num']
+				group = self.groups[group_num - 1]
+				s_id = group['key']
+				s = Sponsor.get_by_id(s_id, parent = self.root)
+				if not s:
+					logging.error("no sponsor with key %d" % s_id)
+					continue
+				golfer = Golfer.get_by_id(g_id, parent = s)
+				if not golfer:
+					logging.error("no golfer with key %d" % g_id)
+					continue
+				if g['team_num'] == 0:
+					golfer.team = None
+				golfer.cart = g['cart']
+				self.golfers_by_id[g_id] = (golfer, modified)
+
+	def update_teams_pass2(self):
+		new_team_num = 1
+		self.team_renumber = []
+		for (team_num, team) in self.team_entities:
+			t = self.teams[team_num - 1]
+			team.golfers = []
+			golfers_to_update = []
+			for golfer_num in t['golfer_nums']:
+				g = self.golfers[golfer_num - 1]
+				g_id = g['key']
+				(golfer, modified) = self.golfers_by_id[g_id]
+				# logging.debug("Update teams pass 2: team %d golfer %d (%s)" % (team_num, g_id, "modified" if modified else "not modified"))
+				team.golfers.append(golfer.key())
+				if modified:
+					golfers_to_update.append(golfer)
+			if len(team.golfers) == 0:
+				self.team_renumber.append(0)
+				t['key'] = ''
+				try:
+					team.delete()
+					logging.warning("Deleting empty team %d \"%s\"" % (team_num, team.name))
+				except:
+					logging.warning("Empty team %d \"%s\" not saved" % (team_num, team.name))
+			else:
+				self.team_renumber.append(new_team_num)
+				new_team_num += 1
+				try:
+					t_id = team.key().id()
+					logging.info("Updating team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
+				except:
+					logging.info("Adding new team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
+				team.put()
+				t['key'] = team.key().id()
+				for golfer in golfers_to_update:
+					golfer.team = team
+
+	def update_golfers_pass2(self):
+		for g_id in self.golfers_by_id:
+			(golfer, modified) = self.golfers_by_id[g_id]
+			if modified:
+				logging.info("Updating golfer %s %s (%d)" % (golfer.first_name, golfer.last_name, golfer.key().id()))
+				golfer.put()
+
+	def update_json(self):
+		for g in self.golfers:
+			team_num = g['team_num']
+			if team_num:
+				g['team_num'] = self.team_renumber[team_num - 1]
+		new_teams = []
+		for t in self.teams:
+			team_num = t['team_num']
+			new_team_num = self.team_renumber[team_num - 1]
+			if new_team_num:
+				t['team_num'] = new_team_num
+				new_teams.append(t)
+		self.teams = new_teams
+
+	def groups_json(self):
+		return json.dumps(self.groups)
+
+	def teams_json(self):
+		return json.dumps(self.teams)
+
+	def golfers_json(self):
+		return json.dumps(self.golfers)
+
+class FormTeams(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		json_builder = JsonBuilder(root)
 		template_values = {
 			'messages': [],
-			'groups_json': json.dumps(groups),
-			'teams_json': json.dumps(teams),
-			'golfers_json': json.dumps(golfers),
+			'groups_json': json_builder.groups_json(),
+			'teams_json': json_builder.teams_json(),
+			'golfers_json': json_builder.golfers_json(),
 			'capabilities': caps
 			}
 		html = render_to_string('formteams.html', template_values)
@@ -809,82 +963,25 @@ class FormTeams(webapp2.RequestHandler):
 		golfers_json = self.request.get('golfers_json')
 		groups_json = self.request.get('groups_json')
 		teams_json = self.request.get('teams_json')
-		golfers = json.loads(golfers_json)
-		groups = json.loads(groups_json)
-		teams = json.loads(teams_json)
 		# logging.debug("golfers: " + golfers_json)
 		# logging.debug("groups: " + groups_json)
 		# logging.debug("teams: " + teams_json)
-		team_entities = []
-		golfers_by_id = {}
-		for t in teams:
-			team_id = t['key']
-			if team_id:
-				team = Team.get_by_id(int(team_id), parent = root)
-				if not team:
-					self.complain("no team with id %s" % team_id)
-					return
-			else:
-				team = Team(parent = root)
-			team.name = t['name']
-			team.pairing = t['pairing_prefs']
-			team_entities.append((t['team_num'], team))
-			for golfer_num in t['golfer_nums']:
-				g_id = golfers[golfer_num - 1]['key']
-				golfers_by_id[g_id] = (None, False)
-		for g in golfers:
-			g_id = g['key']
-			h = hashlib.md5()
-			h.update("%d:%d" % (g['team_num'], g['cart']))
-			modified = h.hexdigest() != g['md5']
-			if modified or g_id in golfers_by_id:
-				group_num = g['group_num']
-				group = groups[group_num - 1]
-				s_id = group['key']
-				s = Sponsor.get_by_id(s_id, parent = root)
-				if not s:
-					self.complain("no sponsor with key %d" % s_id)
-					return
-				golfer = Golfer.get_by_id(g_id, parent = s)
-				if not golfer:
-					self.complain("no golfer with key %d" % g_id)
-					return
-				if g['team_num'] == 0:
-					golfer.team = None
-				golfer.cart = g['cart']
-				golfers_by_id[g_id] = (golfer, modified)
-		for (team_num, team) in team_entities:
-			t = teams[team_num - 1]
-			team.golfers = []
-			golfers_to_update = []
-			for golfer_num in t['golfer_nums']:
-				g = golfers[golfer_num - 1]
-				g_id = g['key']
-				(golfer, modified) = golfers_by_id[g_id]
-				team.golfers.append(golfer.key())
-				if modified:
-					golfers_to_update.append(golfer)
-			if len(team.golfers) == 0:
-				try:
-					team.delete()
-					logging.warning("Deleting empty team %d \"%s\"" % (team_num, team.name))
-				except:
-					logging.warning("Empty team %d \"%s\" not saved" % (team_num, team.name))
-			else:
-				try:
-					t_id = team.key().id()
-					logging.info("Updating team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
-				except:
-					logging.info("Adding new team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
-				team.put()
-				for golfer in golfers_to_update:
-					golfer.team = team
-		for g_id in golfers_by_id:
-			(golfer, modified) = golfers_by_id[g_id]
-			if modified:
-				logging.info("Updating golfer %s %s (%d)" % (golfer.first_name, golfer.last_name, golfer.key().id()))
-				golfer.put()
-		self.redirect('/admin/view/golfers/teams')
+		updater = TeamsUpdater(root, golfers_json, groups_json, teams_json)
+		updater.update_teams_pass1()
+		updater.update_golfers_pass1()
+		updater.update_teams_pass2()
+		updater.update_golfers_pass2()
+		updater.update_json()
+		template_values = {
+			'messages': [],
+			'groups_json': updater.groups_json(),
+			'teams_json': updater.teams_json(),
+			'golfers_json': updater.golfers_json(),
+			'capabilities': caps
+			}
+		html = render_to_string('formteams.html', template_values)
+		self.response.out.write(html)
+		# self.redirect('/admin/view/golfers/teams')
 
 class ViewGolfersByStart(webapp2.RequestHandler):
 	def get(self):
