@@ -9,19 +9,19 @@
 #body #footer { margin-left: auto; margin-right: auto; }
 #body #nav { display: none; }
 #body #content { float: none; width: 100%; margin: 1em 0 3em; }
-h2 { text-align: center; }
+h2 { text-align: center; background-image: none; border-bottom: none; }
 ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
 ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
-ul.viewnav li {
+ul.viewnav li, .help {
   font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
 }
 ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
 ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
-.column { float: left; margin: 0 5%; width: 35%; }
+.column { float: left; margin: 0 5%; padding: 1em 0; width: 35%; }
 .gutter { float: left; padding: 3em 0 0 0; width: 10%; }
-.gutter p { text-align: center; }
-.help p { margin: 1em 0; font-size: 90%; text-align: left; font-style: italic; }
+.gutter div { margin: 1em 0; text-align: center; }
+.help { margin: 2em 0; font-size: 60%; text-align: left; color: #888; }
 .group, .team { margin: 1em 0; border: 1px solid #c4e5c4; padding: 0.5em; background-color: #e7fbe7; }
 .group p.contact, .team p.contact { margin: 0; font-weight: bold; }
 .group p.pairing, .team p.pairing { margin: 0; font-style: italic; }
@@ -34,80 +34,19 @@ p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 .team span.cart { margin-left: 1em; }
 .team span.cart label { font-size: 80%; }
 </style>
+<script src="/js/formteams.js" type="text/javascript" language="javascript"></script>
 <script type="text/javascript" language="javascript">
-function top_onchange_handler(top_box, sub_boxes) {
-	return function() {
-		var is_checked = top_box.checked;
-		for (var i = 0; i < sub_boxes.length; i++) {
-			sub_boxes[i].checked = is_checked;
-		}
-	}
-}
-function sub_onchange_handler(top_box, sub_boxes) {
-	return function() {
-		var num_checked = 0;
-		for (var i = 0; i < sub_boxes.length; i++) {
-			if (sub_boxes[i].checked)
-				num_checked++;
-		}
-		if (num_checked == sub_boxes.length)
-			top_box.checked = true;
-		else if (num_checked == 0)
-			top_box.checked = false;
-	}
-}
-function radio_onclick_handler(cart_spans, span, radio) {
-	return function() {
-		var found = false;
-		for (var i = 1; i < cart_spans.length; i++) {
-			var j = span - i;
-			if (j < 0)
-				j += cart_spans.length;
-			var radios = cart_spans[j].getElementsByTagName('input');
-			if (radios[radio].checked && found) {
-				radios[1-radio].checked = true;
-				break;
-			}
-			if (radios[radio].checked) {
-				found = true;
-			}
-		}
-		return true;
-	}
-}
-function install_handlers() {
-	var group_divs = document.getElementsByClassName('group');
-	var team_divs = document.getElementsByClassName('team');
-	for (var i = 0; i < group_divs.length; i++) {
-		var top_boxes = group_divs[i].getElementsByClassName('group_checkbox');
-		var sub_boxes = group_divs[i].getElementsByClassName('golfer_checkbox');
-		if (top_boxes.length > 0) {
-			top_boxes[0].onchange = top_onchange_handler(top_boxes[0], sub_boxes);
-		}
-		for (var j = 0; j < sub_boxes.length; j++) {
-			sub_boxes[j].onchange = sub_onchange_handler(top_boxes[0], sub_boxes);
-		}
-	}
-	for (var i = 0; i < team_divs.length; i++) {
-		var top_boxes = team_divs[i].getElementsByClassName('group_checkbox');
-		var sub_boxes = team_divs[i].getElementsByClassName('golfer_checkbox');
-		if (top_boxes.length > 0) {
-			top_boxes[0].onchange = top_onchange_handler(top_boxes[0], sub_boxes);
-		}
-		for (var j = 0; j < sub_boxes.length; j++) {
-			sub_boxes[j].onchange = sub_onchange_handler(top_boxes[0], sub_boxes);
-		}
-		var cart_spans = team_divs[i].getElementsByClassName('cart');
-		for (var j = 0; j < cart_spans.length; j++) {
-			var radios = cart_spans[j].getElementsByTagName('input');
-			for (var k = 0; k < radios.length; k++) {
-				radios[k].onclick = radio_onclick_handler(cart_spans, j, k);
-			}
-		}
-	}
-}
+var groups = {{ groups_json|safe }};
+var teams = {{ teams_json|safe }};
+var golfers = {{ golfers_json|safe }};
+var groups_selected = [];
+var teams_selected = [];
+var unassigned_golfers_selected = [];
+var assigned_golfers_selected = [];
+var group_divs;
+var team_div;
 window.onload = function() {
-	install_handlers();
+	initialize();
 };
 </script>
 {% endblock %}
@@ -131,11 +70,6 @@ window.onload = function() {
 	<li><a href="/admin/csv/golfers">Download CSV</a></li>
 </ul>
 
-<form action="/admin/view/golfers/teams" method="post" accept-charset="utf-8">
-<input type="hidden" name="group_count" value="{{ group_count }}">
-<input type="hidden" name="team_count" value="{{ team_count }}">
-<input type="hidden" name="golfer_count" value="{{ golfer_count }}">
-
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
@@ -144,220 +78,54 @@ window.onload = function() {
 
 <h2>Unassigned Foursomes</h2>
 
-{% for group in foursomes %}
-<div class="group">
-<input type="hidden" name="group_{{group.count}}_key" value="{{group.key}}">
-<input type="hidden" name="group_{{group.count}}_first_name" value="{{group.first_name}}">
-<input type="hidden" name="group_{{group.count}}_last_name" value="{{group.last_name}}">
-<input type="hidden" name="group_{{group.count}}_id" value="{{group.id}}">
-<input type="hidden" name="group_{{group.count}}_pairing_prefs" value="{{group.pairing_prefs}}">
-<p class="contact">
-<input id="group_{{group.count}}_box" class="group_checkbox" type="checkbox" name="groups_selected" value="{{group.count}}" {% if group.checked %}checked{% endif %}>
-<label for="group_{{group.count}}_box">{{group.first_name}} {{group.last_name}}</label>
-<span class="id">(<a href="/register?id={{group.id}}">{{group.id}}</a>)</span>
-</p>
-<ul>
-	{% for golfer in group.golfers %}
-	<li>
-	<input type="hidden" name="golfer_{{golfer.count}}_key" value="{{golfer.key}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_group" value="{{group.count}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_team" value="0">
-	<input type="hidden" name="golfer_{{golfer.count}}_name" value="{{golfer.golfer_name}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_hdcp" value="{{golfer.course_handicap}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_cart" value="{{golfer.cart}}">
-	<input id="golfer_{{golfer.count}}_box" class="golfer_checkbox" type="checkbox" name="unassigned_golfers_selected" value="{{golfer.count}}" {% if golfer.checked %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_box"><span class="golfername">{{ golfer.golfer_name }}</span></label>
-	<span class="handicap">({{ golfer.course_handicap }})</span>
-	</li>
-	{% endfor %}
-</ul>
-{% if group.pairing_prefs %}
-<p class="pairing">Pairing preference: {{group.pairing_prefs}}</p>
-{% endif %}
+<div id="foursomes">
 </div>
-{% endfor %}
 
 <h2>Unassigned Threesomes</h2>
 
-{% for group in threesomes %}
-<div class="group">
-<input type="hidden" name="group_{{group.count}}_key" value="{{group.key}}">
-<input type="hidden" name="group_{{group.count}}_first_name" value="{{group.first_name}}">
-<input type="hidden" name="group_{{group.count}}_last_name" value="{{group.last_name}}">
-<input type="hidden" name="group_{{group.count}}_id" value="{{group.id}}">
-<input type="hidden" name="group_{{group.count}}_pairing_prefs" value="{{group.pairing_prefs}}">
-<p class="contact">
-<input id="group_{{group.count}}_box" class="group_checkbox" type="checkbox" name="groups_selected" value="{{group.count}}" {% if group.checked %}checked{% endif %}>
-<label for="group_{{group.count}}_box">{{group.first_name}} {{group.last_name}}</label>
-<span class="id">(<a href="/register?id={{group.id}}">{{group.id}}</a>)</span>
-</p>
-<ul>
-	{% for golfer in group.golfers %}
-	<li>
-	<input type="hidden" name="golfer_{{golfer.count}}_key" value="{{golfer.key}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_group" value="{{group.count}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_team" value="0">
-	<input type="hidden" name="golfer_{{golfer.count}}_name" value="{{golfer.golfer_name}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_hdcp" value="{{golfer.course_handicap}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_cart" value="{{golfer.cart}}">
-	<input id="golfer_{{golfer.count}}_box" class="golfer_checkbox" type="checkbox" name="unassigned_golfers_selected" value="{{golfer.count}}" {% if golfer.checked %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_box"><span class="golfername">{{ golfer.golfer_name }}</span></label>
-	<span class="handicap">({{ golfer.course_handicap }})</span>
-	</li>
-	{% endfor %}
-</ul>
-{% if group.pairing_prefs %}
-<p class="pairing">Pairing preference: {{group.pairing_prefs}}</p>
-{% endif %}
+<div id="threesomes">
 </div>
-{% endfor %}
 
 <h2>Unassigned Twosomes</h2>
 
-{% for group in twosomes %}
-<div class="group">
-<input type="hidden" name="group_{{group.count}}_key" value="{{group.key}}">
-<input type="hidden" name="group_{{group.count}}_first_name" value="{{group.first_name}}">
-<input type="hidden" name="group_{{group.count}}_last_name" value="{{group.last_name}}">
-<input type="hidden" name="group_{{group.count}}_id" value="{{group.id}}">
-<input type="hidden" name="group_{{group.count}}_pairing_prefs" value="{{group.pairing_prefs}}">
-<p class="contact">
-<input id="group_{{group.count}}_box" class="group_checkbox" type="checkbox" name="groups_selected" value="{{group.count}}" {% if group.checked %}checked{% endif %}>
-<label for="group_{{group.count}}_box">{{group.first_name}} {{group.last_name}}</label>
-<span class="id">(<a href="/register?id={{group.id}}">{{group.id}}</a>)</span>
-</p>
-<ul>
-	{% for golfer in group.golfers %}
-	<li>
-	<input type="hidden" name="golfer_{{golfer.count}}_key" value="{{golfer.key}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_group" value="{{group.count}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_team" value="0">
-	<input type="hidden" name="golfer_{{golfer.count}}_name" value="{{golfer.golfer_name}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_hdcp" value="{{golfer.course_handicap}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_cart" value="{{golfer.cart}}">
-	<input id="golfer_{{golfer.count}}_box" class="golfer_checkbox" type="checkbox" name="unassigned_golfers_selected" value="{{golfer.count}}" {% if golfer.checked %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_box"><span class="golfername">{{ golfer.golfer_name }}</span></label>
-	<span class="handicap">({{ golfer.course_handicap }})</span>
-	</li>
-	{% endfor %}
-</ul>
-{% if group.pairing_prefs %}
-<p class="pairing">Pairing preference: {{group.pairing_prefs}}</p>
-{% endif %}
+<div id="twosomes">
 </div>
-{% endfor %}
+
 
 <h2>Unassigned Singles</h2>
 
-{% for group in singles %}
-<div class="group">
-<input type="hidden" name="group_{{group.count}}_key" value="{{group.key}}">
-<input type="hidden" name="group_{{group.count}}_first_name" value="{{group.first_name}}">
-<input type="hidden" name="group_{{group.count}}_last_name" value="{{group.last_name}}">
-<input type="hidden" name="group_{{group.count}}_id" value="{{group.id}}">
-<input type="hidden" name="group_{{group.count}}_pairing_prefs" value="{{group.pairing_prefs}}">
-<p class="contact">
-<input id="group_{{group.count}}_box" class="group_checkbox" type="checkbox" name="groups_selected" value="{{group.count}}" {% if group.checked %}checked{% endif %}>
-<label for="group_{{group.count}}_box">{{group.first_name}} {{group.last_name}}</label>
-<span class="id">(<a href="/register?id={{group.id}}">{{group.id}}</a>)</span>
-</p>
-<ul>
-	{% for golfer in group.golfers %}
-	<li>
-	<input type="hidden" name="golfer_{{golfer.count}}_key" value="{{golfer.key}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_group" value="{{group.count}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_team" value="0">
-	<input type="hidden" name="golfer_{{golfer.count}}_name" value="{{golfer.golfer_name}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_hdcp" value="{{golfer.course_handicap}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_cart" value="{{golfer.cart}}">
-	<input id="golfer_{{golfer.count}}_box" class="golfer_checkbox" type="checkbox" name="unassigned_golfers_selected" value="{{golfer.count}}" {% if golfer.checked %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_box"><span class="golfername">{{ golfer.golfer_name }}</span></label>
-	<span class="handicap">({{ golfer.course_handicap }})</span>
-	</li>
-	{% endfor %}
-</ul>
-{% if group.pairing_prefs %}
-<p class="pairing">Pairing preference: {{group.pairing_prefs}}</p>
-{% endif %}
+<div id="singles">
 </div>
-{% endfor %}
-
-{% for group in emptygroups %}
-<input type="hidden" name="group_{{group.count}}_key" value="{{group.key}}">
-<input type="hidden" name="group_{{group.count}}_first_name" value="{{group.first_name}}">
-<input type="hidden" name="group_{{group.count}}_last_name" value="{{group.last_name}}">
-<input type="hidden" name="group_{{group.count}}_id" value="{{group.id}}">
-<input type="hidden" name="group_{{group.count}}_pairing_prefs" value="{{group.pairing_prefs}}">
-{% endfor %}
 
 </div> <!-- unassigned -->
 
 <div class="gutter">
-<p><input type="submit" name="newteam" value="New Team &rarr;"></p>
-<p><input type="submit" name="move" value="Move &rarr;"></p>
-<p><input type="submit" name="remove" value="&larr; Remove"></p>
-<p><input type="submit" name="update" value="Update"></p>
-<p><input type="submit" name="save" value="Save Teams"></p>
-<div class="help">
-<p>To form a new team, select up to four unassigned golfers from the left column,
+<form id="form" action="/admin/view/golfers/teams" method="post" accept-charset="utf-8">
+<input type="hidden" id="golfers_json" name="golfers_json" value="">
+<input type="hidden" id="groups_json" name="groups_json" value="">
+<input type="hidden" id="teams_json" name="teams_json" value="">
+<div><input type="button" name="newteam" value="New Team &rarr;" onclick="return do_newteam();"></div>
+<div><input type="button" name="move" value="Move &rarr;" onclick="return do_move();"></div>
+<div><input type="button" name="remove" value="&larr; Remove" onclick="return do_remove();"></div>
+<div><input type="button" id="save_button" name="save" value="Save Teams" onclick="return do_save();"></div>
+</form>
+<p class="help">To form a new team, select up to four unassigned golfers from the left column,
 then click &ldquo;New Team.&rdquo;</p>
-<p>To add golfers to an existing team, select the golfers from the left column,
+<p class="help">To add golfers to an existing team, select the golfers from the left column,
 select a team from the right column, then click &ldquo;Move.&rdquo;
 Do not select more than four golfers total.</p>
-<p>To remove golfers from a team, select the golfers from the right column,
+<p class="help">To remove golfers from a team, select the golfers from the right column,
 then click &ldquo;Remove.&rdquo; The golfers will be returned to the
 unassigned column.</p>
-<p>To change a team name or cart assignments,
-make the changes and click &ldquo;Update.&rdquo;</p>
-<p>To save the team assignments permanently, click &ldquo;Save Teams.&rdquo;</p>
-</div>
+<p class="help">To save the team assignments permanently, click &ldquo;Save Teams.&rdquo;</p>
 </div>
 
 <div class="column" id="teams">
 
 <h2>Teams</h2>
 
-{% for team in teams %}
-<div class="team">
-<input type="hidden" name="team_{{team.count}}_key" value="{{team.key}}">
-<input type="hidden" name="team_{{team.count}}_orig_name" value="{{team.name}}">
-<input type="hidden" name="team_{{team.count}}_pairing_prefs" value="{{team.pairing_prefs}}">
-<p class="contact">
-<input id="team_{{team.count}}_box" class="group_checkbox" type="checkbox" name="teams_selected" value="{{team.count}}" {% if team.checked %}checked{% endif %}>
-<label for="team_{{team.count}}_box">Team {{team.count}}</label>
-<input type="text" size="20" name="team_{{team.count}}_name" value="{{team.name}}">
-</p>
-<ul>
-	{% for golfer in team.golfers %}
-	<li>
-	{% if golfer.count %}
-	<input type="hidden" name="golfer_{{golfer.count}}_key" value="{{golfer.golfer.key}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_group" value="{{golfer.group}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_team" value="{{golfer.team}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_name" value="{{golfer.golfer_name}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_hdcp" value="{{golfer.course_handicap}}">
-	<input type="hidden" name="golfer_{{golfer.count}}_orig_cart" value="{{golfer.cart}}">
-	<input id="golfer_{{golfer.count}}_box" class="golfer_checkbox" type="checkbox" name="assigned_golfers_selected" value="{{golfer.count}}" {% if golfer.checked %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_box"><span class="golfername">{{ golfer.golfer_name }}</span></label>
-	<span class="handicap">({{ golfer.course_handicap }})</span>
-	<span class="cart">
-	<label for="golfer_{{golfer.count}}_cart1">Cart 1</label>
-	<input id="golfer_{{golfer.count}}_cart1" type="radio" name="golfer_{{golfer.count}}_cart" value="1" {% if golfer.cart == 1 %}checked{% endif %}>
-	<label for="golfer_{{golfer.count}}_cart2">2</label>
-	<input id="golfer_{{golfer.count}}_cart2" type="radio" name="golfer_{{golfer.count}}_cart" value="2" {% if golfer.cart == 2 %}checked{% endif %}>
-	</span>
-	{% else %}
-	<input type="checkbox" name="placeholder_golfers_selected" value="1" disabled>
-	<span class="placeholder">&nbsp;</span>
-	{% endif %}
-	</li>
-	{% endfor %}
-</ul>
-{% if team.pairing_prefs %}
-<p class="pairing">Pairing preference: {{team.pairing_prefs}}</p>
-{% endif %}
+<div id="teams">
 </div>
-{% endfor %}
 
 </div> <!-- teams -->
 

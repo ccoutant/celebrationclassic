@@ -8,6 +8,7 @@ import logging
 import webapp2
 import datetime
 import hashlib
+import json
 from google.appengine.ext import db, blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from google.appengine.api import users, memcache, images, mail
@@ -22,7 +23,7 @@ import auctionitem
 import detailpage
 import uploadedfile
 import tz
-from sponsor import Sponsor, Golfer, DinnerGuest, TributeAd
+from sponsor import Sponsor, Team, Golfer, DinnerGuest, TributeAd
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -682,292 +683,208 @@ class FormTeams(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		foursomes = []
-		threesomes = []
-		twosomes = []
-		singles = []
-		emptygroups = []
+		golfers = []
+		groups = []
 		teams = []
-		group_count = 0
-		team_count = 0
-		golfer_count = 0
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		teams_by_id = {}
+		golfers_by_team = []
+		golfer_nums_by_id = {}
+		teams_by_golfer_id_fwd = {}
+		teams_by_golfer_id_rev = {}
+		q = Team.all().ancestor(root).order("name")
+		for t in q:
+			t_id = t.key().id()
+			team_num = len(teams) + 1
+			team = {
+				'team_num': team_num,
+				'key': t_id,
+				'name': t.name,
+				'golfer_nums': [],
+				'pairing_prefs': t.pairing or ''
+			}
+			teams.append(team)
+			teams_by_id[t_id] = team_num
+			golfer_ids = []
+			if t.golfers:
+				for g_key in t.golfers:
+					g_id = g_key.id()
+					golfer_ids.append(g_id)
+					if g_id in teams_by_golfer_id_fwd:
+						other_team_num = teams_by_golfer_id_fwd[g_id]
+						other_team = teams[other_team_num - 1]
+						logging.warning("Golfer %d is contained by teams \"%s\" and \"%s\"" % (g_id, other_team['name'], t.name))
+					else:
+						teams_by_golfer_id_fwd[g_id] = team_num
+			golfers_by_team.append(golfer_ids)
+		q = Sponsor.all().ancestor(root).filter("confirmed =", True).order("sort_name")
 		for s in q:
-			group_count += 1
 			q = Golfer.all().ancestor(s.key()).order("sequence")
-			golfers = []
+			group_golfer_nums = []
 			for g in q.fetch(s.num_golfers):
-				golfer_count += 1
-				vg = ViewGolfer(root, s, g, golfer_count)
+				g_id = g.key().id()
+				golfer_num = len(golfers) + 1
+				golfer_nums_by_id[g_id] = golfer_num
+				t = None
+				team_num = 0
+				try:
+					t = g.team
+				except:
+					logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.id))
+					g.team = None
+					g.put()
+				vg = ViewGolfer(root, s, g, golfer_num)
+				if t:
+					t_id = t.key().id()
+					team_num = teams_by_id[t_id]
+					if not g_id in teams_by_golfer_id_fwd:
+						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.id, t.name))
+					elif teams_by_golfer_id_fwd[g_id] != team_num:
+						other_team_num = teams_by_golfer_id_fwd[g_id]
+						other_team = teams[other_team_num - 1]
+						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.id, t.name, other_team['name']))
+				teams_by_golfer_id_rev[g_id] = team_num
+				if g_id in teams_by_golfer_id_fwd:
+					team_num = teams_by_golfer_id_fwd[g_id]
+				else:
+					team_num = 0
+				h = hashlib.md5()
+				h.update("%d:%d" % (team_num, g.cart))
 				golfer = {
-					'count': golfer_count,
-					'key': g.key(),
+					'golfer_num': golfer_num,
+					'group_num': len(groups) + 1,
+					'team_num': team_num,
+					'key': g_id,
 					'golfer_name': vg.golfer_name,
 					'course_handicap': vg.course_handicap,
 					'cart': g.cart,
-					'checked': False
+					'md5': h.hexdigest()
 				}
+				if team_num:
+					team = teams[team_num - 1]
+					team['golfer_nums'].append(golfer_num)
+				else:
+					group_golfer_nums.append(golfer_num)
 				golfers.append(golfer)
 			group = {
-				'count': group_count,
-				'key': s.key(),
+				'group_num': len(groups) + 1,
+				'key': s.key().id(),
 				'id': str(s.id),
 				'first_name': s.first_name,
 				'last_name': s.last_name,
-				'golfers': golfers,
-				'pairing_prefs': s.pairing,
-				'checked': False
+				'golfer_nums': group_golfer_nums,
+				'pairing_prefs': s.pairing
 			}
-			if len(golfers) == 0:
-				emptygroups.append(group)
-			elif len(golfers) == 1:
-				singles.append(group)
-			elif len(golfers) == 2:
-				twosomes.append(group)
-			elif len(golfers) == 3:
-				threesomes.append(group)
-			else:
-				foursomes.append(group)
+			groups.append(group)
+		for t in range(1, len(teams) + 1):
+			team = teams[t - 1]
+			for g_id in golfers_by_team[t - 1]:
+				if teams_by_golfer_id_rev[g_id] != t:
+					logging.warning("Team %d \"%s\" (%d) contains golfer %d (sponsor id %d), but golfer does not refer to team" % (t, team['name'], team['key'], g_id, s.id))
+			if not team['golfer_nums']:
+				logging.warning("Empty team \"%s\" (%d)" % (team['name'], team['key']))
 		template_values = {
 			'messages': [],
-			'group_count': group_count,
-			'team_count': team_count,
-			'golfer_count': golfer_count,
-			'foursomes': foursomes,
-			'threesomes': threesomes,
-			'twosomes': twosomes,
-			'singles': singles,
-			'emptygroups': emptygroups,
-			'teams': teams,
+			'groups_json': json.dumps(groups),
+			'teams_json': json.dumps(teams),
+			'golfers_json': json.dumps(golfers),
 			'capabilities': caps
 			}
 		html = render_to_string('formteams.html', template_values)
 		self.response.out.write(html)
 
+	def complain(self, what):
+		self.response.out.write('<html><head>\n')
+		self.response.out.write('<title>Internal Error</title>\n')
+		self.response.out.write('</head><body>\n')
+		self.response.out.write('<h1>Internal Error</h1>\n')
+		self.response.out.write('<p>%s</p>\n' % what)
+		self.response.out.write('</body></html>\n')
+
 	def post(self):
+		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, '/admin/view/golfers/teams')
 			return
-		group_count = int(self.request.get('group_count'))
-		team_count = int(self.request.get('team_count'))
-		golfer_count = int(self.request.get('golfer_count'))
-		groups_selected = [ int(n) for n in self.request.get_all('groups_selected') ]
-		teams_selected = [ int(n) for n in self.request.get_all('teams_selected') ]
-		unassigned_golfers_selected = [ int(n) for n in self.request.get_all('unassigned_golfers_selected') ]
-		assigned_golfers_selected = [ int(n) for n in self.request.get_all('assigned_golfers_selected') ]
-		if self.request.get('newteam'):
-			action = 1
-		elif self.request.get('move'):
-			action = 2
-		elif self.request.get('remove'):
-			action = 3
-		elif self.request.get('save'):
-			action = 4
-		else:
-			action = 0
-
-		# Extract the groups, golfers, and teams from the form.
-		groups = []
-		teams = []
-		golfers = []
-		for i in range(1, group_count + 1):
-			tag = 'group_%d_' % i
-			key = self.request.get(tag + 'key')
-			id = self.request.get(tag + 'id')
-			first_name = self.request.get(tag + 'first_name')
-			last_name = self.request.get(tag + 'last_name')
-			pairing_prefs = self.request.get(tag + 'pairing_prefs')
-			checked = i in groups_selected
-			group = {
-				'count': i,
-				'key': key,
-				'id': id,
-				'first_name': first_name,
-				'last_name': last_name,
-				'pairing_prefs': pairing_prefs,
-				'checked': checked,
-				'golfers': []
-			}
-			groups.append(group)
-		for i in range(1, team_count + 1):
-			tag = 'team_%d_' % i
-			key = self.request.get(tag + 'key')
-			orig_name = self.request.get(tag + 'orig_name')
-			name = self.request.get(tag + 'name')
-			pairing_prefs = self.request.get(tag + 'pairing_prefs')
-			checked = i in teams_selected
-			team = {
-				'count': i,
-				'key': key,
-				'name': name,
-				'pairing_prefs': pairing_prefs,
-				'modified': orig_name != name,
-				'checked': checked,
-				'golfers': []
-			}
-			teams.append(team)
-		for i in range(1, golfer_count + 1):
-			tag = 'golfer_%d_' % i
-			key = self.request.get(tag + 'key')
-			groupnum = int(self.request.get(tag + 'group'))
-			teamnum = int(self.request.get(tag + 'team'))
-			name = self.request.get(tag + 'name')
-			hdcp = self.request.get(tag + 'hdcp')
-			cart = int(self.request.get(tag + 'cart'))
-			checked = i in unassigned_golfers_selected
-			golfer = {
-				'count': i,
-				'key': key,
-				'group': groupnum,
-				'team': teamnum,
-				'golfer_name': name,
-				'course_handicap': hdcp,
-				'cart': cart,
-				'checked': checked
-			}
-			golfers.append(golfer)
-
-		# Error checking.
-		messages = []
-		if action == 1:	 # New Team
-			if len(unassigned_golfers_selected) < 1:
-				messages.append("Please select up to four unassigned golfers.")
-			elif len(unassigned_golfers_selected) > 4:
-				messages.append("Please select no more than four golfers.")
-			new_team_num = team_count + 1
-			if len(groups_selected):
-				names = [ groups[i - 1]['last_name'] for i in groups_selected ]
-				new_team_name = '/'.join(names)
-				prefs = []
-				for i in groups_selected:
-					if groups[i - 1]['pairing_prefs']:
-						prefs.append(groups[i - 1]['pairing_prefs'])
-				new_pairing_prefs = '/'.join(prefs)
+		golfers_json = self.request.get('golfers_json')
+		groups_json = self.request.get('groups_json')
+		teams_json = self.request.get('teams_json')
+		golfers = json.loads(golfers_json)
+		groups = json.loads(groups_json)
+		teams = json.loads(teams_json)
+		# logging.debug("golfers: " + golfers_json)
+		# logging.debug("groups: " + groups_json)
+		# logging.debug("teams: " + teams_json)
+		team_entities = []
+		golfers_by_id = {}
+		for t in teams:
+			team_id = t['key']
+			if team_id:
+				team = Team.get_by_id(int(team_id), parent = root)
+				if not team:
+					self.complain("no team with id %s" % team_id)
+					return
 			else:
-				new_team_name = "Team #%d" % new_team_num
-			new_team = {
-				'count': new_team_num,
-				'key': '',
-				'name': new_team_name,
-				'pairing_prefs': new_pairing_prefs,
-				'modified': False,
-				'checked': False,
-				'golfers': []
-			}
-		elif action == 2:  # Move
-			if len(unassigned_golfers_selected) < 1:
-				messages.append("Please select up to four unassigned golfers.")
-			if len(teams_selected) != 1:
-				messages.append(u"Please select one team or click \u201cNew Team.\u201d")
+				team = Team(parent = root)
+			team.name = t['name']
+			team.pairing = t['pairing_prefs']
+			team_entities.append((t['team_num'], team))
+			for golfer_num in t['golfer_nums']:
+				g_id = golfers[golfer_num - 1]['key']
+				golfers_by_id[g_id] = (None, False)
+		for g in golfers:
+			g_id = g['key']
+			h = hashlib.md5()
+			h.update("%d:%d" % (g['team_num'], g['cart']))
+			modified = h.hexdigest() != g['md5']
+			if modified or g_id in golfers_by_id:
+				group_num = g['group_num']
+				group = groups[group_num - 1]
+				s_id = group['key']
+				s = Sponsor.get_by_id(s_id, parent = root)
+				if not s:
+					self.complain("no sponsor with key %d" % s_id)
+					return
+				golfer = Golfer.get_by_id(g_id, parent = s)
+				if not golfer:
+					self.complain("no golfer with key %d" % g_id)
+					return
+				if g['team_num'] == 0:
+					golfer.team = None
+				golfer.cart = g['cart']
+				golfers_by_id[g_id] = (golfer, modified)
+		for (team_num, team) in team_entities:
+			t = teams[team_num - 1]
+			team.golfers = []
+			golfers_to_update = []
+			for golfer_num in t['golfer_nums']:
+				g = golfers[golfer_num - 1]
+				g_id = g['key']
+				(golfer, modified) = golfers_by_id[g_id]
+				team.golfers.append(golfer.key())
+				if modified:
+					golfers_to_update.append(golfer)
+			if len(team.golfers) == 0:
+				try:
+					team.delete()
+					logging.warning("Deleting empty team %d \"%s\"" % (team_num, team.name))
+				except:
+					logging.warning("Empty team %d \"%s\" not saved" % (team_num, team.name))
 			else:
-				new_team_num = teams_selected[0]
-				new_team = teams[new_team_num - 1]
-		elif action == 3:  # Remove
-			if len(assigned_golfers_selected) == 0:
-				messages.append("Please select one or more assigned golfers.")
-
-		# Execute the action.
-		if not messages:
-			if action == 1 or action == 2:  # New Team or Move
-				for i in unassigned_golfers_selected:
-					golfer = golfers[i - 1]
-					golfer['team'] = new_team_num
-					golfer['checked'] = False
-					new_team['modified'] = True
-				for i in assigned_golfers_selected:
-					golfers[i - 1]['checked'] = False
-				for i in groups_selected:
-					groups[i - 1]['checked'] = False
-				for i in teams_selected:
-					teams[i - 1]['checked'] = False
-			if action == 3:  # Remove
-				for i in assigned_golfers_selected:
-					golfer = golfers[i - 1]
-					old_team_num = golfer['team']
-					golfer['team'] = 0
-					golfer['checked'] = False
-					teams[old_team_num - 1]['modified'] = True
-				for i in unassigned_golfers_selected:
-					golfers[i - 1]['checked'] = False
-				for i in groups_selected:
-					groups[i - 1]['checked'] = False
-				for i in teams_selected:
-					teams[i - 1]['checked'] = False
-			if action == 1 and new_team['modified']:
-				teams.append(new_team)
-				team_count += 1
-			if action == 4:  # Save
-				pass
-
-		# Place the golfers in their group or team.
-		for i in range(1, golfer_count + 1):
-			golfer = golfers[i - 1]
-			team_num = golfer['team']
-			group_num = golfer['group']
-			if team_num:
-				if not golfer['cart']:
-					first_cart = [ (1 if g['cart'] == 1 else 0) for g in teams[team_num - 1]['golfers'] ]
-					golfer['cart'] = 1 if sum(first_cart) < 2 else 2
-				teams[team_num - 1]['golfers'].append(golfer)
-			elif group_num:
-				groups[group_num - 1]['golfers'].append(golfer)
-			else:
-				messages.append("Internal error: found golfer not in group or team.")
-				logging.error("Golfer %d does not belong to group or team" % i)
-		for i in range(1, team_count + 1):
-			if len(teams[i - 1]['golfers']) > 4:
-				messages.append("Team %d has more than four golfers." % i)
-			while len(teams[i - 1]['golfers']) < 4:
-				golfer = {
-					'count': 0,
-					'key': '',
-					'group': 0,
-					'team': i,
-					'golfer_name': '',
-					'course_handicap': '',
-					'cart': 0,
-					'checked': False
-				}
-				teams[i - 1]['golfers'].append(golfer)
-
-		# Prepare to display the (updated) form.
-		foursomes = []
-		threesomes = []
-		twosomes = []
-		singles = []
-		emptygroups = []
-		for i in range(1, group_count + 1):
-			group = groups[i - 1]
-			golfers = group['golfers']
-			if len(golfers) == 0:
-				emptygroups.append(group)
-			elif len(golfers) == 1:
-				singles.append(group)
-			elif len(golfers) == 2:
-				twosomes.append(group)
-			elif len(golfers) == 3:
-				threesomes.append(group)
-			else:
-				foursomes.append(group)
-		template_values = {
-			'messages': messages,
-			'group_count': group_count,
-			'team_count': team_count,
-			'golfer_count': golfer_count,
-			'foursomes': foursomes,
-			'threesomes': threesomes,
-			'twosomes': twosomes,
-			'singles': singles,
-			'emptygroups': emptygroups,
-			'teams': teams,
-			'capabilities': caps
-			}
-		html = render_to_string('formteams.html', template_values)
-		self.response.out.write(html)
+				try:
+					t_id = team.key().id()
+					logging.info("Updating team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
+				except:
+					logging.info("Adding new team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
+				team.put()
+				for golfer in golfers_to_update:
+					golfer.team = team
+		for g_id in golfers_by_id:
+			(golfer, modified) = golfers_by_id[g_id]
+			if modified:
+				logging.info("Updating golfer %s %s (%d)" % (golfer.first_name, golfer.last_name, golfer.key().id()))
+				golfer.put()
+		self.redirect('/admin/view/golfers/teams')
 
 class ViewGolfersByStart(webapp2.RequestHandler):
 	def get(self):
@@ -1137,7 +1054,7 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 					starting_hole = g.team.starting_hole
 				cart = ''
 				if g.cart:
-					cart = 'A' if g.cart == 1 else 'B'
+					cart = '' if g.cart == 0 else str(g.cart)
 				handicap_index = ''
 				tournament_index = ''
 				if g.has_index:

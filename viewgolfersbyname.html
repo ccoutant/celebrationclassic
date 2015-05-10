@@ -46,6 +46,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<li><a href="/admin/view/golfers/byteam">By Team</a></li>
 	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
 	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/view/golfers/teams">Build Teams</a></li>
 	<li><a href="/admin/csv/golfers">Download CSV</a></li>
 </ul>
 
@@ -98,7 +99,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
 		<td align="left">{% if g.golfer.team %}{{ g.golfer.team.name }}{% endif %}</td>
 		<td align="center">{% if g.golfer.team %}{{ g.golfer.team.starting_hole }}{% endif %}</td>
-		<td align="center">{% if g.golfer.cart == 1 %}A{% elif g.golfer.cart == 2 %}B{% endif %}</td>
+		<td align="center">{% if g.golfer.cart != 0 %}{{ g.golfer.cart }}{% endif %}</td>
 		<td align="center">{{ g.golfer.shirt_size }}</td>
 		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
 	</tr>

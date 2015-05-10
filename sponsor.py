@@ -38,6 +38,8 @@ class Team(db.Model):
 	name = db.StringProperty(default = '')
 	starting_hole = db.StringProperty(default = '')
 	flight = db.IntegerProperty(default = 1)
+	golfers = db.ListProperty(db.Key)
+	pairing = db.StringProperty(default = '')
 
 class Golfer(db.Model):
 	sequence = db.IntegerProperty(default = 0)

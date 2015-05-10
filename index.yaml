@@ -74,6 +74,11 @@ indexes:
   properties:
   - name: sequence
 
+- kind: Team
+  ancestor: yes
+  properties:
+  - name: name
+
 - kind: TributeAd
   ancestor: yes
   properties:
