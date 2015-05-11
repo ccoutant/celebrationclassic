@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Golfers By Team{% endblock %}
+{% block title %}Golfers By {% if bywhat == "byteam" %}Team{% else %}Starting Hole{% endif %}{% endblock %}
 
 {% block head %}
 <style type="text/css">
@@ -46,21 +46,23 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 <ul class="viewnav">
 	<li><a href="/admin/view/golfers">By Sponsor</a></li>
 	<li><a href="/admin/view/golfers/byname">By Name</a></li>
-	<li class="selected"><a href="/admin/view/golfers/byteam">By Team</a></li>
-	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
+	<li {% if bywhat == "byteam" %}class="selected"{% endif %}><a href="/admin/view/golfers/byteam">By Team</a></li>
+	<li {% if bywhat == "bystart" %}class="selected"{% endif %}><a href="/admin/view/golfers/bystart">By Start</a></li>
 	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
 	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
 	<li><a href="/admin/csv/golfers">Download CSV</a></li>
 </ul>
 
-<h2>Golfers by Team</h2>
+<h2>Golfers by {% if bywhat == "byteam" %}Team{% else %}Starting Hole{% endif %}</h2>
 
 <p class="note">(Note: Unassigned golfers are not shown in this view.)</p>
 
 {% if teams %}
 
-<form action="/admin/view/golfers/byteam" method="post" accept-charset="utf-8">
+{% if not readonly %}
+<form action="/admin/view/golfers/{{bywhat}}" method="post" accept-charset="utf-8">
 <input type="hidden" name="num_teams" value="{{num_teams}}">
+{% endif %}
 
 <table>
 <thead>
@@ -77,6 +79,9 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 	<tr class="team" valign="baseline">
 		<td class="teamname">{{ t.name }}</td>
 		<td align="center">
+{% if readonly %}
+			{{ t.starting_hole }}
+{% else %}
 			<input type="hidden" name="team_{{forloop.counter}}_key" value="{{t.key}}">
 			<select name="team_{{forloop.counter}}_start">
 				<option value="-" {% ifequal t.starting_hole '' %} selected {% endifequal %}>--</option>
@@ -117,6 +122,7 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 				<option value="18A" {% ifequal t.starting_hole '18A' %} selected {% endifequal %}>18 A</option>
 				<option value="18B" {% ifequal t.starting_hole '18B' %} selected {% endifequal %}>18 B</option>
 			</select>
+{% endif %}
 		</td>
 		<td></td>
 		<td></td>
@@ -135,9 +141,11 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 </tbody>
 </table>
 
+{% if not readonly %}
 <div class="buttons">
 <input type="submit" name="save" value="Save">
 </div>
+{% endif %}
 
 </form>
 

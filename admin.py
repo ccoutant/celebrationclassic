@@ -1018,13 +1018,20 @@ def calculate_team_handicap(golfer_handicaps):
 		weight /= 2.0
 	return int(round(sum / sum_of_weights * 0.75))
 
+def sort_by_starting_hole(team):
+	h = team['starting_hole']
+	if len(h) == 2:
+		h = '0' + h
+	return h
+
 class ViewGolfersByTeam(webapp2.RequestHandler):
-	def get(self):
+	def get(self, bywhat):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
+		readonly = True if self.request.get('readonly') else False
 		projection_fields = (
 			'first_name', 'last_name', 'gender', 'cart', 'tees',
 			'has_index', 'handicap_index', 'average_score'
@@ -1065,15 +1072,19 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				'team_handicap': team_handicap
 			}
 			teams.append(team)
+		if bywhat == 'bystart':
+			teams.sort(key = sort_by_starting_hole)
 		template_values = {
+			'bywhat': bywhat,
 			'teams': teams,
 			'num_teams': len(teams),
+			'readonly': readonly,
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfersbyteam.html', template_values)
 		self.response.out.write(html)
 
-	def post(self):
+	def post(self, bywhat):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
@@ -1089,46 +1100,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			else:
 				team.starting_hole = starting_hole
 				team.put()
-		self.redirect('/admin/view/golfers/byteam')
-
-class ViewGolfersByStart(webapp2.RequestHandler):
-	def get(self):
-		root = tournament.get_tournament()
-		caps = capabilities.get_current_user_caps()
-		if caps is None or not caps.can_view_registrations:
-			show_login_page(self.response.out, self.request.uri)
-			return
-		all_golfers = []
-		counter = 1
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
-		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
-			for g in golfers:
-				all_golfers.append(ViewGolfer(root, s, g, counter))
-				counter += 1
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				g = Golfer(parent = s, sequence = i, name = '', gender = '',
-						   company = '', address = '', city = '', phone = '', email = '',
-						   golf_index = '', average_score = '', ghin_number = '',
-						   shirt_size = '', dinner_choice = '')
-				all_golfers.append(ViewGolfer(root, s, g, counter))
-				counter += 1
-		shirt_sizes = { }
-		for g in all_golfers:
-			key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
-			if not key in shirt_sizes:
-				shirt_sizes[key] = 0
-			shirt_sizes[key] += 1
-		template_values = {
-			'golfers': all_golfers,
-			'shirt_sizes': shirt_sizes,
-			'capabilities': caps
-			}
-		html = render_to_string('viewgolfers.html', template_values)
-		self.response.out.write(html)
+		self.redirect('/admin/view/golfers/%s' % bywhat)
 
 class ViewDinners(webapp2.RequestHandler):
 	def get(self):
@@ -1796,8 +1768,8 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/dinnersurvey', ViewDinnerSurvey),
 							   ('/admin/view/golfers', ViewGolfers),
 							   ('/admin/view/golfers/byname', ViewGolfersByName),
-							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
-							   ('/admin/view/golfers/bystart', ViewGolfersByStart),
+							   ('/admin/view/golfers/(byteam)', ViewGolfersByTeam),
+							   ('/admin/view/golfers/(bystart)', ViewGolfersByTeam),
 							   ('/admin/view/golfers/handicap', UpdateHandicap),
 							   ('/admin/view/golfers/pairing', Pairing),
 							   ('/admin/view/dinners', ViewDinners),
