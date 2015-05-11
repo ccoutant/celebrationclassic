@@ -1057,6 +1057,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				golfers_in_team.append(golfer)
 			team_handicap = calculate_team_handicap(course_handicaps)
 			team = {
+				'key': t.key().id(),
 				'name': t.name,
 				'starting_hole': t.starting_hole,
 				'flight': t.flight,
@@ -1066,10 +1067,29 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			teams.append(team)
 		template_values = {
 			'teams': teams,
+			'num_teams': len(teams),
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfersbyteam.html', template_values)
 		self.response.out.write(html)
+
+	def post(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, '/admin/view/golfers/byteams')
+			return
+		num_teams = int(self.request.get('num_teams'))
+		for i in range(1, num_teams + 1):
+			t_id = int(self.request.get('team_%d_key' % i))
+			starting_hole = self.request.get('team_%d_start' % i)
+			team = Team.get_by_id(t_id, parent = root)
+			if not team:
+				logging.error("No team with id %d" % t_id)
+			else:
+				team.starting_hole = starting_hole
+				team.put()
+		self.redirect('/admin/view/golfers/byteam')
 
 class ViewGolfersByStart(webapp2.RequestHandler):
 	def get(self):

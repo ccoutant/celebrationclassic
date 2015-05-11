@@ -30,6 +30,7 @@ ul.viewnav li {
 ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
 ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 .note { font-style: italic; text-align: center; }
+.buttons { text-align: center; }
 </style>
 {% endblock %}
 
@@ -58,6 +59,9 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 
 {% if teams %}
 
+<form action="/admin/view/golfers/byteam" method="post" accept-charset="utf-8">
+<input type="hidden" name="num_teams" value="{{num_teams}}">
+
 <table>
 <thead>
 	<tr valign="bottom">
@@ -72,7 +76,48 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 {% for t in teams %}
 	<tr class="team" valign="baseline">
 		<td class="teamname">{{ t.name }}</td>
-		<td align="center">{{ t.starting_hole }}</td>
+		<td align="center">
+			<input type="hidden" name="team_{{forloop.counter}}_key" value="{{t.key}}">
+			<select name="team_{{forloop.counter}}_start">
+				<option value="-" {% ifequal t.starting_hole '' %} selected {% endifequal %}>--</option>
+				<option value="1A" {% ifequal t.starting_hole '1A' %} selected {% endifequal %}>1 A</option>
+				<option value="1B" {% ifequal t.starting_hole '1B' %} selected {% endifequal %}>1 B</option>
+				<option value="2A" {% ifequal t.starting_hole '2A' %} selected {% endifequal %}>2 A</option>
+				<option value="2B" {% ifequal t.starting_hole '2B' %} selected {% endifequal %}>2 B</option>
+				<option value="3A" {% ifequal t.starting_hole '3A' %} selected {% endifequal %}>3 A</option>
+				<option value="3B" {% ifequal t.starting_hole '3B' %} selected {% endifequal %}>3 B</option>
+				<option value="4A" {% ifequal t.starting_hole '4A' %} selected {% endifequal %}>4 A</option>
+				<option value="4B" {% ifequal t.starting_hole '4B' %} selected {% endifequal %}>4 B</option>
+				<option value="5A" {% ifequal t.starting_hole '5A' %} selected {% endifequal %}>5 A</option>
+				<option value="5B" {% ifequal t.starting_hole '5B' %} selected {% endifequal %}>5 B</option>
+				<option value="6A" {% ifequal t.starting_hole '6A' %} selected {% endifequal %}>6 A</option>
+				<option value="6B" {% ifequal t.starting_hole '6B' %} selected {% endifequal %}>6 B</option>
+				<option value="7A" {% ifequal t.starting_hole '7A' %} selected {% endifequal %}>7 A</option>
+				<option value="7B" {% ifequal t.starting_hole '7B' %} selected {% endifequal %}>7 B</option>
+				<option value="8A" {% ifequal t.starting_hole '8A' %} selected {% endifequal %}>8 A</option>
+				<option value="8B" {% ifequal t.starting_hole '8B' %} selected {% endifequal %}>8 B</option>
+				<option value="9A" {% ifequal t.starting_hole '9A' %} selected {% endifequal %}>9 A</option>
+				<option value="9B" {% ifequal t.starting_hole '9B' %} selected {% endifequal %}>9 B</option>
+				<option value="10A" {% ifequal t.starting_hole '10A' %} selected {% endifequal %}>10 A</option>
+				<option value="10B" {% ifequal t.starting_hole '10B' %} selected {% endifequal %}>10 B</option>
+				<option value="11A" {% ifequal t.starting_hole '11A' %} selected {% endifequal %}>11 A</option>
+				<option value="11B" {% ifequal t.starting_hole '11B' %} selected {% endifequal %}>11 B</option>
+				<option value="12A" {% ifequal t.starting_hole '12A' %} selected {% endifequal %}>12 A</option>
+				<option value="12B" {% ifequal t.starting_hole '12B' %} selected {% endifequal %}>12 B</option>
+				<option value="13A" {% ifequal t.starting_hole '13A' %} selected {% endifequal %}>13 A</option>
+				<option value="13B" {% ifequal t.starting_hole '13B' %} selected {% endifequal %}>13 B</option>
+				<option value="14A" {% ifequal t.starting_hole '14A' %} selected {% endifequal %}>14 A</option>
+				<option value="14B" {% ifequal t.starting_hole '14B' %} selected {% endifequal %}>14 B</option>
+				<option value="15A" {% ifequal t.starting_hole '15A' %} selected {% endifequal %}>15 A</option>
+				<option value="15B" {% ifequal t.starting_hole '15B' %} selected {% endifequal %}>15 B</option>
+				<option value="16A" {% ifequal t.starting_hole '16A' %} selected {% endifequal %}>16 A</option>
+				<option value="16B" {% ifequal t.starting_hole '16B' %} selected {% endifequal %}>16 B</option>
+				<option value="17A" {% ifequal t.starting_hole '17A' %} selected {% endifequal %}>17 A</option>
+				<option value="17B" {% ifequal t.starting_hole '17B' %} selected {% endifequal %}>17 B</option>
+				<option value="18A" {% ifequal t.starting_hole '18A' %} selected {% endifequal %}>18 A</option>
+				<option value="18B" {% ifequal t.starting_hole '18B' %} selected {% endifequal %}>18 B</option>
+			</select>
+		</td>
 		<td></td>
 		<td></td>
 		<td align="right">{{ t.team_handicap }}</td>
@@ -89,6 +134,12 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 {% endfor %}
 </tbody>
 </table>
+
+<div class="buttons">
+<input type="submit" name="save" value="Save">
+</div>
+
+</form>
 
 {% else %}
 
