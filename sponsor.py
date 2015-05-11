@@ -39,9 +39,6 @@ class Team(db.Model):
 	starting_hole = db.StringProperty(default = '')
 	flight = db.IntegerProperty(default = 1)
 	golfers = db.ListProperty(db.Key)
-	golfer_names = db.StringListProperty()
-	carts = db.ListProperty(int)
-	course_handicaps = db.StringListProperty()
 	pairing = db.StringProperty(default = '')
 
 class Golfer(db.Model):
@@ -68,6 +65,14 @@ class Golfer(db.Model):
 	cart = db.IntegerProperty(default = 0)
 	tees = db.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
 	index_info_modified = db.BooleanProperty(default = False)
+
+	def get_handicap_index(self):
+		if self.has_index:
+			return self.handicap_index
+		try:
+			return float(self.average_score) * 0.8253 - 61.15
+		except:
+			return None
 
 class DinnerGuest(db.Model):
 	sequence = db.IntegerProperty(default = 0)

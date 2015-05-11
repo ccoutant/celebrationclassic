@@ -300,6 +300,17 @@ class Sponsorships(webapp2.RequestHandler):
 			s.put()
 		self.redirect('/admin/sponsorships')
 
+def get_tees(flight, gender):
+	if gender == "F":
+		return 1 # Red
+	if flight == 2:
+		return 3 # Blue
+	return 2 # White
+
+def calc_course_handicap(tournament, handicap_index, tees):
+	slope = [tournament.red_course_slope, tournament.white_course_slope, tournament.blue_course_slope][tees - 1]
+	return min(36, int(round(handicap_index * slope / 113.0)))
+
 class ViewGolfer(object):
 	def __init__(self, t, s, g, count):
 		self.sponsor_id = s.id
@@ -313,28 +324,21 @@ class ViewGolfer(object):
 		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
 		self.team_name = g.team.name if g.team else ''
 		if g.tees:
-			tees = g.tees
-		elif g.gender == "F":
-			tees = 1 # Red
-		elif g.team and g.team.flight == 2:
-			tees = 3 # Blue
+			self.tees = g.tees
 		else:
-			tees = 2 # White
-		self.tees = tees
-		slope = [t.red_course_slope, t.white_course_slope, t.blue_course_slope][tees - 1]
+			flight = 1
+			if g.team:
+				flight = g.team.flight
+			self.tees = get_tees(flight, g.gender)
+		handicap_index = g.get_handicap_index()
 		if g.has_index:
-			self.handicap_index_str = "%.1f" % g.handicap_index
+			self.handicap_index_str = "%.1f" % handicap_index
 			self.computed_index = ''
-			self.course_handicap = min(36, int(round(g.handicap_index * slope / 113.0)))
-		elif g.average_score:
+			self.course_handicap = calc_course_handicap(t, handicap_index, self.tees)
+		elif handicap_index is not None:
 			self.handicap_index_str = ''
-			self.computed_index = ''
-			try:
-				handicap_index = float(g.average_score) * 0.8253 - 61.15
-				self.computed_index = '%.1f' % handicap_index
-				self.course_handicap = min(36, int(round(handicap_index * slope / 113.0)))
-			except:
-				self.course_handicap = 36
+			self.computed_index = "%.1f" % handicap_index
+			self.course_handicap = calc_course_handicap(t, handicap_index, self.tees)
 		else:
 			self.handicap_index_str = ''
 			self.computed_index = ''
@@ -798,7 +802,7 @@ class JsonBuilder:
 			team = self.teams[t - 1]
 			for g_id in self.golfers_by_team[t - 1]:
 				if self.teams_by_golfer_id_rev[g_id] != t:
-					logging.warning("Team %d \"%s\" (%d) contains golfer %d (sponsor id %d), but golfer does not refer to team" % (t, team['name'], team['key'], g_id, s.id))
+					logging.warning("Team %d \"%s\" (%d) contains golfer %d, but golfer does not refer to team" % (t, team['name'], team['key'], g_id))
 			if not team['golfer_nums']:
 				logging.warning("Empty team \"%s\" (%d)" % (team['name'], team['key']))
 
@@ -868,9 +872,6 @@ class TeamsUpdater:
 		for (team_num, team) in self.team_entities:
 			t = self.teams[team_num - 1]
 			golfers_in_team = []
-			golfer_names = []
-			carts = []
-			course_handicaps = []
 			golfers_to_update = []
 			for golfer_num in t['golfer_nums']:
 				g = self.golfers[golfer_num - 1]
@@ -878,17 +879,9 @@ class TeamsUpdater:
 				(golfer, modified) = self.golfers_by_id[g_id]
 				# logging.debug("Update teams pass 2: team %d golfer %d (%s)" % (team_num, g_id, "modified" if modified else "not modified"))
 				golfers_in_team.append(golfer.key())
-				vg = ViewGolfer(self.root, golfer.parent(), golfer, len(course_handicaps) + 1)
-				golfer_names.append(vg.golfer_name)
-				carts.append(golfer.cart)
-				course_handicap = str(vg.course_handicap) if golfer.has_index else ''
-				course_handicaps.append(course_handicap)
 				if modified:
 					golfers_to_update.append(golfer)
 			team.golfers = golfers_in_team
-			team.golfer_names = golfer_names
-			team.carts = carts
-			team.course_handicaps = course_handicaps
 			if len(team.golfers) == 0:
 				self.team_renumber.append(0)
 				t['key'] = ''
@@ -984,6 +977,7 @@ class Pairing(webapp2.RequestHandler):
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
+		memcache.delete('2015/admin/view/golfers')
 		template_values = {
 			'messages': [],
 			'groups_json': updater.groups_json(),
@@ -995,6 +989,20 @@ class Pairing(webapp2.RequestHandler):
 		self.response.out.write(html)
 		# self.redirect('/admin/view/golfers/teams')
 
+def calculate_team_handicap(golfer_handicaps):
+	try:
+		handicaps = sorted([int(h) for h in golfer_handicaps])
+	except:
+		return "n/a"
+	weight = 4.0
+	sum = 0.0
+	sum_of_weights = 0.0
+	for i in range(0, len(handicaps)):
+		sum += handicaps[i] * weight
+		sum_of_weights += weight
+		weight /= 2.0
+	return int(round(sum / sum_of_weights * 0.75))
+
 class ViewGolfersByTeam(webapp2.RequestHandler):
 	def get(self):
 		root = tournament.get_tournament()
@@ -1002,33 +1010,47 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		all_golfers = []
-		counter = 1
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
-		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
-			for g in golfers:
-				all_golfers.append(ViewGolfer(root, s, g, counter))
-				counter += 1
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				g = Golfer(parent = s, sequence = i, name = '', gender = '',
-						   company = '', address = '', city = '', phone = '', email = '',
-						   golf_index = '', average_score = '', ghin_number = '',
-						   shirt_size = '', dinner_choice = '')
-				all_golfers.append(ViewGolfer(root, s, g, counter))
-				counter += 1
-		shirt_sizes = { }
-		for g in all_golfers:
-			key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
-			if not key in shirt_sizes:
-				shirt_sizes[key] = 0
-			shirt_sizes[key] += 1
+		projection_fields = (
+			'first_name', 'last_name', 'gender', 'cart', 'tees',
+			'has_index', 'handicap_index', 'average_score'
+		)
+		golfers = db.Query(Golfer, projection=projection_fields).filter("active =", True).order("sort_name")
+		golfers_by_key = {}
+		for g in golfers:
+			golfers_by_key[g.key()] = g
+		teams = []
+		q = Team.all().ancestor(root).order("name")
+		for t in q:
+			golfers_in_team = []
+			course_handicaps = []
+			for g_key in t.golfers:
+				g = golfers_by_key[g_key]
+				tees = get_tees(t.flight, g.gender)
+				handicap_index = g.get_handicap_index()
+				if handicap_index is not None:
+					course_handicap = calc_course_handicap(root, handicap_index, tees)
+				else:
+					course_handicap = 'n/a'
+				course_handicaps.append(course_handicap)
+				golfer = {
+					'first_name': g.first_name,
+					'last_name': g.last_name,
+					'cart': g.cart,
+					'tees': tees,
+					'course_handicap': course_handicap
+				}
+				golfers_in_team.append(golfer)
+			team_handicap = calculate_team_handicap(course_handicaps)
+			team = {
+				'name': t.name,
+				'starting_hole': t.starting_hole,
+				'flight': t.flight,
+				'golfers': golfers_in_team,
+				'team_handicap': team_handicap
+			}
+			teams.append(team)
 		template_values = {
-			'golfers': all_golfers,
-			'shirt_sizes': shirt_sizes,
+			'teams': teams,
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfersbyteam.html', template_values)
@@ -1188,42 +1210,55 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 		q.order("timestamp")
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
-							 'address', 'city', 'state', 'zip', 'email', 'phone',
-							 'ghin_number', 'index', 'avg_score', 'tournament_index', 'course_handicap',
+							 'address', 'city', 'state', 'zip',
+							 'email', 'phone', 'ghin_number', 'index',
+							 'avg_score', 'tournament_index', 'course_handicap', 'tees',
 							 'shirt_size', 'team', 'starting_hole', 'cart',
 							 'contact_first_name', 'contact_last_name']))
 		counter = 1
 		for s in q:
 			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
 			for g in golfers:
-				vg = ViewGolfer(root, s, g, counter)
+				team_name = ''
 				starting_hole = ''
-				if g.team:
-					starting_hole = g.team.starting_hole
 				cart = ''
+				flight = 1
+				if g.team:
+					team_name = g.team.name
+					starting_hole = g.team.starting_hole
+					flight = g.team.flight
 				if g.cart:
-					cart = '' if g.cart == 0 else str(g.cart)
-				handicap_index = ''
-				tournament_index = ''
+					cart = str(g.cart)
+				tees = get_tees(flight, g.gender)
+				tees_str = ["Red", "White", "Blue"][tees - 1]
+				handicap_index = g.get_handicap_index()
 				if g.has_index:
-					handicap_index = "%.1f" % g.handicap_index
-					tournament_index = handicap_index
-				elif g.average_score:
-					tournament_index = vg.computed_index
+					handicap_index_str = "%.1f" % handicap_index
+					tournament_index = handicap_index_str
+				elif handicap_index is not None:
+					handicap_index_str = ''
+					tournament_index = "%.1f" % handicap_index
+				else:
+					handicap_index_str = ''
+					tournament_index = ''
+				if handicap_index is not None:
+					course_handicap = str(calc_course_handicap(root, handicap_index, tees))
+				else:
+					course_handicap = ''
 				counter += 1
 				csv.append(','.join([csv_encode(x)
 									 for x in [g.first_name, g.last_name, g.gender, g.company,
-											   g.address, g.city, g.state, g.zip, g.email, g.phone,
-											   g.ghin_number, handicap_index, g.average_score,
-											   tournament_index, vg.course_handicap,
-											   g.shirt_size, vg.team_name, starting_hole, cart,
+											   g.address, g.city, g.state, g.zip,
+											   g.email, g.phone, g.ghin_number, handicap_index_str,
+											   g.average_score, tournament_index, course_handicap, tees_str,
+											   g.shirt_size, team_name, starting_hole, cart,
 											   s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
 				csv.append(','.join([csv_encode(x)
 									 for x in ['n/a', 'n/a', '', '',
-											   '', '', '', '', '', '',
-											   '', '', '',
-											   '', '',
+											   '', '', '', '',
+											   '', '', '', '',
+											   '', '', '', '',
 											   '', '', '', '',
 											   s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
