@@ -763,13 +763,15 @@ class JsonBuilder:
 						other_team_num = self.teams_by_golfer_id_fwd[g_id]
 						other_team = self.teams[other_team_num - 1]
 						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.id, t.name, other_team['name']))
+				else:
+					t_id = -1
 				self.teams_by_golfer_id_rev[g_id] = team_num
 				if g_id in self.teams_by_golfer_id_fwd:
 					team_num = self.teams_by_golfer_id_fwd[g_id]
 				else:
 					team_num = 0
 				h = hashlib.md5()
-				h.update("%d:%d" % (team_num, g.cart))
+				h.update("%d:%d" % (t_id, g.cart))
 				golfer = {
 					'golfer_num': golfer_num,
 					'group_num': len(self.groups) + 1,
@@ -845,8 +847,15 @@ class TeamsUpdater:
 	def update_golfers_pass1(self):
 		for g in self.golfers:
 			g_id = g['key']
+			team_num = g['team_num']
+			if team_num:
+				t_id = self.teams[team_num - 1]['key']
+				if not t_id:
+					t_id = 0
+			else:
+				t_id = -1
 			h = hashlib.md5()
-			h.update("%d:%d" % (g['team_num'], g['cart']))
+			h.update("%d:%d" % (t_id, g['cart']))
 			modified = h.hexdigest() != g['md5']
 			# logging.debug("Update golfers pass 1: team %d golfer %d (%s)" % (g['team_num'], g_id, "modified" if modified else "not modified"))
 			if modified or g_id in self.golfers_by_id:
@@ -915,6 +924,12 @@ class TeamsUpdater:
 			team_num = g['team_num']
 			if team_num:
 				g['team_num'] = self.team_renumber[team_num - 1]
+				t_id = self.teams[team_num - 1]['key']
+			else:
+				t_id = -1
+			h = hashlib.md5()
+			h.update("%d:%d" % (t_id, g['cart']))
+			g['md5'] = h.hexdigest()
 		new_teams = []
 		for t in self.teams:
 			team_num = t['team_num']
