@@ -867,16 +867,28 @@ class TeamsUpdater:
 		self.team_renumber = []
 		for (team_num, team) in self.team_entities:
 			t = self.teams[team_num - 1]
-			team.golfers = []
+			golfers_in_team = []
+			golfer_names = []
+			carts = []
+			course_handicaps = []
 			golfers_to_update = []
 			for golfer_num in t['golfer_nums']:
 				g = self.golfers[golfer_num - 1]
 				g_id = g['key']
 				(golfer, modified) = self.golfers_by_id[g_id]
 				# logging.debug("Update teams pass 2: team %d golfer %d (%s)" % (team_num, g_id, "modified" if modified else "not modified"))
-				team.golfers.append(golfer.key())
+				golfers_in_team.append(golfer.key())
+				vg = ViewGolfer(self.root, golfer.parent(), golfer, len(course_handicaps) + 1)
+				golfer_names.append(vg.golfer_name)
+				carts.append(golfer.cart)
+				course_handicap = str(vg.course_handicap) if golfer.has_index else ''
+				course_handicaps.append(course_handicap)
 				if modified:
 					golfers_to_update.append(golfer)
+			team.golfers = golfers_in_team
+			team.golfer_names = golfer_names
+			team.carts = carts
+			team.course_handicaps = course_handicaps
 			if len(team.golfers) == 0:
 				self.team_renumber.append(0)
 				t['key'] = ''
@@ -928,7 +940,7 @@ class TeamsUpdater:
 	def golfers_json(self):
 		return json.dumps(self.golfers)
 
-class FormTeams(webapp2.RequestHandler):
+class Pairing(webapp2.RequestHandler):
 	def get(self):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
@@ -943,7 +955,7 @@ class FormTeams(webapp2.RequestHandler):
 			'golfers_json': json_builder.golfers_json(),
 			'capabilities': caps
 			}
-		html = render_to_string('formteams.html', template_values)
+		html = render_to_string('pairing.html', template_values)
 		self.response.out.write(html)
 
 	def complain(self, what):
@@ -979,9 +991,48 @@ class FormTeams(webapp2.RequestHandler):
 			'golfers_json': updater.golfers_json(),
 			'capabilities': caps
 			}
-		html = render_to_string('formteams.html', template_values)
+		html = render_to_string('pairing.html', template_values)
 		self.response.out.write(html)
 		# self.redirect('/admin/view/golfers/teams')
+
+class ViewGolfersByTeam(webapp2.RequestHandler):
+	def get(self):
+		root = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		all_golfers = []
+		counter = 1
+		q = Sponsor.all()
+		q.ancestor(root)
+		q.filter("confirmed =", True)
+		q.order("sort_name")
+		for s in q:
+			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
+			for g in golfers:
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+			for i in range(len(golfers) + 1, s.num_golfers + 1):
+				g = Golfer(parent = s, sequence = i, name = '', gender = '',
+						   company = '', address = '', city = '', phone = '', email = '',
+						   golf_index = '', average_score = '', ghin_number = '',
+						   shirt_size = '', dinner_choice = '')
+				all_golfers.append(ViewGolfer(root, s, g, counter))
+				counter += 1
+		shirt_sizes = { }
+		for g in all_golfers:
+			key = g.golfer.shirt_size if g.golfer.shirt_size else 'unspecified'
+			if not key in shirt_sizes:
+				shirt_sizes[key] = 0
+			shirt_sizes[key] += 1
+		template_values = {
+			'golfers': all_golfers,
+			'shirt_sizes': shirt_sizes,
+			'capabilities': caps
+			}
+		html = render_to_string('viewgolfersbyteam.html', template_values)
+		self.response.out.write(html)
 
 class ViewGolfersByStart(webapp2.RequestHandler):
 	def get(self):
@@ -1675,10 +1726,10 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/dinnersurvey', ViewDinnerSurvey),
 							   ('/admin/view/golfers', ViewGolfers),
 							   ('/admin/view/golfers/byname', ViewGolfersByName),
-							   ('/admin/view/golfers/byteam', ViewGolfersByName), # TODO
+							   ('/admin/view/golfers/byteam', ViewGolfersByTeam),
 							   ('/admin/view/golfers/bystart', ViewGolfersByStart),
 							   ('/admin/view/golfers/handicap', UpdateHandicap),
-							   ('/admin/view/golfers/teams', FormTeams),
+							   ('/admin/view/golfers/pairing', Pairing),
 							   ('/admin/view/dinners', ViewDinners),
 							   ('/admin/view/tribute', ViewTributeAds),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
