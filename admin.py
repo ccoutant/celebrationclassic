@@ -803,7 +803,9 @@ class JsonBuilder:
 		for t in range(1, len(self.teams) + 1):
 			team = self.teams[t - 1]
 			for g_id in self.golfers_by_team[t - 1]:
-				if self.teams_by_golfer_id_rev[g_id] != t:
+				if not g_id in self.teams_by_golfer_id_rev:
+					logging.warning("Team %d \"%s\" (%d) contains golfer %d, but golfer does not exist" % (t, team['name'], team['key'], g_id))
+				elif self.teams_by_golfer_id_rev[g_id] != t:
 					logging.warning("Team %d \"%s\" (%d) contains golfer %d, but golfer does not refer to team" % (t, team['name'], team['key'], g_id))
 			if not team['golfer_nums']:
 				logging.warning("Empty team \"%s\" (%d)" % (team['name'], team['key']))
@@ -1039,14 +1041,18 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		golfers = db.Query(Golfer, projection=projection_fields).filter("active =", True).order("sort_name")
 		golfers_by_key = {}
 		for g in golfers:
-			golfers_by_key[g.key()] = g
+			golfers_by_key[g.key().id()] = g
 		teams = []
 		q = Team.all().ancestor(root).order("name")
 		for t in q:
 			golfers_in_team = []
 			course_handicaps = []
 			for g_key in t.golfers:
-				g = golfers_by_key[g_key]
+				g_id = g_key.id()
+				if not g_id in golfers_by_key:
+					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, t.name, t.key().id()))
+					continue
+				g = golfers_by_key[g_id]
 				tees = get_tees(t.flight, g.gender)
 				handicap_index = g.get_handicap_index()
 				if handicap_index is not None:
