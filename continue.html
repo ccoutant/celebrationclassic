@@ -91,10 +91,10 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry form-text">
 <div class="form-button">
-<input type="submit" name="back" value="<- Back to Step 1">
+<input type="submit" name="back" value="&larr; Back to Step 1">
 {% if net_payment_due %}
-<input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
-<input type="submit" name="pay_by_check" value="Pay by Check ->">
+<input type="submit" name="pay_with_cc" value="Pay with Credit Card &rarr;">
+<input type="submit" name="pay_by_check" value="Pay by Check &rarr;">
 {% endif %}
 </div>
 </div>
@@ -252,10 +252,10 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry form-submit">
 <div class="form-button">
-<input type="submit" name="back" value="<- Back to Step 1">
+<input type="submit" name="back" value="&larr; Back to Step 1">
 {% if net_payment_due %}
-<input type="submit" name="pay_with_cc" value="Pay with Credit Card ->">
-<input type="submit" name="pay_by_check" value="Pay by Check ->">
+<input type="submit" name="pay_with_cc" value="Pay with Credit Card &rarr;">
+<input type="submit" name="pay_by_check" value="Pay by Check &rarr;">
 {% endif %}
 {% if net_payment_due == 0 or capabilities.can_add_registrations %}
 <input type="submit" name="save" value="Save Changes">
