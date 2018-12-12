@@ -346,8 +346,8 @@ class Register(webapp2.RequestHandler):
 				logging.info('ID collision for %d; retrying...' % s.id)
 		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
 		s.put()
-		memcache.delete('2015/admin/view/golfers')
-		memcache.delete('2015/admin/view/dinners')
+		memcache.delete('2019/admin/view/golfers')
+		memcache.delete('2019/admin/view/dinners')
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/register')
 			return
@@ -435,8 +435,8 @@ class Continue(webapp2.RequestHandler):
 			s.confirmed = True
 		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
-		memcache.delete('2015/admin/view/golfers')
-		memcache.delete('2015/admin/view/dinners')
+		memcache.delete('2019/admin/view/golfers')
+		memcache.delete('2019/admin/view/dinners')
 
 		# Mark unique sponsorships as sold.
 		for k in s.sponsorships:
@@ -884,7 +884,7 @@ class Tribute(webapp2.RequestHandler):
 		phone = self.request.get('phone')
 		ad_size = int(self.request.get('ad_size'))
 		printed_names = self.request.get('printed_names')
-		price_list = [ 0, 18, 50, 100, 200, 400, 500 ]
+		price_list = [ 0, 36, 108, 360, 720, 1800, 3600 ]
 		net_payment_due = price_list[ad_size] if ad_size >= 1 and ad_size <= 6 else 0
 		ad = None
 

@@ -152,7 +152,7 @@ class ManageTournament(webapp2.RequestHandler):
 			show_login_page(self.response.out, '/admin/tournament')
 			return
 		q = tournament.Tournament.all()
-		q.filter("name = ", "cc2015")
+		q.filter("name = ", "cc2019")
 		t = q.get()
 		golf_month = int(self.request.get("golf_month"))
 		golf_day = int(self.request.get("golf_day"))
@@ -523,7 +523,7 @@ class ViewGolfers(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('2015/admin/view/golfers')
+		html = memcache.get('2019/admin/view/golfers')
 		if html:
 			self.response.out.write(html)
 			return
@@ -557,7 +557,7 @@ class ViewGolfers(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfers.html', template_values)
-		memcache.add('2015/admin/view/golfers', html, 60*60*24)
+		memcache.add('2019/admin/view/golfers', html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewGolfersByName(webapp2.RequestHandler):
@@ -672,7 +672,7 @@ class UpdateHandicap(webapp2.RequestHandler):
 			g.average_score = average_score
 			g.index_info_modified = False
 			g.put()
-		memcache.delete('2015/admin/view/golfers')
+		memcache.delete('2019/admin/view/golfers')
 		if self.request.get('prevpage'):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
 		elif self.request.get('nextpage'):
@@ -994,7 +994,7 @@ class Pairing(webapp2.RequestHandler):
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
-		memcache.delete('2015/admin/view/golfers')
+		memcache.delete('2019/admin/view/golfers')
 		template_values = {
 			'messages': [],
 			'groups_json': updater.groups_json(),
@@ -1115,7 +1115,7 @@ class ViewDinners(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('2015/admin/view/dinners')
+		html = memcache.get('2019/admin/view/dinners')
 		if html:
 			self.response.out.write(html)
 			return
@@ -1153,7 +1153,7 @@ class ViewDinners(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewguests.html', template_values)
-		memcache.add('2015/admin/view/dinners', html, 60*60*24)
+		memcache.add('2019/admin/view/dinners', html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewTributeAds(webapp2.RequestHandler):

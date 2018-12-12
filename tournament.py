@@ -25,20 +25,20 @@ class Tournament(db.Model):
 	timestamp = db.DateTimeProperty(auto_now = True)
 
 def get_tournament():
-	t = memcache.get("2015/tournament")
+	t = memcache.get("2019/tournament")
 	if t is not None:
 		return t
 	q = Tournament.all()
-	q.filter("name = ", "cc2015")
+	q.filter("name = ", "cc2019")
 	t = q.get()
 	if t is not None:
 		set_tournament_cache(t)
 		return t
-	t = Tournament(name = "cc2015",
-				   golf_date = datetime.date(2015, 5, 18),
-				   dinner_date = datetime.date(2015, 5, 18),
-				   early_bird_deadline = datetime.date(2015, 3, 30),
-				   deadline = datetime.date(2015, 5, 18),
+	t = Tournament(name = "cc2019",
+				   golf_date = datetime.date(2019, 4, 29),
+				   dinner_date = datetime.date(2019, 4, 29),
+				   early_bird_deadline = datetime.date(2019, 3, 31),
+				   deadline = datetime.date(2019, 4, 22),
 				   golf_price_early = 400,
 				   golf_price_late = 450,
 				   dinner_price_early = 100,
@@ -48,7 +48,7 @@ def get_tournament():
 	return t
 
 def set_tournament_cache(t):
-	memcache.add("2015/tournament", t, 60*60*24)
+	memcache.add("2019/tournament", t, 60*60*24)
 
 def clear_tournament_cache():
-	memcache.delete("2015/tournament")
+	memcache.delete("2019/tournament")

@@ -20,7 +20,7 @@ def get_current_user_caps():
 	if not user:
 		return Capabilities(email = None)
 	email = user.email()
-	caps = memcache.get('2015/caps/' + email.lower())
+	caps = memcache.get('2019/caps/' + email.lower())
 	if caps is not None:
 		return caps
 	else:
@@ -30,6 +30,6 @@ def get_current_user_caps():
 		q.filter("email = ", email.lower())
 		caps = q.get()
 		if caps:
-			memcache.add('2015/caps/' + email.lower(), caps, 60*60)
+			memcache.add('2019/caps/' + email.lower(), caps, 60*60)
 			return caps
 		return Capabilities(email = None)

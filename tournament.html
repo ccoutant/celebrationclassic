@@ -4,8 +4,6 @@
 
 {% block head %}
 <style type="text/css">
-#body #nav { display: none; }
-#body #content { float: left; width: 100%; margin: 1em 0 3em; }
 h2 { text-align: center; }
 form table { margin: 0 auto; }
 form table tr th { font-size: 75%; }
@@ -27,7 +25,7 @@ function gen_date_picker(name, month, day, year) {
 					   d + "</option>");
 	document.write("</select>");
 	document.write("<select name=" + name + "_year>");
-	for (var y = 2014; y <= 2015; y++)
+	for (var y = 2018; y <= 2019; y++)
 		document.write("<option label=\"" + y + "\" value=\"" + y + "\"" +
 					   (y == year ? " selected" : "") + ">" +
 					   y + "</option>");
@@ -68,7 +66,7 @@ gen_date_picker("early_bird", {{ tournament.early_bird_deadline.month }}, {{ tou
 <td align="left">Final Deadline</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
-gen_date_picker("deadline", {{ tournament.deadline.month|default:5 }}, {{ tournament.deadline.day|default:18 }}, {{ tournament.deadline.year|default:2015 }});
+gen_date_picker("deadline", {{ tournament.deadline.month|default:4 }}, {{ tournament.deadline.day|default:29 }}, {{ tournament.deadline.year|default:2019 }});
 </script>
 </td>
 </tr>
@@ -76,7 +74,7 @@ gen_date_picker("deadline", {{ tournament.deadline.month|default:5 }}, {{ tourna
 <td align="left">Tribute Ad Deadline</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
-gen_date_picker("tribute_deadline", {{ tournament.tribute_deadline.month|default:5 }}, {{ tournament.tribute_deadline.day|default:18 }}, {{ tournament.tribute_deadline.year|default:2015 }});
+gen_date_picker("tribute_deadline", {{ tournament.tribute_deadline.month|default:4 }}, {{ tournament.tribute_deadline.day|default:29 }}, {{ tournament.tribute_deadline.year|default:2019 }});
 </script>
 </td>
 </tr>

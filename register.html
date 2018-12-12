@@ -23,13 +23,13 @@ window.onload = function() {
 <p>Sorry, registration for the Celebration Classic is now closed.</p>
 {% endif %}
 
-{% if not capabilities.can_add_registrations %}
-{% endif %}
 {{ page.content|markdown }}
 
 {% for m in messages %}
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
+
+{% if tournament.golf_price_late %}
 
 <form action="/register" method="post" accept-charset="utf-8">
 
@@ -386,5 +386,7 @@ $<input type="text" name="discount" value="{% if sponsor.discount %}{{ sponsor.d
 </div> <!-- register_form -->
 
 </form>
+
+{% endif %} <!-- if tournament.golf_price_late -->
 
 {% endblock %}
