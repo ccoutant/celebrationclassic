@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "wide.html" %}
 
 {% load custom_filters %}
 
@@ -6,11 +6,6 @@
 
 {% block head %}
 <style type="text/css">
-#body { width: 95%; }
-#body #header { margin-left: auto; margin-right: auto; }
-#body #footer { margin-left: auto; margin-right: auto; }
-#body #nav { display: none; }
-#body #content { float: none; width: 100%; margin: 1em 0 3em; }
 #body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
 #body thead tr { border: none; border-bottom: 2px solid #c4e5c4; }
 #body tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
@@ -22,13 +17,6 @@
 #body td p { margin: 0; }
 #body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
 h2 { text-align: center; }
-ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; }
-ul.viewnav li {
-  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
-}
-ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
-ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 div.payment-details { display: none; }
 span.disclosure { font-size: 80%; font-style: italic; margin-left: 0.5em; cursor: pointer; }
 span.details { font-size: 80%; font-style: italic; margin-left: 0.5em; }

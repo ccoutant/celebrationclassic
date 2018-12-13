@@ -148,23 +148,23 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_email{{ golfer.sequence }}">Email</label>
-<input type="text" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}" placeholder="Email">
+<input type="email" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone{{ golfer.sequence }}">Phone</label>
-<input type="text" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}" placeholder="Phone">
+<input type="tel" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}" placeholder="Phone">
 </div>
 </div>
 
 <div class="form-entry form-number">
 <div class="form-input">
 <label for="entry_ghin{{ golfer.sequence }}">GHIN Number</label>
-<input type="text" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}">
+<input type="number" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}">
 <label class="right" for="entry_avg{{ golfer.sequence }}"><i>OR</i> Average Score</label>
-<input type="text" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}">
+<input type="number" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}">
 </div>
 </div>
 

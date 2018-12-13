@@ -71,21 +71,21 @@ window.onload = function() {
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_email">* Email</label>
-<input type="text" name="email" value="{{ sponsor.email }}" id="entry_email" placeholder="Email">
+<input type="email" name="email" value="{{ sponsor.email }}" id="entry_email" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone">* Phone</label>
-<input type="text" name="phone" value="{{ sponsor.phone }}" id="entry_phone" placeholder="Phone">
+<input type="tel" name="phone" value="{{ sponsor.phone }}" id="entry_phone" placeholder="Phone">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_fax">Fax</label>
-<input type="text" name="fax" value="{{ sponsor.fax }}" id="entry_fax" placeholder="Fax">
+<input type="tel" name="fax" value="{{ sponsor.fax }}" id="entry_fax" placeholder="Fax">
 </div>
 </div>
 
@@ -228,7 +228,7 @@ And you know that you are doing something very special for Congregation Shir Had
 <div class="form-entry form-dollars">
 <div class="form-input">
 <label for="entry_fax">Additional Donation</label>
-$<input type="text" name="other" value="{{ sponsor.additional_donation }}" id="entry_other">
+$<input type="number" name="other" value="{{ sponsor.additional_donation }}" id="entry_other">
 </div>
 </div>
 
@@ -324,7 +324,7 @@ If you do not check the box, your email address will not be given to anyone.</i>
 <div class="form-entry form-dollars">
 <div class="form-input">
 <label for="entry_payment_made">Payment Made</label>
-$<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
+$<input type="number" name="payment_made" value="{% if sponsor.payment_made %}{{ sponsor.payment_made }}{% endif %}" id="entry_payment_made">
 </div>
 </div>
 
@@ -352,7 +352,7 @@ $<input type="text" name="payment_made" value="{% if sponsor.payment_made %}{{ s
 <div class="form-entry form-dollars">
 <div class="form-input">
 <label for="entry_discount">Discount</label>
-$<input type="text" name="discount" value="{% if sponsor.discount %}{{ sponsor.discount }}{% endif %}" id="entry_discount">
+$<input type="number" name="discount" value="{% if sponsor.discount %}{{ sponsor.discount }}{% endif %}" id="entry_discount">
 </div>
 </div>
 

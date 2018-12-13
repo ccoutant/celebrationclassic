@@ -1,23 +1,11 @@
-{% extends "base.html" %}
+{% extends "wide.html" %}
 
 {% block title %}Reminder Emails{% endblock %}
 
 {% block head %}
 <style type="text/css">
-#body { width: 95%; }
-#body #header { margin-left: auto; margin-right: auto; }
-#body #footer { margin-left: auto; margin-right: auto; }
-#body #nav { display: none; }
-#body #content { float: none; width: 100%; margin: 1em 0 3em; }
 #body #content p { text-align: center; }
 h2 { text-align: center; }
-ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-ul.viewnav li { display: inline; margin: 0; padding: 0 1em 0 0; }
-ul.viewnav li {
-  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
-}
-ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
-ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 </style>
 {% endblock %}
 

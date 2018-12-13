@@ -1,14 +1,9 @@
-{% extends "base.html" %}
+{% extends "wide.html" %}
 
 {% block title %}Dinners{% endblock %}
 
 {% block head %}
 <style type="text/css">
-/* #body { width: 95%; }
-#body #header { margin-left: auto; margin-right: auto; }
-#body #footer { margin-left: auto; margin-right: auto; } */
-#body #nav { display: none; }
-#body #content { float: none; width: 100%; margin: 1em 0 3em; }
 #body table { width: 30em; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin: 0 auto 2em; }
 #body thead tr { border-bottom: 2px solid #c4e5c4; }
 #body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
@@ -21,13 +16,6 @@
 #body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
 #body tr.seating p { font-size: 80%; font-style: italic; color: #555; }
 h2 { text-align: center; }
-ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; }
-ul.viewnav li {
-  font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Lucida, sans-serif;
-}
-ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
-ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 </style>
 {% endblock %}
 
@@ -75,16 +63,17 @@ ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decorat
 </tbody>
 </table>
 
-{% else %}
-
-<p>No dinner guests.</p>
-
-{% endif %}
-
 <p><b>Total dinners:</b></p>
 <ul>
 {% for key, value in dinner_choices.items %}
 	<li>{{ key }}: {{ value }}</li>
 {% endfor %}
 </ul>
+
+{% else %}
+
+<p>No dinner guests.</p>
+
+{% endif %}
+
 {% endblock %}
