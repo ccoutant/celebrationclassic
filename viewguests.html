@@ -19,19 +19,23 @@ h2 { text-align: center; }
 </style>
 {% endblock %}
 
-{% block content %}
+{% block subnav %}
 <ul class="viewnav">
-	<li><a href="/admin/view/registrations">All</a></li>
-	<li><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/registrations">All Registrations</a></li>
+	<li><a href="/admin/view/golfers">Golfers by Sponsor</a></li>
+	<li><a href="/admin/view/golfers/byname">Golfers by Name</a></li>
+	<li><a href="/admin/view/golfers/byteam">Golfers by Team</a></li>
+	<li><a href="/admin/view/golfers/bystart">Golfers by Start</a></li>
+	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
 	<li class="selected"><a href="/admin/view/dinners">Dinners</a></li>
 	<li><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
 </ul>
-<ul class="viewnav">
-	<li><a href="/admin/csv/dinners">Download CSV</a></li>
-</ul>
+{% endblock %}
 
+{% block content %}
 <h2>Dinners</h2>
 
 {% if dinners %}
@@ -69,6 +73,8 @@ h2 { text-align: center; }
 	<li>{{ key }}: {{ value }}</li>
 {% endfor %}
 </ul>
+
+<p><a href="/admin/csv/dinners"><button name="download" type="button">Download CSV</button></a></p>
 
 {% else %}
 

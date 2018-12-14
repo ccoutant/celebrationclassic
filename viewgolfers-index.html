@@ -20,25 +20,23 @@ h2 { text-align: center; }
 </style>
 {% endblock %}
 
-{% block content %}
+{% block subnav %}
 <ul class="viewnav">
-	<li><a href="/admin/view/registrations">All</a></li>
-	<li class="selected"><a href="/admin/view/golfers">Golfers</a></li>
+	<li><a href="/admin/view/registrations">All Registrations</a></li>
+	<li><a href="/admin/view/golfers">Golfers by Sponsor</a></li>
+	<li><a href="/admin/view/golfers/byname">Golfers by Name</a></li>
+	<li><a href="/admin/view/golfers/byteam">Golfers by Team</a></li>
+	<li><a href="/admin/view/golfers/bystart">Golfers by Start</a></li>
+	<li class="selected"><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
 	<li><a href="/admin/view/dinners">Dinners</a></li>
 	<li><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
 </ul>
-<ul class="viewnav">
-	<li><a href="/admin/view/golfers">By Sponsor</a></li>
-	<li><a href="/admin/view/golfers/byname">By Name</a></li>
-	<li><a href="/admin/view/golfers/byteam">By Team</a></li>
-	<li><a href="/admin/view/golfers/bystart">By Start</a></li>
-	<li class="selected"><a href="/admin/view/golfers/handicap">Handicap</a></li>
-	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
-	<li><a href="/admin/csv/golfers">Download CSV</a></li>
-</ul>
+{% endblock %}
 
+{% block content %}
 <h2>Golfers</h2>
 
 <form action="/admin/view/golfers/handicap" method="post" accept-charset="utf-8">
@@ -92,17 +90,17 @@ h2 { text-align: center; }
 </tbody>
 </table>
 
-{% else %}
-
-<p>No golfers.</p>
-
-{% endif %}
-
 <div class="buttons">
 {% if prev_page_offset %}<input type="submit" name="prevpage" value="&larr; Previous Page">{% endif %}
 <input type="submit" name="save" value="Save">
 {% if next_page_offset %}<input type="submit" name="nextpage" value="Next Page &rarr;">{% endif %}
 </div>
+
+{% else %}
+
+<p>No golfers.</p>
+
+{% endif %}
 
 </form>
 

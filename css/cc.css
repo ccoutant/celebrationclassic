@@ -24,20 +24,16 @@ div.container { position: relative; overflow: hidden; }
 #nav ul.admin li a:hover { color: #FB0042; text-decoration: underline; }
 #nav ul.admin li a:visited { color: #FB0042; text-decoration: none; }
 
+#nav ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
+#nav ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; font-weight: normal; font-size: 70%; }
+#nav ul.viewnav li a { color: #FB0042; text-decoration: none; }
+#nav ul.viewnav li a:hover { color: #FB0042; text-decoration: none; }
+#nav ul.viewnav li a:visited { color: #FB0042; text-decoration: none; }
+#nav ul.viewnav li.selected a { font-weight: bold; }
+#nav ul.viewnav li.selected a:hover { text-decoration: none; }
+
 #content { float: left; width: 618px; margin: 1em 15px 0; }
 #content b, #content strong { color: #157d15; }
-
-.wide #nav { float: none; width: 96%; margin: 0 2%; }
-.wide #nav ul { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-.wide #nav ul li { display: inline; margin: 0; padding: 0 0.5em; white-space: nowrap; }
-.wide #nav ul.admin { padding-top: 0; border-top: none; }
-.wide #content { float: none; width: 96%; margin: 0 2%; }
-.wide h2 { text-align: center; }
-
-ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; font-size: 80%; }
-ul.viewnav li.selected a { font-weight: bold; color: #157d15; text-decoration: none; }
-ul.viewnav li.selected a:hover { font-weight: bold; color: #157d15; text-decoration: none; }
 
 #footer { width: 1080px; margin: 2em 0 30px; padding-top: 1em; }
 #footer p { font-style: italic; font-size: 80%; line-height: 1.333em; text-align: center; color: #666; }
@@ -100,6 +96,15 @@ div.form { margin: 2em 0; }
 /* IE6 hacks */
 * html .container { display: inline-block; }
 
+/* Pages that need to use the full width for content */
+.wide #nav { display: block; float: none; width: 96%; margin: 0 2% 1em; border-bottom: 1px solid black; }
+.wide #nav ul { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
+.wide #nav ul li { display: inline; margin: 0; padding: 0 0.5em; white-space: nowrap; }
+.wide #nav ul.admin { padding-top: 0; border-top: none; }
+.wide #content { float: none; width: 96%; margin: 0 2%; }
+.wide h2 { text-align: center; }
+
+/* Responsive design */
 @media only screen and (min-width: 865px) and (max-width: 1080px) {
   body { width: 100%; margin: 30px 0 0; }
   #header { width: 96%; margin: 0 2% 20px; }
@@ -127,4 +132,9 @@ div.form { margin: 2em 0; }
   #ccbanner img { position: absolute; left: -120px; width: 240px; height: 92px; }
   #nav { display: none; }
   #content { width: 96.4%; margin: 1em 1.8% 0; font-size: 80%; }
+}
+
+@media print {
+  #nav { visibility: hidden; }
+  .wide #nav, .viewnav { visibility: visible; display: none; }
 }

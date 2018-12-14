@@ -37,21 +37,23 @@ function toggle_display(i) {
 </script>
 {% endblock %}
 
-{% block content %}
+{% block subnav %}
 <ul class="viewnav">
-	<li{% if incomplete == '' %} class="selected"{% endif %}><a href="/admin/view/registrations">All</a></li>
-	<li><a href="/admin/view/golfers">Golfers</a></li>
+	<li{% if incomplete == '' %} class="selected"{% endif %}><a href="/admin/view/registrations">All Registrations</a></li>
+	<li><a href="/admin/view/golfers">Golfers by Sponsor</a></li>
+	<li><a href="/admin/view/golfers/byname">Golfers by Name</a></li>
+	<li><a href="/admin/view/golfers/byteam">Golfers by Team</a></li>
+	<li><a href="/admin/view/golfers/bystart">Golfers by Start</a></li>
+	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
 	<li><a href="/admin/view/dinners">Dinners</a></li>
 	<li{% if incomplete == 'unpaid' %} class="selected"{% endif %}><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li{% if incomplete == 'incomplete' %} class="selected"{% endif %}><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li{% if incomplete == 'unconfirmed' %} class="selected"{% endif %}><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
 </ul>
-{% if incomplete == '' %}
-<ul class="viewnav">
-	<li><a href="/admin/csv/registrations">Download CSV</a></li>
-</ul>
-{% endif %}
+{% endblock %}
 
+{% block content %}
 <h2>{% if incomplete %}{{ incomplete|capfirst }} {% endif %}Registrations</h2>
 
 {% if sponsors %}
@@ -129,6 +131,9 @@ function toggle_display(i) {
 </tbody>
 </table>
 
+{% if incomplete == '' %}
+<p><a href="/admin/csv/registrations"><button name="download" type="button">Download CSV</button></a></p>
+{% endif %}
 {% if incomplete == 'unpaid' or incomplete == 'incomplete' %}
 <p>Send reminder e-mails to selected registrants:
 <input type="submit" name="send" value="Send email"></p>

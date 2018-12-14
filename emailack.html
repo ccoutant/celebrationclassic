@@ -10,15 +10,6 @@ h2 { text-align: center; }
 {% endblock %}
 
 {% block content %}
-<ul class="viewnav">
-	<li><a href="/admin/view/registrations">All</a></li>
-	<li><a href="/admin/view/golfers">Golfers</a></li>
-	<li><a href="/admin/view/dinners">Dinners</a></li>
-	<li><a href="/admin/view/unpaid">Unpaid</a></li>
-	<li><a href="/admin/view/incomplete">Incomplete</a></li>
-	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
-</ul>
-
 <h2>Reminder Emails</h2>
 
 {% if num_sent == 0 %}
