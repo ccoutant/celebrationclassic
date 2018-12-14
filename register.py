@@ -884,6 +884,7 @@ class Tribute(webapp2.RequestHandler):
 		phone = self.request.get('phone')
 		ad_size = int(self.request.get('ad_size'))
 		printed_names = self.request.get('printed_names')
+		printed_names = re.sub(r'\s+', ' ', printed_names)
 		price_list = [ 0, 36, 108, 360, 720, 1800, 3600 ]
 		net_payment_due = price_list[ad_size] if ad_size >= 1 and ad_size <= 6 else 0
 		ad = None

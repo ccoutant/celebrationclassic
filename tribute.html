@@ -23,11 +23,19 @@ function ignore_enter(e) {
 function recalculate() {
 	var ad_size_selector = document.getElementById("entry_ad_size");
 	var one_line_div = document.getElementById("oneline");
+	var word_limit_span = document.getElementById("wordlimit")
 	var contact_you_div = document.getElementById("contact_you");
+	var or_par = document.getElementById("or");
 	ad_size = parseInt(ad_size_selector.value);
-	if (ad_size == 1)
+	if (ad_size == 1) {
 		one_line_div.style.display = "block";
-	else
+		word_limit_span.innerHTML = "18";
+		or_par.style.display = "none";
+	} else if (ad_size == 2) {
+		one_line_div.style.display = "block";
+		word_limit_span.innerHTML = "54";
+		or_par.style.display = "block";
+	} else
 		one_line_div.style.display = "none";
 	if (ad_size > 1)
 		contact_you_div.style.display = "block";
@@ -38,13 +46,17 @@ function install_recalculate_hooks() {
 	var ad_size_selector = document.getElementById("entry_ad_size");
 	ad_size_selector.onchange = recalculate;
 	var one_line_div = document.getElementById("oneline");
-	one_line_div.onkeypress = ignore_enter;
+	// one_line_div.onkeypress = ignore_enter;
 }
 window.onload = function() {
 	install_recalculate_hooks();
 	recalculate();
 };
 </script>
+<style type="text/css">
+#or { text-align: left; font-style: italic; margin: 1em; }
+#oneline textarea { width: 75%; height: 5em; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -76,14 +88,14 @@ window.onload = function() {
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_email">* Email</label>
-<input type="text" name="email" value="{{ email }}" id="entry_email" placeholder="Email">
+<input type="email" name="email" value="{{ email }}" id="entry_email" placeholder="Email">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone">* Phone</label>
-<input type="text" name="phone" value="{{ phone }}" id="entry_phone" placeholder="Phone">
+<input type="tel" name="phone" value="{{ phone }}" id="entry_phone" placeholder="Phone">
 </div>
 </div>
 
@@ -93,23 +105,24 @@ window.onload = function() {
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_ad_size">Size of Ad</label>
+<label for="entry_ad_size">* Size of Ad</label>
 <select id="entry_ad_size" name="ad_size">
 <option value="0" {% ifequal ad_size 0 %} selected {% endifequal %}>Select one...</option>
-<option value="1" {% ifequal ad_size 1 %} selected {% endifequal %}>$36: The Seed (one line)</option>
-<option value="2" {% ifequal ad_size 2 %} selected {% endifequal %}>$108: The Root (business card)</option>
-<option value="3" {% ifequal ad_size 3 %} selected {% endifequal %}>$360: The Canopy (&frac14; page)</option>
-<option value="4" {% ifequal ad_size 4 %} selected {% endifequal %}>$720: The Valley Oak (&frac12; page)</option>
-<option value="5" {% ifequal ad_size 5 %} selected {% endifequal %}>$1,800: The Giant Sequoia (full page b&amp;w)</option>
-<option value="6" {% ifequal ad_size 6 %} selected {% endifequal %}>$3,600: The Giving Tree (full page color)</option>
+<option value="1" {% ifequal ad_size 1 %} selected {% endifequal %}>The Seed (one line): $36</option>
+<option value="2" {% ifequal ad_size 2 %} selected {% endifequal %}>The Root (business card): $108</option>
+<option value="3" {% ifequal ad_size 3 %} selected {% endifequal %}>The Canopy (&frac14; page): $360</option>
+<option value="4" {% ifequal ad_size 4 %} selected {% endifequal %}>The Valley Oak (&frac12; page): $720</option>
+<option value="5" {% ifequal ad_size 5 %} selected {% endifequal %}>The Giant Sequoia (full page b&amp;w): $1,800</option>
+<option value="6" {% ifequal ad_size 6 %} selected {% endifequal %}>The Giving Tree (full page color): $3,600</option>
 </select>
 </div>
 </div>
 
 <div id="oneline" class="form-entry form-text">
 <div class="form-input">
-<label class="above" for="entry_printednames"><i>Please enter your text (max. 18 words):</i></label>
-<input class="form-prefs" type="text" name="printed_names" value="{{ printed_names }}" id="entry_printednames">
+<label class="above" for="entry_printednames"><i>Please enter your text (max. <span id="wordlimit">18</span> words):</i></label>
+<textarea name="printed_names" id="entry_printednames">{{ printed_names }}</textarea>
+<p id="or">&mdash; OR &mdash;</p>
 </div>
 </div>
 
