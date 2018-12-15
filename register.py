@@ -39,10 +39,10 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
 							  root.deadline.day,
 							  root.deadline.year)
-	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
+	premier = sponsorship.get_sponsorships("Premier")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
-	underpar = sponsorship.get_sponsorships("Under Par")
+	birdie = sponsorship.get_sponsorships("Birdie")
 	angel = sponsorship.get_sponsorships("Angel")
 	selected_sponsorships = []
 	non_angel_selected = False
@@ -62,10 +62,10 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'registration_closed': registration_closed,
 		'early_bird_deadline': early_bird_deadline,
 		'deadline': deadline,
-		'doubleeagle': doubleeagle,
+		'premier': premier,
 		'holeinone': holeinone,
 		'eagle': eagle,
-		'underpar': underpar,
+		'birdie': birdie,
 		'angel': angel[0],
 		'non_angel_selected': non_angel_selected,
 		'selected': selected_sponsorships,
