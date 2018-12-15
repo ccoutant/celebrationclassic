@@ -67,16 +67,14 @@
 	<li><a href="/admin/tournament">Tournament Properties</a></li>
 {% endif %}
 </ul>
-
-{% block subnav %}{% endblock %}
 {% endif %}
 </div>
 {% endblock %}
 
 <div id="content">
 
-{% block content %}
-{% endblock %}
+<div>{% block subnav %}{% endblock %}</div>
+<div>{% block content %}{% endblock %}</div>
 
 </div>
 

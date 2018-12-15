@@ -16,6 +16,10 @@ body, div, h1, h2, h3, p, th, td, li, dd {
 #ccbanner { position: absolute; left: 302px; top: 10px; }
 #ccbanner img { width: 480px; height: 184px; }
 #ccmenu { position: absolute; display: none; font-size: 8px; line-height: 1em; }
+#ccmenu.off .openmenu { display: block; }
+#ccmenu.on .openmenu { display: none; }
+#ccmenu.off .closemenu { display: none; }
+#ccmenu.on .closemenu { display: block; }
 
 #nav { float: left; width: 186px; margin: 0 15px; }
 #nav ul { list-style: none; margin: 0; padding: 0; }
@@ -25,13 +29,13 @@ body, div, h1, h2, h3, p, th, td, li, dd {
 #nav ul.admin li a:hover { color: #FB0042; text-decoration: underline; }
 #nav ul.admin li a:visited { color: #FB0042; text-decoration: none; }
 
-#nav ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-#nav ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; font-weight: normal; font-size: 70%; }
-#nav ul.viewnav li a { color: #FB0042; text-decoration: none; }
-#nav ul.viewnav li a:hover { color: #FB0042; text-decoration: none; }
-#nav ul.viewnav li a:visited { color: #FB0042; text-decoration: none; }
-#nav ul.viewnav li.selected a { font-weight: bold; }
-#nav ul.viewnav li.selected a:hover { text-decoration: none; }
+ul.viewnav { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
+ul.viewnav li { display: inline; margin: 0; padding: 0 0.5em; font-weight: normal; font-size: 70%; }
+ul.viewnav li a { color: #FB0042; text-decoration: none; }
+ul.viewnav li a:hover { color: #FB0042; text-decoration: none; }
+ul.viewnav li a:visited { color: #FB0042; text-decoration: none; }
+ul.viewnav li.selected a { font-weight: bold; }
+ul.viewnav li.selected a:hover { text-decoration: none; }
 
 #content { float: left; width: 618px; margin: 0 15px; }
 #content b, #content strong { color: #157d15; }
@@ -98,12 +102,16 @@ div.form { margin: 2em 0; }
 * html .container { display: inline-block; }
 
 /* Pages that need to use the full width for content */
-.wide #nav { display: block; float: none; width: 96%; margin: 0 2% 1em; border-bottom: 1px solid black; }
-.wide #nav ul { list-style: none; margin: 0 0 1em 0; padding: 0; text-align: center; }
-.wide #nav ul li { display: inline; margin: 0; padding: 0 0.5em; white-space: nowrap; }
-.wide #nav ul.admin { padding-top: 0; border-top: none; }
-.wide #content { float: none; width: 96%; margin: 0 2%; }
-.wide h2 { text-align: center; }
+#container.wide { overflow: visible; }
+.wide #ccmenu { display: block; left: 2.5%; top: -50px;
+  width: 20px; height: 18px; background-color: #f0fff0; z-index: 2;
+  font-size: 16px; text-align: center; padding-top: 2px; }
+.wide #nav { float: none; position: absolute; left: -50vw; top: 0;
+  padding: 1.8%; margin: 0;
+  background-color: #e0ffe0; z-index: 2;
+  transition: left 0.5s; 
+  -webkit-transition: left 0.5s; }
+.wide #content { float: left; width: 95%; margin: 0 2.5%; font-size: 80%; z-index: 1; }
 
 /* Responsive design */
 @media only screen and (min-width: 865px) and (max-width: 1080px) {
@@ -121,7 +129,7 @@ div.form { margin: 2em 0; }
   #ccbanner { left: 62.5%; top: 5px; }
   #ccbanner img { position: absolute; left: -120px; width: 240px; height: 92px; }
   #nav { width: 20%; margin: 0 2.5%; font-size: 80%; }
-  #content { width: 70%; margin: 1em 2.5% 0; font-size: 80%; }
+  #content { width: 70%; margin: 0 2.5%; font-size: 80%; }
   .sponsorlevel { width: 250px; margin: 10px 10px; }
 }
 
@@ -134,20 +142,16 @@ div.form { margin: 2em 0; }
   #ccbanner { left: 50%; top: 5px; z-index: 1; }
   #ccbanner img { position: absolute; left: -120px; width: 240px; height: 92px; }
   #container.withsidebar { overflow: visible; }
-  .withsidebar #ccmenu { display: block; left: 2.5%; top: -50px;
+  #ccmenu { display: block; left: 2.5%; top: -50px;
     width: 20px; height: 18px; background-color: #f0fff0; z-index: 2;
     font-size: 16px; text-align: center; padding-top: 2px; }
-  .withsidebar #ccmenu.off .openmenu { display: block; }
-  .withsidebar #ccmenu.on .openmenu { display: none; }
-  .withsidebar #ccmenu.off .closemenu { display: none; }
-  .withsidebar #ccmenu.on .closemenu { display: block; }
   #nav { font-size: 70%; }
-  .withsidebar #nav { float: none; position: absolute; left: -53.6%; top: 0;
+  #nav, .wide #nav { float: none; position: absolute; left: -53.6%; top: 0;
     width: 50%; padding: 1.8%; margin: 0;
     background-color: #e0ffe0; z-index: 2;
     transition: left 0.5s; 
     -webkit-transition: left 0.5s; }
-  .withsidebar #content { float: left; width: 95%; margin: 0 2.5%; font-size: 80%; z-index: 1; }
+  #content { float: left; width: 95%; margin: 0 2.5%; font-size: 80%; z-index: 1; }
   .wide #content { overflow-x: scroll; }
 }
 
