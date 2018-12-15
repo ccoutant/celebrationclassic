@@ -7,6 +7,12 @@
 	<link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,700,700i" rel="stylesheet">
 	<link rel="stylesheet" href="/css/cc.css" type="text/css">
 	<link rel="icon" href="/favicon.png" type="image/png">
+	<script src="/js/menu.js" type="text/javascript" language="javascript"></script>
+	<script type="text/javascript" language="javascript">
+		window.addEventListener('load', function() {
+			init_menu();
+		});
+	</script>
 {% block head %}{% endblock %}
 </head>
 <body id="body">
@@ -14,15 +20,15 @@
 {% block header %}
 <div id="header">
 
-<h1>
+<h1><div id="ccbanner"><img src="/images/CSH-Presents.png" alt="Congregation Shir Hadash Presents the Celebration Classic"></div></h1>
 <div id="cclogo"><a href="/"><img src="/images/CCGolfLOGO_3_144.gif" alt="Home"></a></div>
-<div id="ccbanner"><img src="/images/CSH-Presents.png" alt="Congregation Shir Hadash Presents the Celebration Classic"></div>
-</h1>
 
 </div> <!-- header -->
 {% endblock %}
 
-<div class="container {% block containerclass %}{% endblock %}">
+<div id="container" class="container {% block containerclass %}withsidebar{% endblock %}">
+
+<div id="ccmenu" class="visible">&#9776;<!--&#9654;&#xFE0E;--></div>
 
 {% block nav %}
 <div id="nav">

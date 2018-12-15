@@ -5,7 +5,7 @@
 {% block title %}{{ page.title }}{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="css/register.css" type="text/css">
+<link rel="stylesheet" href="/css/register.css" type="text/css">
 <script type="text/javascript" language="javascript">
 function ignore_enter(e) {
 	e = e || event;
@@ -48,10 +48,10 @@ function install_recalculate_hooks() {
 	var one_line_div = document.getElementById("oneline");
 	// one_line_div.onkeypress = ignore_enter;
 }
-window.onload = function() {
+window.addEventListener('load', function() {
 	install_recalculate_hooks();
 	recalculate();
-};
+});
 </script>
 <style type="text/css">
 #or { text-align: left; font-style: italic; margin: 1em; }
