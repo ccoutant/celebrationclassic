@@ -134,9 +134,13 @@ div.form { margin: 2em 0; }
   #ccbanner { left: 50%; top: 5px; z-index: 1; }
   #ccbanner img { position: absolute; left: -120px; width: 240px; height: 92px; }
   #container.withsidebar { overflow: visible; }
-  .withsidebar #ccmenu.visible { display: block; left: 2.5%; top: -50px;
+  .withsidebar #ccmenu { display: block; left: 2.5%; top: -50px;
     width: 20px; height: 18px; background-color: #f0fff0; z-index: 2;
     font-size: 16px; text-align: center; padding-top: 2px; }
+  .withsidebar #ccmenu.off .openmenu { display: block; }
+  .withsidebar #ccmenu.on .openmenu { display: none; }
+  .withsidebar #ccmenu.off .closemenu { display: none; }
+  .withsidebar #ccmenu.on .closemenu { display: block; }
   #nav { font-size: 70%; }
   .withsidebar #nav { float: none; position: absolute; left: -53.6%; top: 0;
     width: 50%; padding: 1.8%; margin: 0;
