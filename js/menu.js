@@ -3,15 +3,18 @@ var menu_visible = false;
 function init_menu() {
 	var menu_container = document.getElementById("ccmenu");
 	var nav_div = document.getElementById("nav");
+	menu_visible = false;
+	menu_container.className = "off";
+	nav_div.style.left = "";
 	menu_container.onclick = function() {
 		if (menu_visible) {
+			menu_visible = false;
 			menu_container.className = "off";
 			nav_div.style.left = "";
-			menu_visible = false;
 		} else {
+			menu_visible = true;
 			menu_container.className = "on";
 			nav_div.style.left = "0";
-			menu_visible = true;
 		}
 	};
 	document.addEventListener('click', function(e) {
