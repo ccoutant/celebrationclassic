@@ -29,7 +29,7 @@ window.addEventListener('load', function() {
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
-{% if tournament.golf_price_late %}
+{% if tournament.golf_price_late or capabilities.can_add_registrations %}
 
 <form action="/register" method="post" accept-charset="utf-8" novalidate>
 
