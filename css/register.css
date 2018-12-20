@@ -6,9 +6,6 @@ p.important { font-weight: bold; }
 
 .form { position: relative; overflow: hidden; width: 100%; }
 
-/* Don't display GO campaign discount box. */
-#gobox { display: none; }
-
 .form-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; background-color: #e7fbe7; }
 .form-submit-section { margin: 0 0 1em 0; padding: 0.5em; overflow: hidden; }
 
