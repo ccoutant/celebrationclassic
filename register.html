@@ -219,7 +219,7 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <label class="right" for="checkbox_Angel">Want to be an angel
 and get some good PR for your organization at the same time?
 Check here to become an Angel sponsor for your foursome.
-For ${{ angel.price|intcomma }}, your Angel sponsorship includes four golfers, eight banquet dinners,
+For ${{ angel.price|intcomma }}, your Angel sponsorship includes four golfers, eight dinners,
 and the PR benefits of being an Angel sponsor!
 And you know that you are doing something very special for Congregation Shir Hadash!</label>
 </div>
@@ -248,7 +248,9 @@ $<input type="number" name="other" value="{{ sponsor.additional_donation }}" id=
 <input class="form-submit" type="submit" name="apply_discount" value="Apply">
 <input type="hidden" name="go_golfers" value="{{ sponsor.go_golfers|default:0 }}" id="entry_go_golfers">
 <br><label class="right" for="entry_discount_code"><i>Enter your GO campaign discount code here.
-<a href="mailto:eric@shirhadash.org">Contact Eric Stone</a> if you haven't received one.</i></label>
+Golf and dinner reservations are free for GO members,
+but this benefit may not be transferred to anyone else.
+<a href="mailto:eric@shirhadash.org">Contact Eric Stone</a> if you haven&rsquo;t received a discount code.</i></label>
 </div>
 </div>
 </div> <!-- form-section -->
