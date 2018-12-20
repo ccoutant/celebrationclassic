@@ -39,7 +39,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
 							  root.deadline.day,
 							  root.deadline.year)
-	premier = sponsorship.get_sponsorships("Premier")
+	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
 	birdie = sponsorship.get_sponsorships("Birdie")
@@ -62,7 +62,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'registration_closed': registration_closed,
 		'early_bird_deadline': early_bird_deadline,
 		'deadline': deadline,
-		'premier': premier,
+		'doubleeagle': doubleeagle,
 		'holeinone': holeinone,
 		'eagle': eagle,
 		'birdie': birdie,

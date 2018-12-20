@@ -34,4 +34,4 @@ def get_sponsorships(level):
 	return sponsorships
 
 def clear_sponsorships_cache():
-	memcache.delete_multi(["2019/all","2019/Premier","2019/Hole in One","2019/Eagle","2019/Birdie","2019/Angel"])
+	memcache.delete_multi(["2019/all", "2019/Double Eagle", "2019/Hole in One", "2019/Eagle", "2019/Birdie", "2019/Angel"])

@@ -104,7 +104,7 @@ window.addEventListener('load', function() {
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if non_angel_selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
-Premier, Hole-in-One, Eagle, or Birdie sponsor for this event.
+Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
 </div>
 </div>
@@ -112,9 +112,9 @@ Premier, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <div id="sponsorship_choices" class="form-column-container">
 <div class="form-column">
 
-<h3>Premier Sponsors</h3>
+<h3>Double Eagle Sponsors</h3>
 
-{% for sponsorship in premier %}
+{% for sponsorship in doubleeagle %}
 <div class="form-entry form-checkbox">
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="sponsorships" id="checkbox_{{ sponsorship.level|slugify }}_{{ sponsorship.sequence }}" value="{{ sponsorship.level }}:{{ sponsorship.sequence }}:{{ sponsorship.price }}:{{ sponsorship.golfers_included }}" {% if sponsorship.sequence in selected %}checked{% elif sponsorship.sold %}disabled{% endif %}></div>

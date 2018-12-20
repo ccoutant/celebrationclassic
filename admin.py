@@ -240,7 +240,7 @@ class Sponsorships(webapp2.RequestHandler):
 		root = tournament.get_tournament()
 		sponsorships = sponsorship.Sponsorship.all().ancestor(root).order("sequence").fetch(30)
 		next_seq = 1
-		last_level = "Premier"
+		last_level = "Double Eagle"
 		for s in sponsorships:
 			next_seq = s.sequence + 1
 			last_level = s.level
