@@ -12,14 +12,14 @@ p.important { font-weight: bold; }
 .form-section h2 { background: none; border: none; margin: 0 0 0.5em 8em; }
 .form-section p { margin: 0 0 0.5em 8em; text-align: left; color: #555; }
 
-.form-entry { float: left; width: 100%; overflow: hidden; }
-.form-entry-left { float: left; width: 60%; }
+.form-entry, .form-entry-left { float: left; width: 100%; overflow: hidden; }
+/* .form-entry-left { float: left; width: 60%; } */
 .form-entry-right { float: left; width: 40%; }
 
 .form label { display: block; float: left; width: 8em;
 	text-align: right; margin: 0.2em 0 0.5em -8.5em;
-	font-size: 90%; line-height: 1.2em; color: #555;
-	}
+	font-size: 90%; line-height: 1.1em; color: #555;
+	white-space: normal; }
 .form label.above { float: none; width: auto; text-align: left; margin: 0.5em 0; }
 .form label.right { display: inline; float: none; width: auto;
 	text-align: left; margin: 0.2em 0 0 0;
@@ -27,7 +27,8 @@ p.important { font-weight: bold; }
 .form-gender li label { display: inline; float: none; width: auto; text-align: left; margin: 0.5em 0; white-space: nowrap; }
 label.sold { color: #999; }
 
-.form-input { white-space: nowrap; }
+/* .form-input { white-space: nowrap; } */
+.form-input { white-space: normal; }
 .form-input, .form-button { margin: 0 0 0.5em 8em; }
 .form-text .form-input input { width: 15em; }
 .form-text .form-input input.form-submit { width: auto; }
@@ -73,3 +74,29 @@ label.sold { color: #999; }
 * html .form-checkbox .checkbox-container { float: none; display: inline; }
 * html .form-input label.above { display: block; }
 * html .form-checkbox label.right { display: inline; float: none; margin: 0; }
+
+/* Responsive design */
+@media only screen and (min-width: 361px) and (max-width: 600px) {
+  .form-section h2 { margin-left: 5em; }
+  .form-section p { margin-left: 5em; }
+  .form-input, .form-button { margin-left: 5em; }
+  .form label { width: 5em; margin-left: -5.5em; }
+  .form-text .form-input input.form-first-name { width: 8em; }
+  .form-text .form-input input.form-last-name { width: 12em; }
+  .form-column-container { margin-left: 5em; }
+  .form-checkbox .form-input { margin-left: 7em; }
+}
+
+@media only screen and (max-width: 360px) {
+  .form-section h2 { margin-left: 5em; }
+  .form-section p { margin-left: 5em; }
+  .form-input, .form-button { margin-left: 5em; }
+  .form label { width: 5em; margin-left: -5.5em; }
+  .form-text .form-input input.form-first-name { width: 6em; }
+  .form-text .form-input input.form-last-name { width: 10em; }
+  .form-text .form-input input.form-city { width: 8em; }
+  .form-text .form-input input.form-state { width: 4em; }
+  .form-text .form-input input.form-zip { width: 4em; }
+  .form-column-container { margin-left: 5em; }
+  .form-checkbox .form-input { margin-left: 7em; }
+}

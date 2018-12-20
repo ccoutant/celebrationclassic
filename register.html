@@ -31,7 +31,7 @@ window.addEventListener('load', function() {
 
 {% if tournament.golf_price_late %}
 
-<form action="/register" method="post" accept-charset="utf-8">
+<form action="/register" method="post" accept-charset="utf-8" novalidate>
 
 <div id="register-form" class="form">
 
@@ -64,7 +64,7 @@ window.addEventListener('load', function() {
 <!--<label for="entry_city">* City, State, ZIP</label>-->
 <input class="form-city" type="text" name="city" value="{{ sponsor.city }}" id="entry_city" placeholder="City">
 <input class="form-state" type="text" name="state" value="{{ sponsor.state }}" id="entry_state" placeholder="State">
-<input class="form-zip" type="text" name="zip" value="{{ sponsor.zip }}" id="entry_zip" placeholder="ZIP">
+<input class="form-zip" type="text" pattern="\d*" name="zip" value="{{ sponsor.zip }}" id="entry_zip" placeholder="ZIP">
 </div>
 </div>
 
@@ -248,7 +248,7 @@ $<input type="number" name="other" value="{{ sponsor.additional_donation }}" id=
 <input class="form-submit" type="submit" name="apply_discount" value="Apply">
 <input type="hidden" name="go_golfers" value="{{ sponsor.go_golfers|default:0 }}" id="entry_go_golfers">
 <br><label class="right" for="entry_discount_code"><i>Enter your GO campaign discount code here.
-<a href="mailto:gordon@shirhadash.org">Contact Gordon Gladstone</a> if you haven't received one.</i></label>
+<a href="mailto:eric@shirhadash.org">Contact Eric Stone</a> if you haven't received one.</i></label>
 </div>
 </div>
 </div> <!-- form-section -->

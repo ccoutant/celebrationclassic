@@ -53,7 +53,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
-<form action="/continue" method="post" accept-charset="utf-8">
+<form action="/continue" method="post" accept-charset="utf-8" novalidate>
 <input type="hidden" name="id" value="{{ sponsor.id }}">
 
 <div id="continue-form" class="form">
@@ -109,8 +109,8 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_golfer_first_name{{ golfer.sequence }}">Name</label>
-<input class="form-first-name" type="text" name="first_name{{ golfer.sequence }}" value="{{ golfer.first_name }}" id="entry_golfer_first_name{{ golfer.sequence }}" placeholder="First">
-<input class="form-last-name" type="text" name="last_name{{ golfer.sequence }}" value="{{ golfer.last_name }}" id="entry_golfer_last_name{{ golfer.sequence }}" placeholder="Last">
+<input class="form-first-name" type="text" name="first_name{{ golfer.sequence }}" value="{{ golfer.first_name }}" id="entry_golfer_first_name{{ golfer.sequence }}" placeholder="First" autocomplete="off">
+<input class="form-last-name" type="text" name="last_name{{ golfer.sequence }}" value="{{ golfer.last_name }}" id="entry_golfer_last_name{{ golfer.sequence }}" placeholder="Last" autocomplete="off">
 </div>
 </div>
 
@@ -126,45 +126,59 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_company{{ golfer.sequence }}">Company</label>
-<input type="text" name="company{{ golfer.sequence }}" value="{{ golfer.company }}" id="entry_company{{ golfer.sequence }}" placeholder="Company">
+<input type="text" name="company{{ golfer.sequence }}" value="{{ golfer.company }}" id="entry_company{{ golfer.sequence }}" placeholder="Company" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_address{{ golfer.sequence }}">Address</label>
-<input type="text" name="address{{ golfer.sequence }}" value="{{ golfer.address }}" id="entry_address{{ golfer.sequence }}" placeholder="Street">
+<input type="text" name="address{{ golfer.sequence }}" value="{{ golfer.address }}" id="entry_address{{ golfer.sequence }}" placeholder="Street" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
-<input class="form-city" type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}" placeholder="City">
-<input class="form-state" type="text" name="state{{ golfer.sequence }}" value="{{ golfer.state }}" id="entry_state{{ golfer.sequence }}" placeholder="State">
-<input class="form-zip" type="text" name="zip{{ golfer.sequence }}" value="{{ golfer.zip }}" id="entry_zip{{ golfer.sequence }}" placeholder="ZIP">
+<input class="form-city" type="text" name="city{{ golfer.sequence }}" value="{{ golfer.city }}" id="entry_city{{ golfer.sequence }}" placeholder="City" autocomplete="off">
+<input class="form-state" type="text" name="state{{ golfer.sequence }}" value="{{ golfer.state }}" id="entry_state{{ golfer.sequence }}" placeholder="State" autocomplete="off">
+<input class="form-zip" type="text" pattern="\d*" name="zip{{ golfer.sequence }}" value="{{ golfer.zip }}" id="entry_zip{{ golfer.sequence }}" placeholder="ZIP" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry-left form-text">
 <div class="form-input">
 <label for="entry_email{{ golfer.sequence }}">Email</label>
-<input type="email" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}" placeholder="Email">
+<input type="email" name="email{{ golfer.sequence }}" value="{{ golfer.email }}" id="entry_email{{ golfer.sequence }}" placeholder="Email" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry-left form-phone">
 <div class="form-input">
 <label for="entry_phone{{ golfer.sequence }}">Phone</label>
-<input type="tel" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}" placeholder="Phone">
+<input type="tel" name="phone{{ golfer.sequence }}" value="{{ golfer.phone }}" id="entry_phone{{ golfer.sequence }}" placeholder="Phone" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry form-number">
 <div class="form-input">
-<label for="entry_ghin{{ golfer.sequence }}">GHIN Number</label>
-<input type="number" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}">
-<label class="right" for="entry_avg{{ golfer.sequence }}"><i>OR</i> Average Score</label>
-<input type="number" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}">
+<label for="entry_ghin{{ golfer.sequence }}">GHIN number</label>
+<input type="text" pattern="[0-9]*" inputmode="numeric" name="ghin{{ golfer.sequence }}" value="{{ golfer.ghin_number }}" id="entry_ghin{{ golfer.sequence }}" autocomplete="off">
+</div>
+</div>
+
+<div class="form-entry form-number">
+<div class="form-input">
+<!--<label for="entry_index{{ golfer.sequence }}">(<i>OR</i> Index)</label>-->
+<label class="right" for="entry_index{{ golfer.sequence }}">If this golfer doesn&rsquo;t have a GHIN number, please enter their index:</label>
+<br><input type="number" step="0.1" inputmode="numeric" name="index{{ golfer.sequence }}" value="{% if golfer.has_index %}{{ golfer.handicap_index }}{% endif %}" id="entry_index{{ golfer.sequence }}" autocomplete="off">
+</div>
+</div>
+
+<div class="form-entry form-number">
+<div class="form-input">
+<!--<label for="entry_avg{{ golfer.sequence }}">(<i>OR</i> Average Score)</label>-->
+<label class="right" for="entry_avg{{ golfer.sequence }}">If neither of the above is available, please enter their average 18-hole score over the last several rounds:</label>
+<br><input type="text" pattern="[0-9]*" inputmode="numeric" name="avg{{ golfer.sequence }}" value="{{ golfer.average_score }}" id="entry_avg{{ golfer.sequence }}" autocomplete="off">
 </div>
 </div>
 
@@ -185,15 +199,13 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 
 <div class="form-entry">
 <div class="form-input">
-<input type="checkbox" name="golfer_nodinner{{ golfer.sequence }}" value="y" id="entry_golfer_nodinner{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "No Dinner" %}checked{% endifequal %}>
-<label class="right" for="entry_golfer_nodinner{{ golfer.sequence }}">Check here if golfer will not be having dinner</label>
-</div>
-</div>
-
-<div class="form-entry">
-<div class="form-input">
-<input type="checkbox" name="golfer_vegetarian{{ golfer.sequence }}" value="y" id="entry_golfer_vegetarian{{ golfer.sequence }}" {% ifequal golfer.dinner_choice "Vegetarian" %}checked{% endifequal %}>
-<label class="right" for="entry_golfer_vegetarian{{ golfer.sequence }}">Check here for a vegetarian entree</label>
+<label for="entry_golfer_dinner{{ golfer.sequence }}">Dinner choice</label>
+<select name="golfer_dinner{{ golfer.sequence }}" id="entry_golfer_dinner{{ golfer.sequence }}">
+<option value="">Select one...</option>
+<option value="Non-Vegetarian" {% ifequal golfer.dinner_choice "Non-Vegetarian" %}selected{% endifequal %}>Non-Vegetarian</option>
+<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
+<option value="none" {% ifequal golfer.dinner_choice "none" %}selected{% endifequal %}>No Dinner</option>
+</select>
 </div>
 </div>
 
@@ -205,7 +217,7 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry form-text">
 <div class="form-input">
 <label class="above" for="entry_pairing">Golfer pairing preferences:</label>
-<input class="form-prefs" type="text" name="pairing" value="{{ sponsor.pairing }}" id="entry_pairing">
+<input class="form-prefs" type="text" name="pairing" value="{{ sponsor.pairing }}" id="entry_pairing" autocomplete="off">
 </div>
 </div>
 
@@ -222,15 +234,19 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry form-text">
 <div class="form-input">
 <label for="entry_guest_first_name{{ guest.sequence }}">Name</label>
-<input class="form-first-name" type="text" name="guest_first_name{{ guest.sequence }}" value="{{ guest.first_name }}" id="entry_guest_first_name{{ guest.sequence }}" placeholder="First">
-<input class="form-last-name" type="text" name="guest_last_name{{ guest.sequence }}" value="{{ guest.last_name }}" id="entry_guest_last_name{{ guest.sequence }}" placeholder="Last">
+<input class="form-first-name" type="text" name="guest_first_name{{ guest.sequence }}" value="{{ guest.first_name }}" id="entry_guest_first_name{{ guest.sequence }}" placeholder="First" autocomplete="off">
+<input class="form-last-name" type="text" name="guest_last_name{{ guest.sequence }}" value="{{ guest.last_name }}" id="entry_guest_last_name{{ guest.sequence }}" placeholder="Last" autocomplete="off">
 </div>
 </div>
 
 <div class="form-entry">
 <div class="form-input">
-<input type="checkbox" name="guest_vegetarian{{ guest.sequence }}" value="y" id="entry_guest_vegetarian{{ guest.sequence }}" {% ifequal guest.dinner_choice "Vegetarian" %}checked{% endifequal %}>
-<label class="right" for="entry_guest_vegetarian{{ guest.sequence }}">Check here for a vegetarian entree</label>
+<label for="entry_guest_dinner{{ guest.sequence }}">Dinner choice</label>
+<select name="guest_dinner{{ guest.sequence }}" id="entry_guest_dinner{{ guest.sequence }}">
+<option value="">Select one...</option>
+<option value="Non-Vegetarian" {% ifequal guest.dinner_choice "Non-Vegetarian" %}selected{% endifequal %}>Non-Vegetarian</option>
+<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
+</select>
 </div>
 </div>
 
@@ -242,7 +258,7 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-entry form-text">
 <div class="form-input">
 <label class="above" for="entry_seating">Dinner seating preferences:</label>
-<input class="form-prefs" type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating">
+<input class="form-prefs" type="text" name="dinner_seating" value="{{ sponsor.dinner_seating }}" id="entry_seating" autocomplete="off">
 </div>
 </div>
 

@@ -372,6 +372,17 @@ class Continue(webapp2.RequestHandler):
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
+		for i in range(1, s.num_golfers + 1):
+			handicap_index = self.request.get('index%d' % i)
+			if handicap_index:
+				try:
+					val = float(handicap_index)
+				except ValueError:
+					messages.append('Invalid handicap index for golfer #%d; please enter a decimal number.' % i)
+		if messages:
+			show_continuation_form(self.response, root, s, messages, caps, dev_server)
+			return
+
 		q = Golfer.all().ancestor(s.key()).order('sequence')
 		golfers = q.fetch(limit = None)
 		for i in range(1, s.num_golfers + 1):
@@ -394,6 +405,25 @@ class Continue(webapp2.RequestHandler):
 			golfer.phone = self.request.get('phone%d' % i)
 			golfer.email = self.request.get('email%d' % i)
 			golfer.index_info_modified = False
+			handicap_index = self.request.get('index%d' % i)
+			if handicap_index:
+				try:
+					val = float(handicap_index)
+					if not golfer.has_index or val != golfer.handicap_index:
+						golfer.handicap_index = val
+						golfer.has_index = True
+						golfer.index_info_modified = True
+				except ValueError:
+					logging.error("Invalid handicap index '%s'" % handicap_index)
+					if golfer.has_index:
+						golfer.index_info_modified = True
+					golfer.handicap_index = 0.0
+					golfer.has_index = False
+			else:
+				if golfer.has_index:
+					golfer.index_info_modified = True
+				golfer.handicap_index = 0.0
+				golfer.has_index = False
 			average_score = self.request.get('avg%d' % i)
 			if average_score != golfer.average_score:
 				golfer.index_info_modified = True
@@ -403,12 +433,7 @@ class Continue(webapp2.RequestHandler):
 				golfer.index_info_modified = True
 			golfer.ghin_number = ghin_number
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
-			if self.request.get('golfer_nodinner%d' % i) == "y":
-				golfer.dinner_choice = "No Dinner"
-			elif self.request.get('golfer_vegetarian%d' % i) == "y":
-				golfer.dinner_choice = "Vegetarian"
-			else:
-				golfer.dinner_choice = "Chicken/Fish"
+			golfer.dinner_choice = self.request.get('golfer_dinner%d' % i)
 			golfer.put()
 
 		# Mark excess golfer instances as not active, so we can filter
@@ -426,7 +451,7 @@ class Continue(webapp2.RequestHandler):
 			guest = dinner_guests[i-1]
 			guest.first_name = self.request.get('guest_first_name%d' % i)
 			guest.last_name = self.request.get('guest_last_name%d' % i)
-			guest.dinner_choice = "Vegetarian" if self.request.get('guest_vegetarian%d' % i) == "y" else "Chicken/Fish"
+			guest.dinner_choice = self.request.get('guest_dinner%d' % i)
 			guest.put()
 
 		s.pairing = self.request.get('pairing')
