@@ -20,6 +20,9 @@ div.payment-details { display: none; }
 span.disclosure { font-size: 80%; font-style: italic; margin-left: 0.5em; cursor: pointer; }
 span.details { font-size: 80%; font-style: italic; margin-left: 0.5em; }
 td button { margin-left: 0.5em; }
+@media print {
+  td button { display: none; }
+}
 </style>
 <script type="text/javascript" language="javascript">
 function toggle_display(i) {

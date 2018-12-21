@@ -160,6 +160,6 @@ div.form { margin: 2em 0; }
 }
 
 @media print {
-  #nav { visibility: hidden; }
+  #ccmenu, #nav { visibility: hidden; }
   .wide #nav, .viewnav { visibility: visible; display: none; }
 }
