@@ -1472,7 +1472,7 @@ class ManageAuction(webapp2.RequestHandler):
 				'item': item,
 				'which_auction': which_auction,
 				'key': key,
-				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
+				'upload_url': '/admin/upload-auction',
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
@@ -1490,7 +1490,7 @@ class ManageAuction(webapp2.RequestHandler):
 				'item': item,
 				'which_auction': which_auction,
 				'key': '',
-				'upload_url': blobstore.create_upload_url('/admin/upload-auction'),
+				'upload_url': '/admin/upload-auction',
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
@@ -1504,7 +1504,7 @@ class ManageAuction(webapp2.RequestHandler):
 				}
 			self.response.out.write(render_to_string('adminauction.html', template_values))
 
-class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
+class UploadAuctionItem(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		root = tournament.get_tournament()
@@ -1529,21 +1529,26 @@ class UploadAuctionItem(blobstore_handlers.BlobstoreUploadHandler):
 		desc = self.request.get('description')
 		desc = desc.replace('\r\n', '\n')
 		item.description = desc
-		upload_files = self.get_uploads('file')
+		upload_files = self.request.POST.getall('file')
 		if upload_files:
 			if item.photo_blob:
 				blobstore.delete(item.photo_blob.key())
+				item.photo_blob = None
 			if item.thumbnail_id:
 				auctionitem.Thumbnail.get_by_id(item.thumbnail_id).delete()
-			item.photo_blob = upload_files[0].key()
-			img = images.Image(blob_key = item.photo_blob)
-			img.resize(width = 200)
 			thumbnail = auctionitem.Thumbnail()
-			thumbnail.image = img.execute_transforms(output_encoding = images.JPEG)
+			if dev_server:
+				thumbnail.image = upload_files[0].file.getvalue()
+				item.thumbnail_width = 200
+				item.thumbnail_height = 100
+			else:
+				img = images.Image(upload_files[0].file.getvalue())
+				img.resize(width = 200)
+				thumbnail.image = img.execute_transforms(output_encoding = images.JPEG)
+				item.thumbnail_width = img.width
+				item.thumbnail_height = img.height
 			thumbnail.put()
 			item.thumbnail_id = thumbnail.key().id()
-			item.thumbnail_width = img.width
-			item.thumbnail_height = img.height
 		item.put()
 		self.redirect("/admin/auction")
 
@@ -1568,29 +1573,29 @@ class DeleteFile(webapp2.RequestHandler):
 				item.delete()
 		self.redirect("/admin/edit")
 
-class UploadFile(blobstore_handlers.BlobstoreUploadHandler):
+class UploadFile(webapp2.RequestHandler):
 	def post(self):
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
 			show_login_page(self.response.out, '/admin/edit')
 			return
-		upload_files = self.get_uploads('file')
-		if upload_files:
-			blob_key = upload_files[0].key()
-			filename = upload_files[0].filename
+		uploads = self.request.POST.getall('file')
+		if uploads:
+			filename = uploads[0].filename
+			contents = uploads[0].file.getvalue()
+			uploads[0].file.close()
+			logging.debug("upload file %s, size %d" % (filename, len(contents)))
 			if self.request.get('upload-photo'):
 				item = uploadedfile.UploadedFile(parent = root, name = filename,
 												 path = "/photos/%s" % filename,
-												 blob = blob_key)
+												 contents = contents)
 				item.put()
 			elif self.request.get('upload-file'):
 				item = uploadedfile.UploadedFile(parent = root, name = filename,
 												 path = "/files/%s" % filename,
-												 blob = blob_key)
+												 contents = contents)
 				item.put()
-			else:
-				blobstore.delete(blob_key)
 		self.redirect("/admin/edit")
 
 def show_edit_form(name, caps, response):
@@ -1636,11 +1641,12 @@ class EditPageHandler(webapp2.RequestHandler):
 				photos.append(item)
 			elif item.path.startswith('/files/'):
 				files.append(item)
+
 		template_values = {
 			'pages': pages,
 			'photos': photos,
 			'files': files,
-			'upload_url': blobstore.create_upload_url('/admin/upload-file'),
+			'upload_url': '/admin/upload-file',
 			'capabilities': caps
 			}
 		self.response.out.write(render_to_string('adminedit.html', template_values))

@@ -61,8 +61,9 @@
 {% endif %}
 
 <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
-<input type="file" name="file">
+<p><input type="file" name="file">
 <input type="submit" name="upload-photo" value="Upload New Photo">
+<span class="maxupload">(max. 32MB)</span></p>
 </form>
 
 <h2>PDF Files</h2>
@@ -96,8 +97,9 @@
 {% endif %}
 
 <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
-<input type="file" name="file">
+<p><input type="file" name="file">
 <input type="submit" name="upload-file" value="Upload New File">
+<span class="maxupload">(max. 32MB)</span></p>
 </form>
 
 {% endblock %}

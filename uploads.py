@@ -13,7 +13,12 @@ class ServeFileHandler(blobstore_handlers.BlobstoreDownloadHandler):
 		query.filter("path = ", name)
 		item = query.get()
 		if item:
-			self.send_blob(item.blob)
+			if item.blob:
+				self.send_blob(item.blob)
+			else:
+				self.response.headers['Content-Type'] = 'image/jpeg'
+				self.response.headers['Cache-Control'] = 'public, max-age=86400;'
+				self.response.out.write(item.contents)
 		else:
 			self.error(404)
 			self.response.out.write('<html><head>\n')

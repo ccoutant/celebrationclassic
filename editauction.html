@@ -23,7 +23,7 @@ p.description { margin-bottom: 0.5em; }
 <img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
 {% endif %}
 
-<p>{% if item.thumbnail_id %}Replace{% else %}Upload{% endif %} photo: <input type="file" name="file"></p>
+<p>{% if item.thumbnail_id %}Replace{% else %}Upload{% endif %} photo (max. 32MB): <input type="file" name="file"></p>
 
 <p class="description">Item Description:</p>
 
