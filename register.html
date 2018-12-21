@@ -105,7 +105,7 @@ window.addEventListener('load', function() {
 <div class="checkbox-container"><input type="checkbox" name="show_sponsorships" id="checkbox_show_sponsorships" value="y" {% if non_angel_selected %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_sponsorships">Check here if you would like to be a
 Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
-<a href="sponsor.html" target="_blank">Learn more about sponsorship opportunities</a>.</label>
+<a href="sponsorships" target="_blank">Learn more about sponsorship opportunities</a>.</label>
 </div>
 </div>
 
@@ -239,6 +239,7 @@ $<input type="number" name="other" value="{{ sponsor.additional_donation }}" id=
 <div class="form-input">
 <div class="checkbox-container"><input type="checkbox" name="show_go_campaign" id="checkbox_show_go_campaign" value="y" {% if sponsor.go_discount_code %}checked{% endif %}></div>
 <label class="right" for="checkbox_show_go_campaign">Check here if you are a Shir Hadash GO campaign member.</label>
+<input type="hidden" name="use_go_discount_code" value="{{ use_go_discount_code }}" id="entry_use_go_discount_code">
 </div>
 </div>
 <div class="form-entry form-text" id="go_campaign">
@@ -251,6 +252,12 @@ $<input type="number" name="other" value="{{ sponsor.additional_donation }}" id=
 Golf and dinner reservations are free for GO members,
 but this benefit may not be transferred to anyone else.
 <a href="mailto:eric@shirhadash.org">Contact Eric Stone</a> if you haven&rsquo;t received a discount code.</i></label>
+</div>
+</div>
+<div class="form-entry form-text" id="go_campaign_no_code">
+<div class="form-input">
+<label class="right" for="checkbox_show_go_campaign"><i>Golf and dinner reservations are free for GO members,
+but this benefit may not be transferred to anyone else.</i></label>
 </div>
 </div>
 </div> <!-- form-section -->

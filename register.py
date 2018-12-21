@@ -46,6 +46,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	angel = sponsorship.get_sponsorships("Angel")
 	selected_sponsorships = []
 	non_angel_selected = False
+	use_go_discount_code = 1 if root.go_discount_codes else 0
 	for sskey in s.sponsorships:
 		ss = db.get(sskey)
 		if ss:
@@ -68,6 +69,7 @@ def show_registration_form(response, root, s, messages, caps, debug):
 		'birdie': birdie,
 		'angel': angel[0],
 		'non_angel_selected': non_angel_selected,
+		'use_go_discount_code': use_go_discount_code,
 		'selected': selected_sponsorships,
 		'page': page,
 		'messages': messages,
@@ -225,18 +227,25 @@ class Register(webapp2.RequestHandler):
 
 		discount_applied = False
 		if self.request.get('show_go_campaign'):
-			discount_code = self.request.get('discount_code')
-			if discount_code and s.discount == 0:
-				codes = [ pair.split(':') for pair in root.go_discount_codes.split(',') ]
-				codes = dict(codes)
-				if discount_code in codes:
-					s.go_discount_code = discount_code
-					s.go_golfers = int(codes[discount_code])
-					if s.go_golfers != int(self.request.get('go_golfers')):
-						discount_applied = True
-						messages.append('Your GO campaign discount has been applied.')
-				else:
-					messages.append('The discount code you entered is not valid.')
+			if root.go_discount_codes:
+				discount_code = self.request.get('discount_code')
+				if discount_code and s.discount == 0:
+					codes = [ pair.split(':') for pair in root.go_discount_codes.split(',') ]
+					codes = dict(codes)
+					if discount_code in codes:
+						s.go_discount_code = discount_code
+						s.go_golfers = int(codes[discount_code])
+						if s.go_golfers != int(self.request.get('go_golfers')):
+							discount_applied = True
+							messages.append('Your GO campaign discount has been applied.')
+					else:
+						messages.append('The discount code you entered is not valid.')
+			else:
+				s.go_discount_code = 'go'
+				s.go_golfers = 2
+		else:
+			s.go_discount_code = ''
+			s.go_golfers = 0
 
 		if s.go_golfers > 12:
 			go_discount = s.go_golfers

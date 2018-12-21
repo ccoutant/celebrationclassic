@@ -13,6 +13,7 @@ function add_commas(str) {
 function recalculate() {
 	var sponsorship_choices = document.getElementById("sponsorship_choices");
 	var go_campaign_div = document.getElementById("go_campaign");
+	var go_campaign_div_2 = document.getElementById("go_campaign_no_code");
 	var checkboxes = sponsorship_choices.getElementsByTagName("input");
 	var show_sponsorships_box = document.getElementById("checkbox_show_sponsorships");
 	var show_go_campaign_box = document.getElementById("checkbox_show_go_campaign");
@@ -20,6 +21,7 @@ function recalculate() {
 	var angelbox = angel.getElementsByTagName("input")[0];
 	var otherbox = document.getElementById("entry_other");
 	var golferbox = document.getElementById("entry_num_golfers");
+	var use_go_discount_code_box = document.getElementById("entry_use_go_discount_code");
 	var go_golferbox = document.getElementById("entry_go_golfers");
 	var dinnerbox = document.getElementById("entry_num_dinners");
 	var includes_span = document.getElementById("included_text");
@@ -51,18 +53,29 @@ function recalculate() {
 	}
 
 	// Show or hide the GO campaign box.
-	if (show_go_campaign_box.checked)
+	var use_go_discount_code = parseInt(use_go_discount_code_box.value);
+	if (show_go_campaign_box.checked && use_go_discount_code)
 		go_campaign_div.style.display = "block";
 	else
 		go_campaign_div.style.display = "none";
+	if (show_go_campaign_box.checked && !use_go_discount_code)
+		go_campaign_div_2.style.display = "block";
+	else
+		go_campaign_div_2.style.display = "none";
 
 	// The discount code can represent either a number of golfers or the value
 	// of a sponsorship.
-	var go_discount = parseInt(go_golferbox.value);
+	var go_discount = 0;
 	var go_golfers = 0;
-	if (go_discount <= 12) {
-		go_golfers = go_discount;
-		go_discount = 0;
+	if (use_go_discount_code) {
+		go_discount = parseInt(go_golferbox.value);
+		go_golfers = 0;
+		if (go_discount <= 12) {
+			go_golfers = go_discount;
+			go_discount = 0;
+		}
+	} else {
+		go_golfers = (show_go_campaign_box.checked ? 2 : 0);
 	}
 
 	// Calculate total cost of sponsorships and number of golfers/dinners included.
