@@ -1038,7 +1038,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			'first_name', 'last_name', 'gender', 'cart', 'tees',
 			'has_index', 'handicap_index', 'average_score'
 		)
-		golfers = db.Query(Golfer, projection=projection_fields).filter("active =", True).order("sort_name")
+		golfers = db.Query(Golfer, projection=projection_fields).ancestor(root).filter("active =", True).order("sort_name")
 		golfers_by_key = {}
 		for g in golfers:
 			golfers_by_key[g.key().id()] = g

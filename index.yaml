@@ -43,6 +43,20 @@ indexes:
   properties:
   - name: active
   - name: sort_name
+  - name: average_score
+  - name: cart
+  - name: first_name
+  - name: gender
+  - name: handicap_index
+  - name: has_index
+  - name: last_name
+  - name: tees
+
+- kind: Golfer
+  ancestor: yes
+  properties:
+  - name: active
+  - name: sort_name
 
 - kind: Golfer
   ancestor: yes
