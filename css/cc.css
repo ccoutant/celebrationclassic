@@ -15,7 +15,7 @@ body, div, h1, h2, h3, p, th, td, li, dd {
 #cclogo img { width: 144px; height: 132px; }
 #ccbanner { position: absolute; left: 302px; top: 10px; }
 #ccbanner img { width: 480px; height: 184px; }
-#ccmenu { position: absolute; display: none; font-size: 8px; line-height: 1em; }
+#ccmenu { position: absolute; display: none; font-size: 8px; line-height: 1em; cursor: pointer; }
 #ccmenu.off .openmenu { display: block; }
 #ccmenu.on .openmenu { display: none; }
 #ccmenu.off .closemenu { display: none; }
@@ -40,7 +40,7 @@ ul.viewnav li.selected a:hover { text-decoration: none; }
 #content { float: left; width: 618px; margin: 0 15px; }
 #content b, #content strong { color: #157d15; }
 
-#footer { width: 1080px; margin: 2em 0 30px; padding-top: 1em; }
+#footer { width: 1080px; margin: 0 0 30px; padding-top: 2em; clear: both; }
 #footer p { font-style: italic; font-size: 80%; line-height: 1.333em; text-align: center; color: #666; }
 
 h1 { font-size: 180%; line-height: 1.333em; font-weight: bold; color: #157d15; margin: 0 2em 1em 2em; text-align: center; }
