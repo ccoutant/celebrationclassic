@@ -57,8 +57,7 @@ class ManageUsers(webapp2.RequestHandler):
 			return
 		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
-		q = capabilities.Capabilities.all()
-		q.ancestor(root)
+		q = capabilities.all_caps()
 		q.order("email")
 		allcaps = q.fetch(30)
 		template_values = {
@@ -76,14 +75,7 @@ class ManageUsers(webapp2.RequestHandler):
 		count = int(self.request.get('count'))
 		for i in range(1, count + 1):
 			email = self.request.get('email%d' % i)
-			q = capabilities.Capabilities.all()
-			q.ancestor(root)
-			q.filter("email = ", email)
-			u = q.get()
-			must_update = False
-			if u.can_edit_tournament_properties is None:
-				u.can_edit_tournament_properties = False
-				must_update = True
+			u = capabilities.get_caps(email)
 			us = True if self.request.get('us%d' % i) == 'u' else False
 			vr = True if self.request.get('vr%d' % i) == 'v' else False
 			ar = True if self.request.get('ar%d' % i) == 'a' else False
@@ -91,8 +83,7 @@ class ManageUsers(webapp2.RequestHandler):
 			ec = True if self.request.get('ec%d' % i) == 'e' else False
 			et = True if self.request.get('et%d' % i) == 't' else False
 			pp = True if self.request.get('pp%d' % i) == 'p' else False
-			if (must_update or
-					us != u.can_update_sponsorships or
+			if (us != u.can_update_sponsorships or
 					vr != u.can_view_registrations or
 					ar != u.can_add_registrations or
 					ua != u.can_update_auction or
@@ -108,25 +99,53 @@ class ManageUsers(webapp2.RequestHandler):
 				u.can_edit_payment_processor = pp
 				u.put()
 		email = self.request.get('email')
-		us = True if self.request.get('us') == 'u' else False
-		vr = True if self.request.get('vr') == 'v' else False
-		ar = True if self.request.get('ar') == 'a' else False
-		ua = True if self.request.get('ua') == 'u' else False
-		ec = True if self.request.get('ec') == 'e' else False
-		et = True if self.request.get('et') == 't' else False
-		pp = True if self.request.get('pp') == 'p' else False
 		if email:
-			u = capabilities.Capabilities(parent = root,
-										  email = email,
-										  can_update_sponsorships = us,
-										  can_view_registrations = vr,
-										  can_add_registrations = ar,
-										  can_update_auction = ua,
-										  can_edit_content = ec,
-										  can_edit_tournament_properties = et,
-										  can_edit_payment_processor = pp)
-			u.put()
+			us = True if self.request.get('us') == 'u' else False
+			vr = True if self.request.get('vr') == 'v' else False
+			ar = True if self.request.get('ar') == 'a' else False
+			ua = True if self.request.get('ua') == 'u' else False
+			ec = True if self.request.get('ec') == 'e' else False
+			et = True if self.request.get('et') == 't' else False
+			pp = True if self.request.get('pp') == 'p' else False
+			capabilities.add_user(email = email,
+								  can_update_sponsorships = us,
+								  can_view_registrations = vr,
+								  can_add_registrations = ar,
+								  can_update_auction = ua,
+								  can_edit_content = ec,
+								  can_edit_tournament_properties = et,
+								  can_edit_payment_processor = pp)
 		memcache.flush_all()
+		self.redirect('/admin/users')
+
+# Migrate admin users from Tournament-as-parent to "Root"-as-parent.
+
+class MigrateUsers(webapp2.RequestHandler):
+	def get(self):
+		self.response.out.write('<html><head><title>Migrate Users</title></head>')
+		self.response.out.write('<body><form action="/admin/migrate-users" method="post">')
+		self.response.out.write('<input type="submit" name="upgrade" value="Migrate">')
+		self.response.out.write('</form></body></html>')
+
+	def post(self):
+		if not users.is_current_user_admin():
+			show_login_page(self.response.out, self.request.uri)
+			return
+		root = tournament.get_tournament()
+		q = capabilities.Capabilities.all().ancestor(root)
+		for u in q:
+			try:
+				capabilities.add_user(email = u.email,
+									  can_update_sponsorships = u.can_update_sponsorships,
+									  can_view_registrations = u.can_view_registrations,
+									  can_add_registrations = u.can_add_registrations,
+									  can_update_auction = u.can_update_auction,
+									  can_edit_content = u.can_edit_content,
+									  can_edit_tournament_properties = u.can_edit_tournament_properties,
+									  can_edit_payment_processor = u.can_edit_payment_processor)
+			except:
+				logging.debug("exception adding user %s" % u.email)
+				pass
 		self.redirect('/admin/users')
 
 # Tournament properties
@@ -138,7 +157,7 @@ class ManageTournament(webapp2.RequestHandler):
 		if caps is None or not caps.can_edit_tournament_properties:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		t = tournament.get_tournament()
+		t = tournament.get_tournament(self.request.get("t"))
 		template_values = {
 			'capabilities': caps,
 			'tournament': t
@@ -151,9 +170,10 @@ class ManageTournament(webapp2.RequestHandler):
 		if caps is None or not caps.can_edit_tournament_properties:
 			show_login_page(self.response.out, '/admin/tournament')
 			return
-		q = tournament.Tournament.all()
-		q.filter("name = ", "cc2019")
-		t = q.get()
+		t = tournament.get_tournament(self.request.get("original_name"))
+		t.name = self.request.get("new_name")
+		t.published = (self.request.get("published") == "y")
+		t.accepting_registrations = (self.request.get("accepting") == "y")
 		golf_month = int(self.request.get("golf_month"))
 		golf_day = int(self.request.get("golf_day"))
 		golf_year = int(self.request.get("golf_year"))
@@ -180,6 +200,7 @@ class ManageTournament(webapp2.RequestHandler):
 		t.dinner_price_late = int(self.request.get("dinner_price_late"))
 		t.golf_sold_out = (self.request.get("golf_sold_out") == "y")
 		t.dinner_sold_out = (self.request.get("dinner_sold_out") == "y")
+		t.dinner_choices = self.request.get("dinner_choices")
 		t.go_discount_codes = self.request.get("go_discount_codes")
 		t.red_course_rating = float(self.request.get("red_course_rating"))
 		t.red_course_slope = float(self.request.get("red_course_slope"))
@@ -188,7 +209,6 @@ class ManageTournament(webapp2.RequestHandler):
 		t.blue_course_rating = float(self.request.get("blue_course_rating"))
 		t.blue_course_slope = float(self.request.get("blue_course_slope"))
 		t.put()
-		memcache.flush_all()
 		tournament.set_tournament_cache(t)
 		self.redirect('/admin/tournament')
 
@@ -523,7 +543,7 @@ class ViewGolfers(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('2019/admin/view/golfers')
+		html = memcache.get('%s/admin/view/golfers' % root.name)
 		if html:
 			self.response.out.write(html)
 			return
@@ -557,7 +577,7 @@ class ViewGolfers(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfers.html', template_values)
-		memcache.add('2019/admin/view/golfers', html, 60*60*24)
+		memcache.add('%s/admin/view/golfers' % root.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewGolfersByName(webapp2.RequestHandler):
@@ -629,6 +649,7 @@ class UpdateHandicap(webapp2.RequestHandler):
 		self.response.out.write(html)
 
 	def post(self):
+		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, '/admin/view/golfers/handicap')
@@ -672,7 +693,7 @@ class UpdateHandicap(webapp2.RequestHandler):
 			g.average_score = average_score
 			g.index_info_modified = False
 			g.put()
-		memcache.delete('2019/admin/view/golfers')
+		memcache.delete('%s/admin/view/golfers' % root.name)
 		if self.request.get('prevpage'):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
 		elif self.request.get('nextpage'):
@@ -994,7 +1015,7 @@ class Pairing(webapp2.RequestHandler):
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
-		memcache.delete('2019/admin/view/golfers')
+		memcache.delete('%s/admin/view/golfers' % root.name)
 		template_values = {
 			'messages': [],
 			'groups_json': updater.groups_json(),
@@ -1115,7 +1136,7 @@ class ViewDinners(webapp2.RequestHandler):
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('2019/admin/view/dinners')
+		html = memcache.get('%s/admin/view/dinners' % root.name)
 		if html:
 			self.response.out.write(html)
 			return
@@ -1153,7 +1174,7 @@ class ViewDinners(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewguests.html', template_values)
-		memcache.add('2019/admin/view/dinners', html, 60*60*24)
+		memcache.add('%s/admin/view/dinners' % root.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewTributeAds(webapp2.RequestHandler):
@@ -1512,7 +1533,7 @@ class UploadAuctionItem(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_auction:
 			show_login_page(self.response.out, '/admin/auction')
 			return
-		auctionitem.clear_auction_item_cache()
+		auctionitem.clear_auction_item_cache(root)
 		which_auction = self.request.get('which_auction')
 		key = self.request.get('key')
 		if which_auction == 'l':
@@ -1767,6 +1788,7 @@ class UpgradeHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
+							   ('/admin/migrate-users', MigrateUsers),
 							   ('/admin/tournament', ManageTournament),
 							   ('/admin/payments', PaymentGateway),
 							   ('/admin/auction', ManageAuction),

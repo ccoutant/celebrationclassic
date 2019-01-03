@@ -21,29 +21,29 @@ class PageVersion(db.Model):
 	draft_version = db.IntegerProperty(default = 0)
 
 def get_published_version(name):
-	versions = memcache.get("2019/published_versions")
+	t = tournament.get_tournament()
+	versions = memcache.get("%s/published_versions" % t.name)
 	if not versions:
-		t = tournament.get_tournament()
 		q = PageVersion.all()
 		q.ancestor(t)
 		q.order('name')
 		versions = { v.name: v.published_version for v in q }
 		if versions:
-			memcache.add("2019/published_versions", versions, 60*60*24)
+			memcache.add("%s/published_versions" % t.name, versions, 60*60*24)
 	if versions.has_key(name):
 		return versions[name]
 	return 0
 
 def get_draft_version(name):
-	versions = memcache.get("2019/draft_versions")
+	t = tournament.get_tournament()
+	versions = memcache.get("%s/draft_versions" % t.name)
 	if not versions:
-		t = tournament.get_tournament()
 		q = PageVersion.all()
 		q.ancestor(t)
 		q.order('name')
 		versions = { v.name: v.draft_version for v in q }
 		if versions:
-			memcache.add("2019/draft_versions", versions, 60*60*24)
+			memcache.add("%s/draft_versions" % t.name, versions, 60*60*24)
 	if versions.has_key(name):
 		return versions[name]
 	return 0
@@ -61,8 +61,8 @@ def set_version(name, v, draft):
 			pageversion.published_version = v
 		pageversion.draft_version = v
 	pageversion.put()
-	memcache.delete("2019/draft_versions")
-	memcache.delete("2019/published_versions")
+	memcache.delete("%s/draft_versions" % t.name)
+	memcache.delete("%s/published_versions" % t.name)
 
 def detail_page_list():
 	return ["home", "details", "raffle", "map", "sponsors", "sponsorships", "volunteer", "register", "tribute"]

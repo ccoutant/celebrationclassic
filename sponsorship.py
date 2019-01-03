@@ -17,10 +17,10 @@ class Sponsorship(db.Model):
 # Get a list of sponsorships.
 
 def get_sponsorships(level):
-	sponsorships = memcache.get('2019/' + level)
+	root = tournament.get_tournament()
+	sponsorships = memcache.get('%s/%s' % (root.name, level))
 	if sponsorships is not None:
 		return sponsorships
-	root = tournament.get_tournament()
 	q = Sponsorship.all()
 	q.ancestor(root)
 	if level != "all":
@@ -30,8 +30,14 @@ def get_sponsorships(level):
 	if not sponsorships:
 		s = Sponsorship(parent = root, name = level, level = level, sequence = 1, price = 1000, unique = False, sold = False, golfers_included = 4)
 		sponsorships.append(s)
-	memcache.add('2019/' + level, sponsorships, 60*60*24)
+	memcache.add('%s/%s' % (root.name, level), sponsorships, 60*60*24)
 	return sponsorships
 
 def clear_sponsorships_cache():
-	memcache.delete_multi(["2019/all", "2019/Double Eagle", "2019/Hole in One", "2019/Eagle", "2019/Birdie", "2019/Angel"])
+	root = tournament.get_tournament()
+	memcache.delete_multi(["%s/all" % root.name,
+						   "%s/Double Eagle" % root.name,
+						   "%s/Hole in One" % root.name,
+						   "%s/Eagle" % root.name,
+						   "%s/Birdie" % root.name,
+						   "%s/Angel" % root.name])

@@ -37,7 +37,30 @@ function gen_date_picker(name, month, day, year) {
 <form action="/admin/tournament" method="post">
 <table border="0" cellspacing="0" cellpadding="10">
 <tr>
-<td align="left">Golf Tournament</td>
+<td align="left">Name</td>
+<td align="left">
+<input type="hidden" name="original_name" value="{{ tournament.name }}">
+<input type="text" size="10" name="new_name" value="{{ tournament.name }}">
+</td>
+</tr>
+<tr>
+<td align="left">Published</td>
+<td align="left"><input type="checkbox" name="published" value="y" {% if tournament.published %}checked{% endif %}></td>
+</tr>
+<tr>
+<td align="left">Accepting Registrations</td>
+<td align="left"><input type="checkbox" name="accepting" value="y" {% if tournament.accepting_registrations %}checked{% endif %}></td>
+</tr>
+<tr>
+<td align="left">Golf Sold Out</td>
+<td align="left"><input type="checkbox" name="golf_sold_out" value="y" {% if tournament.golf_sold_out %}checked{% endif %}></td>
+</tr>
+<tr>
+<td align="left">Dinner Sold Out</td>
+<td align="left"><input type="checkbox" name="dinner_sold_out" value="y" {% if tournament.dinner_sold_out %}checked{% endif %}></td>
+</tr>
+<tr>
+<td align="left">Golf Date</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
 gen_date_picker("golf", {{ tournament.golf_date.month }}, {{ tournament.golf_date.day }}, {{ tournament.golf_date.year }});
@@ -45,7 +68,7 @@ gen_date_picker("golf", {{ tournament.golf_date.month }}, {{ tournament.golf_dat
 </td>
 </tr>
 <tr>
-<td align="left">Dinner</td>
+<td align="left">Dinner Date</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
 gen_date_picker("dinner", {{ tournament.dinner_date.month }}, {{ tournament.dinner_date.day }}, {{ tournament.dinner_date.year }});
@@ -78,46 +101,44 @@ gen_date_picker("tribute_deadline", {{ tournament.tribute_deadline.month|default
 </tr>
 <tr>
 <td align="left">Early Bird Golfer Price</td>
-<td align="left"><input type="text" size="5" name="golf_price_early" value="{{ tournament.golf_price_early }}"></td>
+<td align="left"><input type="number" size="5" name="golf_price_early" value="{{ tournament.golf_price_early }}"></td>
 </tr>
 <tr>
 <td align="left">Early Bird Dinner Price</td>
-<td align="left"><input type="text" size="5" name="dinner_price_early" value="{{ tournament.dinner_price_early }}"></td>
+<td align="left"><input type="number" size="5" name="dinner_price_early" value="{{ tournament.dinner_price_early }}"></td>
 </tr>
 <tr>
 <td align="left">Late Golfer Price</td>
-<td align="left"><input type="text" size="5" name="golf_price_late" value="{{ tournament.golf_price_late }}"></td>
+<td align="left"><input type="number" size="5" name="golf_price_late" value="{{ tournament.golf_price_late }}"></td>
 </tr>
 <tr>
 <td align="left">Late Dinner Price</td>
-<td align="left"><input type="text" size="5" name="dinner_price_late" value="{{ tournament.dinner_price_late }}"></td>
-</tr>
-<tr>
-<td align="left">Golf Sold Out</td>
-<td align="left"><input type="checkbox" name="golf_sold_out" value="y" {% if tournament.golf_sold_out %}checked{% endif %}></td>
-</tr>
-<tr>
-<td align="left">Dinner Sold Out</td>
-<td align="left"><input type="checkbox" name="dinner_sold_out" value="y" {% if tournament.dinner_sold_out %}checked{% endif %}></td>
+<td align="left"><input type="number" size="5" name="dinner_price_late" value="{{ tournament.dinner_price_late }}"></td>
 </tr>
 <tr>
 <td align="left">GO Discount Codes</td>
-<td align="left"><input type="text" size="20" name="go_discount_codes" value="{{ tournament.go_discount_codes|default:"" }}"></td>
+<td align="left"><input type="text" size="30" name="go_discount_codes" value="{{ tournament.go_discount_codes|default:"" }}"></td>
+</tr>
+<tr>
+<td align="left">Dinner Choices</td>
+<td align="left">
+<input type="text" size="30" name="dinner_choices" value="{{ tournament.dinner_choices }}">
+</td>
 </tr>
 <tr>
 <td align="left">Red Tees</td>
-<td align="left">Rating <input type="text" size="5" name="red_course_rating" value="{{ tournament.red_course_rating }}">
-Slope <input type="text" size="5" name="red_course_slope" value="{{ tournament.red_course_slope }}"></td>
+<td align="left">Rating <input type="number" step="0.1" size="3" name="red_course_rating" value="{{ tournament.red_course_rating }}">
+Slope <input type="number" step="0.1" size="4" name="red_course_slope" value="{{ tournament.red_course_slope }}"></td>
 </tr>
 <tr>
 <td align="left">White Tees</td>
-<td align="left">Rating <input type="text" size="5" name="white_course_rating" value="{{ tournament.white_course_rating }}">
-Slope <input type="text" size="5" name="white_course_slope" value="{{ tournament.white_course_slope }}"></td>
+<td align="left">Rating <input type="number" step="0.1" size="3" name="white_course_rating" value="{{ tournament.white_course_rating }}">
+Slope <input type="number" step="0.1" size="4" name="white_course_slope" value="{{ tournament.white_course_slope }}"></td>
 </tr>
 <tr>
 <td align="left">Blue Tees</td>
-<td align="left">Rating <input type="text" size="5" name="blue_course_rating" value="{{ tournament.blue_course_rating }}">
-Slope <input type="text" size="5" name="blue_course_slope" value="{{ tournament.blue_course_slope }}"></td>
+<td align="left">Rating <input type="number" step="0.1" size="3" name="blue_course_rating" value="{{ tournament.blue_course_rating }}">
+Slope <input type="number" step="0.1" size="4" name="blue_course_slope" value="{{ tournament.blue_course_slope }}"></td>
 </tr>
 <tr>
 <td></td>

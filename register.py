@@ -355,8 +355,8 @@ class Register(webapp2.RequestHandler):
 				logging.info('ID collision for %d; retrying...' % s.id)
 		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
 		s.put()
-		memcache.delete('2019/admin/view/golfers')
-		memcache.delete('2019/admin/view/dinners')
+		memcache.delete('%s/admin/view/golfers' % root.name)
+		memcache.delete('%s/admin/view/dinners' % root.name)
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/register')
 			return
@@ -469,8 +469,8 @@ class Continue(webapp2.RequestHandler):
 			s.confirmed = True
 		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
-		memcache.delete('2019/admin/view/golfers')
-		memcache.delete('2019/admin/view/dinners')
+		memcache.delete('%s/admin/view/golfers' % root.name)
+		memcache.delete('%s/admin/view/dinners' % root.name)
 
 		# Mark unique sponsorships as sold.
 		for k in s.sponsorships:

@@ -15,15 +15,15 @@ class AuctionItem(db.Model):
 	thumbnail_height = db.IntegerProperty()
 
 def get_auction_items():
-	auction_items = memcache.get("2019/auction_items")
+	root = tournament.get_tournament()
+	auction_items = memcache.get("%s/auction_items" % root.name)
 	if auction_items is not None:
 		return auction_items
-	root = tournament.get_tournament()
 	q = AuctionItem.all()
 	q.ancestor(root)
 	q.order("sequence")
 	auction_items = q.fetch(30)
-	memcache.add("2019/auction_items", auction_items, 60*60*24)
+	memcache.add("%s/auction_items" % root.name, auction_items, 60*60*24)
 	return auction_items
 
 class SilentAuctionItem(db.Model):
@@ -35,17 +35,17 @@ class SilentAuctionItem(db.Model):
 	thumbnail_height = db.IntegerProperty()
 
 def get_silent_auction_items():
-	auction_items = memcache.get("2019/silent_auction_items")
+	root = tournament.get_tournament()
+	auction_items = memcache.get("%s/silent_auction_items" % root.name)
 	if auction_items is not None:
 		return auction_items
-	root = tournament.get_tournament()
 	q = SilentAuctionItem.all()
 	q.ancestor(root)
 	q.order("sequence")
 	auction_items = q.fetch(30)
-	memcache.add("2019/silent_auction_items", auction_items, 60*60*24)
+	memcache.add("%s/silent_auction_items" % root.name, auction_items, 60*60*24)
 	return auction_items
 
-def clear_auction_item_cache():
-	memcache.delete("2019/auction_items")
-	memcache.delete("2019/silent_auction_items")
+def clear_auction_item_cache(root):
+	memcache.delete("%s/auction_items" % root.name)
+	memcache.delete("%s/silent_auction_items" % root.name)
