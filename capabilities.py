@@ -3,6 +3,7 @@ from google.appengine.api import users, memcache
 from google.appengine.ext import db
 
 import tournament
+import auditing
 
 # Users who can update parts of the site.
 
@@ -15,6 +16,18 @@ class Capabilities(db.Model):
 	can_edit_content = db.BooleanProperty(default = False)
 	can_edit_tournament_properties = db.BooleanProperty(default = False)
 	can_edit_payment_processor = db.BooleanProperty(default = False)
+
+	def to_string(self):
+		return (("US" if self.can_update_sponsorships else "us") + "," +
+				("VR" if self.can_view_registrations else "vr") + "," +
+				("AR" if self.can_add_registrations else "ar") + "," +
+				("UA" if self.can_update_auction else "ua") + "," +
+				("EC" if self.can_edit_content else "ec") + "," +
+				("ET" if self.can_edit_tournament_properties else "et") + "," +
+				("PP" if self.can_edit_payment_processor else "pp"))
+
+	def audit(self):
+		auditing.audit(None, "Updated Admin " + self.email, data = self.to_string())
 
 def all_caps():
 	return Capabilities.all().ancestor(db.Key.from_path('Root', 'CC'))
@@ -36,14 +49,7 @@ def get_current_user_caps():
 	if not user:
 		return Capabilities(email = None)
 	caps = get_caps(user.email())
-	# 	logging.debug("get_current_user_caps: " + caps.email
-	# 				  + "," + ("US" if caps.can_update_sponsorships else "us")
-	# 				  + "," + ("VR" if caps.can_view_registrations else "vr")
-	# 				  + "," + ("AR" if caps.can_add_registrations else "ar")
-	# 				  + "," + ("UA" if caps.can_update_auction else "ua")
-	# 				  + "," + ("EC" if caps.can_edit_content else "ec")
-	# 				  + "," + ("ET" if caps.can_edit_tournament_properties else "et")
-	# 				  + "," + ("PP" if caps.can_edit_payment_processor else "pp"))
+	# logging.debug("get_current_user_caps: " + caps.to_string())
 	return caps
 
 def add_user(email, can_update_sponsorships, can_view_registrations,
@@ -59,3 +65,4 @@ def add_user(email, can_update_sponsorships, can_view_registrations,
 						can_edit_tournament_properties = can_edit_tournament_properties,
 						can_edit_payment_processor = can_edit_payment_processor)
 	caps.put()
+	auditing.audit(None, "Updated Admin " + caps.email, data = caps.to_string())

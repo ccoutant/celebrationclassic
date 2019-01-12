@@ -21,6 +21,7 @@ import capabilities
 import detailpage
 import sponsorship
 from sponsor import Sponsor, Golfer, DinnerGuest, TributeAd
+import auditing
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -355,10 +356,13 @@ class Register(webapp2.RequestHandler):
 				logging.info('ID collision for %d; retrying...' % s.id)
 		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
 		s.put()
+		auditing.audit(root, "Registration Step 1",
+					   sponsor_id = s.id,
+					   data = "%d golfers, %d dinners" % (s.num_golfers, s.num_dinners))
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 		if caps.can_add_registrations and self.request.get('save'):
-			self.redirect('/register')
+			self.redirect('/admin/view/registrations')
 			return
 		self.redirect('/register?id=%d' % s.id)
 
@@ -469,6 +473,7 @@ class Continue(webapp2.RequestHandler):
 			s.confirmed = True
 		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
+		auditing.audit(root, "Registration Step 2", sponsor_id = s.id)
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 
@@ -678,6 +683,10 @@ class RelayResponse(webapp2.RequestHandler):
 				ad.put()
 				if ad.email:
 					email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount)
+				auditing.audit(root, "Tribute Ad Payment",
+							   tribute_id = tribute_id,
+							   data = ("Response code %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
+									   (int(response_code), int(reason_code), auth_code, trans_id, amount, method)))
 		else:
 			sponsor_id = None
 			try:
@@ -700,6 +709,10 @@ class RelayResponse(webapp2.RequestHandler):
 					s.put()
 					if s.email:
 						email_cc_receipt(s, card_type, auth_code, amount)
+					auditing.audit(root, "Payment",
+								   sponsor_id = sponsor_id,
+								   data = ("Response code %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
+										   (int(response_code), int(reason_code), auth_code, trans_id, amount, method)))
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
@@ -965,6 +978,9 @@ class Tribute(webapp2.RequestHandler):
 		tribute_id = ad.key().id()
 		logging.info("Tribute ad for %s %s, amount due $%d, pay by %s" %
 					 (ad.first_name, ad.last_name, ad.payment_due, ad.payment_type))
+		auditing.audit(root, "Added Tribute Ad for %s %s" % (ad.first_name, ad.last_name),
+					   tribute_id = tribute_id,
+					   data = "Amount due $%d, pay by %s" % (ad.payment_due, ad.payment_type))
 		cust_id = 'T%d' % tribute_id
 
 		if ad.payment_type == 'check':

@@ -23,6 +23,7 @@ import auctionitem
 import detailpage
 import uploadedfile
 import tz
+import auditing
 from sponsor import Sponsor, Team, Golfer, DinnerGuest, TributeAd
 
 server_software = os.environ.get('SERVER_SOFTWARE')
@@ -98,6 +99,7 @@ class ManageUsers(webapp2.RequestHandler):
 				u.can_edit_tournament_properties = et
 				u.can_edit_payment_processor = pp
 				u.put()
+				u.audit()
 		email = self.request.get('email')
 		if email:
 			us = True if self.request.get('us') == 'u' else False
@@ -209,6 +211,7 @@ class ManageTournament(webapp2.RequestHandler):
 		t.blue_course_rating = float(self.request.get("blue_course_rating"))
 		t.blue_course_slope = float(self.request.get("blue_course_slope"))
 		t.put()
+		auditing.audit(t, "Updated tournament properties")
 		tournament.set_tournament_cache(t)
 		self.redirect('/admin/tournament')
 
@@ -246,6 +249,7 @@ class PaymentGateway(webapp2.RequestHandler):
 		payment_gateway.transaction_key = self.request.get("transaction_key")
 		payment_gateway.test_mode = self.request.get("test_mode") == "true"
 		payment_gateway.put()
+		auditing.audit(t, "Updated payment gateway")
 		self.redirect('/admin/payments')
 
 # Sponsorship information.
@@ -306,6 +310,7 @@ class Sponsorships(webapp2.RequestHandler):
 					s.unique = unique
 					s.sold = sold
 					s.put()
+					auditing.audit(root, "Updated Sponsorship " + name)
 		name = self.request.get('name')
 		level = self.request.get('level')
 		sequence = self.request.get('seq')
@@ -318,6 +323,7 @@ class Sponsorships(webapp2.RequestHandler):
 		if name and sequence and price:
 			s = sponsorship.Sponsorship(parent = root, name = name, level = level, sequence = int(sequence), price = int(price), golfers_included = int(golfers_included), unique = unique, sold = sold)
 			s.put()
+			auditing.audit(root, "Added Sponsorship " + name)
 		self.redirect('/admin/sponsorships')
 
 def get_tees(flight, gender):
@@ -1571,6 +1577,7 @@ class UploadAuctionItem(webapp2.RequestHandler):
 			thumbnail.put()
 			item.thumbnail_id = thumbnail.key().id()
 		item.put()
+		auditing.audit(root, "Added Auction Item", data = desc)
 		self.redirect("/admin/auction")
 
 class DeleteFile(webapp2.RequestHandler):
@@ -1590,8 +1597,10 @@ class DeleteFile(webapp2.RequestHandler):
 			q.filter("path =", path)
 			item = q.get()
 			if item:
-				blobstore.delete(item.blob.key())
+				if item.blob:
+					blobstore.delete(item.blob.key())
 				item.delete()
+				auditing.audit(root, "Deleted Uploaded File " + path)
 		self.redirect("/admin/edit")
 
 class UploadFile(webapp2.RequestHandler):
@@ -1612,11 +1621,13 @@ class UploadFile(webapp2.RequestHandler):
 												 path = "/photos/%s" % filename,
 												 contents = contents)
 				item.put()
+				auditing.audit(root, "Uploaded Photo " + filename)
 			elif self.request.get('upload-file'):
 				item = uploadedfile.UploadedFile(parent = root, name = filename,
 												 path = "/files/%s" % filename,
 												 contents = contents)
 				item.put()
+				auditing.audit(root, "Uploaded File " + filename)
 		self.redirect("/admin/edit")
 
 def show_edit_form(name, caps, response):
@@ -1693,6 +1704,9 @@ class EditPageHandler(webapp2.RequestHandler):
 			page.preview = is_preview
 			page.draft = is_draft
 			page.put()
+			auditing.audit(t, "Updated Page " + name,
+						   data = ("Version %d, draft %s, preview %s" %
+								   (version, "yes" if is_draft else "no", "yes" if is_preview else "no")))
 		else:
 			versions = detailpage.get_draft_version(name)
 			version += 1
@@ -1702,6 +1716,9 @@ class EditPageHandler(webapp2.RequestHandler):
 			logging.info("saving new: name %s, version %d, draft %s, preview %s" %
 						 (name, version, "yes" if is_draft else "no", "yes" if is_preview else "no"))
 			page.put()
+			auditing.audit(t, "Saved New Page " + name,
+						   data = ("Version %d, draft %s, preview %s" %
+								   (version, "yes" if is_draft else "no", "yes" if is_preview else "no")))
 		detailpage.set_version(name, version, is_preview or is_draft)
 
 	def post(self):
@@ -1756,6 +1773,7 @@ class DeleteHandler(webapp2.RequestHandler):
 				db.delete(golfers)
 				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
 				db.delete(guests)
+				auditing.audit(root, "Deleted Registration", sponsor_id = id)
 				s.delete()
 		self.redirect('/admin/delete-registrations')
 
