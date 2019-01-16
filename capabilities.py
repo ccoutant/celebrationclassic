@@ -56,7 +56,7 @@ def add_user(email, can_update_sponsorships, can_view_registrations,
 			 can_add_registrations, can_update_auction, can_edit_content,
 			 can_edit_tournament_properties, can_edit_payment_processor):
 	caps = Capabilities(parent = db.Key.from_path('Root', 'CC'),
-						email = email,
+						email = email.lower(),
 						can_update_sponsorships = can_update_sponsorships,
 						can_view_registrations = can_view_registrations,
 						can_add_registrations = can_add_registrations,
@@ -65,4 +65,4 @@ def add_user(email, can_update_sponsorships, can_view_registrations,
 						can_edit_tournament_properties = can_edit_tournament_properties,
 						can_edit_payment_processor = can_edit_payment_processor)
 	caps.put()
-	auditing.audit(None, "Updated Admin " + caps.email, data = caps.to_string())
+	auditing.audit(None, "Added Admin " + caps.email, data = caps.to_string())
