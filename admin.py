@@ -50,6 +50,14 @@ class Logout(webapp2.RequestHandler):
 
 # Users who can update parts of the site.
 
+def make_bitmask(*caps):
+	bitmask = 0
+	for cap in caps:
+		bitmask = bitmask << 1
+		if cap:
+			bitmask = bitmask | 1
+	return bitmask
+
 class ManageUsers(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
@@ -61,6 +69,14 @@ class ManageUsers(webapp2.RequestHandler):
 		q = capabilities.all_caps()
 		q.order("email")
 		allcaps = q.fetch(30)
+		for u in allcaps:
+			u.capbits = make_bitmask(u.can_update_sponsorships,
+									 u.can_view_registrations,
+									 u.can_add_registrations,
+									 u.can_update_auction,
+									 u.can_edit_content,
+									 u.can_edit_tournament_properties,
+									 u.can_edit_payment_processor)
 		template_values = {
 			'capabilities': caps,
 			'allcaps': allcaps
@@ -76,7 +92,6 @@ class ManageUsers(webapp2.RequestHandler):
 		count = int(self.request.get('count'))
 		for i in range(1, count + 1):
 			email = self.request.get('email%d' % i)
-			u = capabilities.get_caps(email)
 			us = True if self.request.get('us%d' % i) == 'u' else False
 			vr = True if self.request.get('vr%d' % i) == 'v' else False
 			ar = True if self.request.get('ar%d' % i) == 'a' else False
@@ -84,22 +99,23 @@ class ManageUsers(webapp2.RequestHandler):
 			ec = True if self.request.get('ec%d' % i) == 'e' else False
 			et = True if self.request.get('et%d' % i) == 't' else False
 			pp = True if self.request.get('pp%d' % i) == 'p' else False
-			if (us != u.can_update_sponsorships or
-					vr != u.can_view_registrations or
-					ar != u.can_add_registrations or
-					ua != u.can_update_auction or
-					ec != u.can_edit_content or
-					et != u.can_edit_tournament_properties or
-					pp != u.can_edit_payment_processor):
-				u.can_update_sponsorships = us
-				u.can_view_registrations = vr
-				u.can_add_registrations = ar
-				u.can_update_auction = ua
-				u.can_edit_content = ec
-				u.can_edit_tournament_properties = et
-				u.can_edit_payment_processor = pp
-				u.put()
-				u.audit()
+			orig_capbits = int(self.request.get('capbits%d' % i))
+			new_capbits = make_bitmask(us, vr, ar, ua, ec, et, pp)
+			if orig_capbits != new_capbits:
+				u = capabilities.get_caps(email)
+				logging.info("updating user %s: orig caps %02x new caps %02x" % (email, orig_capbits, new_capbits))
+				if u.email is None:
+					logging.error("user %d not found" % email)
+				else:
+					u.can_update_sponsorships = us
+					u.can_view_registrations = vr
+					u.can_add_registrations = ar
+					u.can_update_auction = ua
+					u.can_edit_content = ec
+					u.can_edit_tournament_properties = et
+					u.can_edit_payment_processor = pp
+					u.put()
+					u.audit()
 		email = self.request.get('email')
 		if email:
 			us = True if self.request.get('us') == 'u' else False
@@ -109,6 +125,8 @@ class ManageUsers(webapp2.RequestHandler):
 			ec = True if self.request.get('ec') == 'e' else False
 			et = True if self.request.get('et') == 't' else False
 			pp = True if self.request.get('pp') == 'p' else False
+			new_capbits = make_bitmask(us, vr, ar, ua, ec, et, pp)
+			logging.info("adding user %s: caps %02x" % (email, new_capbits))
 			capabilities.add_user(email = email,
 								  can_update_sponsorships = us,
 								  can_view_registrations = vr,

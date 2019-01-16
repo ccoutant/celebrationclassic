@@ -25,7 +25,9 @@ form table tr th { font-size: 75%; }
 </tr>
 {% for u in allcaps %}
 <tr>
-	<td align="left">{{ u.email }}<input type="hidden" name="email{{ forloop.counter }}" value="{{ u.email }}"></td>
+	<td align="left">{{ u.email }}
+	<input type="hidden" name="email{{ forloop.counter }}" value="{{ u.email }}">
+	<input type="hidden" name="capbits{{ forloop.counter }}" value="{{ u.capbits }}"></td>
 	<td align="center"><input type="checkbox" name="us{{ forloop.counter }}" value="u" {% if u.can_update_sponsorships %}checked{% endif %}></td>
 	<td align="center"><input type="checkbox" name="vr{{ forloop.counter }}" value="v" {% if u.can_view_registrations %}checked{% endif %}></td>
 	<td align="center"><input type="checkbox" name="ar{{ forloop.counter }}" value="a" {% if u.can_add_registrations %}checked{% endif %}></td>
