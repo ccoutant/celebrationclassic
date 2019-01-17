@@ -882,7 +882,7 @@ class FakeAcceptiva(webapp2.RequestHandler):
 # Handle a request for a tribute ad.
 
 class Tribute(webapp2.RequestHandler):
-	def show_form(self, root, first_name, last_name, email, phone, ad_size, printed_names, tribute_id, messages):
+	def show_form(self, root, ad, tribute_id, messages):
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
 		past_deadline = today.date() > root.tribute_deadline
 		page = detailpage.get_detail_page('tribute', False)
@@ -891,12 +891,7 @@ class Tribute(webapp2.RequestHandler):
 			'capabilities': caps,
 			'page': page,
 			'messages': messages,
-			'first_name': first_name,
-			'last_name': last_name,
-			'email': email,
-			'phone': phone,
-			'ad_size': ad_size,
-			'printed_names': printed_names,
+			'ad': ad,
 			'tribute_id': tribute_id,
 			'past_deadline': past_deadline
 			}
@@ -910,13 +905,13 @@ class Tribute(webapp2.RequestHandler):
 			try:
 				ad = TributeAd.get_by_id(int(id_parm), parent = root)
 				if ad:
-					self.show_form(root, ad.first_name, ad.last_name, ad.email, ad.phone,
-								   ad.ad_size, ad.printed_names, id_parm, messages)
+					self.show_form(root, ad, id_parm, messages)
 					return
 				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
 			except:
 				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
-		self.show_form(root, "", "", "", "", 0, "", "", messages)
+		ad = TributeAd()
+		self.show_form(root, ad, "", messages)
 
 	def post(self):
 		root = tournament.get_tournament()
@@ -963,13 +958,33 @@ class Tribute(webapp2.RequestHandler):
 			messages.append('Please enter your phone number.')
 		if net_payment_due == 0:
 			messages.append('Please select an ad size.')
+		if past_deadline and not caps.can_add_registrations:
+			messages.append('Sorry, the deadline has passed.')
 
-		if messages or past_deadline:
-			self.show_form(root, first_name, last_name, email, phone,
-						   ad.ad_size, ad.printed_names, id_parm, messages)
+		if caps.can_add_registrations:
+			payment_made = self.request.get('payment_made')
+			if payment_made == '':
+				ad.payment_made = 0
+				ad.payment_type = ''
+				ad.transaction_code = ''
+				ad.auth_code = ''
+			else:
+				try:
+					ad.payment_made = int(payment_made)
+				except ValueError:
+					ad.payment_made = 0
+					messages.append('You entered an invalid value in the "Payment Made" field.')
+				ad.payment_type = self.request.get('paytype')
+				ad.transaction_code = self.request.get('transcode')
+				ad.auth_code = self.request.get('authcode')
+
+		if messages:
+			self.show_form(root, ad, id_parm, messages)
 			return
 
-		if self.request.get('pay_by_check'):
+		if caps.can_add_registrations and self.request.get('save'):
+			pass
+		elif self.request.get('pay_by_check'):
 			ad.payment_type = 'check'
 		else:
 			ad.payment_type = 'credit'
@@ -978,9 +993,15 @@ class Tribute(webapp2.RequestHandler):
 		tribute_id = ad.key().id()
 		logging.info("Tribute ad for %s %s, amount due $%d, pay by %s" %
 					 (ad.first_name, ad.last_name, ad.payment_due, ad.payment_type))
-		auditing.audit(root, "Added Tribute Ad for %s %s" % (ad.first_name, ad.last_name),
+		action = "Updated" if id_parm else "Added"
+		auditing.audit(root, "%s Tribute Ad for %s %s" % (action, ad.first_name, ad.last_name),
 					   tribute_id = tribute_id,
 					   data = "Amount due $%d, pay by %s" % (ad.payment_due, ad.payment_type))
+
+		if caps.can_add_registrations and self.request.get('save'):
+			self.redirect('/admin/view/tribute')
+			return
+
 		cust_id = 'T%d' % tribute_id
 
 		if ad.payment_type == 'check':
@@ -1041,7 +1062,7 @@ class Tribute(webapp2.RequestHandler):
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			self.show_form(root, first_name, last_name, email, phone, ad_size, printed_names, str(tribute_id), messages)
+			self.show_form(root, ad, str(tribute_id), messages)
 
 app = webapp2.WSGIApplication([('/register', Register),
 							   ('/continue', Continue),

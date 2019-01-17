@@ -33,6 +33,9 @@
 		<th align="left">Ad Size</th>
 		<th align="left">Contents</th>
 		<th align="left">Payment</th>
+{% if capabilities.can_add_registrations %}
+		<th></th>
+{% endif %}
 	</tr>
 </thead>
 <tbody>
@@ -52,6 +55,9 @@
 			{% endif %}
 			<p>Due: $<script type="text/javascript" language="javascript">document.write({{ ad.payment_due }} - {{ ad.payment_made }});</script></p>
 		</td>
+{% if capabilities.can_add_registrations %}
+		<td align="left"><a href="/tribute?id={{ ad|get_id }}"><button name="edit_ad" type="button">Edit</button></a></td>
+{% endif %}
 	</tr>
 {% endfor %}
 </tbody>
