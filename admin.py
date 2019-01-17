@@ -1791,7 +1791,7 @@ class DeleteHandler(webapp2.RequestHandler):
 				db.delete(golfers)
 				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
 				db.delete(guests)
-				auditing.audit(root, "Deleted Registration", sponsor_id = id)
+				auditing.audit(root, "Deleted Registration", sponsor_id = int(id))
 				s.delete()
 		self.redirect('/admin/delete-registrations')
 
