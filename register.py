@@ -89,6 +89,7 @@ def show_continuation_form(response, root, s, messages, caps, debug):
 	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
 							  root.deadline.day,
 							  root.deadline.year)
+	dinner_choices = root.dinner_choices.split(',')
 	has_registered = s.confirmed
 	has_completed_names = True
 	has_completed_handicaps = True
@@ -138,6 +139,7 @@ def show_continuation_form(response, root, s, messages, caps, debug):
 	template_values = {
 		'deadline': deadline,
 		'registration_closed': registration_closed,
+		'dinner_choices': dinner_choices,
 		'sponsor': s,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'golfers': golfers,

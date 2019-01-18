@@ -202,9 +202,7 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <label for="entry_golfer_dinner{{ golfer.sequence }}">Dinner choice</label>
 <select name="golfer_dinner{{ golfer.sequence }}" id="entry_golfer_dinner{{ golfer.sequence }}">
 <option value="">Select one...</option>
-<option value="Salmon" {% ifequal golfer.dinner_choice "Salmon" %}selected{% endifequal %}>Salmon</option>
-<option value="Beef" {% ifequal golfer.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
-<option value="Vegetarian" {% ifequal golfer.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
+{% for c in dinner_choices %}<option value="{{ c }}" {% ifequal golfer.dinner_choice c %}selected{% endifequal %}>{{ c }}</option>{% endfor %}
 <option value="none" {% ifequal golfer.dinner_choice "none" %}selected{% endifequal %}>No Dinner</option>
 </select>
 </div>
@@ -245,9 +243,7 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <label for="entry_guest_dinner{{ guest.sequence }}">Dinner choice</label>
 <select name="guest_dinner{{ guest.sequence }}" id="entry_guest_dinner{{ guest.sequence }}">
 <option value="">Select one...</option>
-<option value="Salmon" {% ifequal guest.dinner_choice "Salmon" %}selected{% endifequal %}>Salmon</option>
-<option value="Beef" {% ifequal guest.dinner_choice "Beef" %}selected{% endifequal %}>Beef</option>
-<option value="Vegetarian" {% ifequal guest.dinner_choice "Vegetarian" %}selected{% endifequal %}>Vegetarian</option>
+{% for c in dinner_choices %}<option value="{{ c }}" {% ifequal golfer.dinner_choice c %}selected{% endifequal %}>{{ c }}</option>{% endfor %}
 </select>
 </div>
 </div>
