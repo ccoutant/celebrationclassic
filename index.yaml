@@ -29,6 +29,12 @@ indexes:
   properties:
   - name: sequence
 
+- kind: AuditEntry
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
 - kind: Capabilities
   ancestor: yes
   properties:

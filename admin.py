@@ -1795,6 +1795,35 @@ class DeleteHandler(webapp2.RequestHandler):
 				s.delete()
 		self.redirect('/admin/delete-registrations')
 
+class AuditHandler(webapp2.RequestHandler):
+	def get(self):
+		if not users.is_current_user_admin():
+			show_login_page(self.response.out, '/admin/delete-registrations')
+			return
+		start = int(self.request.get('start') or 0)
+		q = auditing.get_audit_entries().order('-timestamp')
+		entries = q.fetch(offset = start, limit = 20)
+		self.response.out.write('<html><head><title>Audit</title></head>')
+		self.response.out.write('<body><table border="0" cellpadding="5" cellspacing="0">')
+		for entry in entries:
+			self.response.out.write('<tr valign="top">')
+			self.response.out.write(entry.timestamp.replace(tzinfo=tz.utc).astimezone(tz.pacific).strftime('<td>%Y-%b-%d %H:%M:%S</td>'))
+			self.response.out.write('<td>%s</td>' % entry.user)
+			self.response.out.write('<td>%s</td>' % entry.tournament)
+			self.response.out.write('<td>%s</td>' % entry.desc)
+			if entry.sponsor_id:
+				self.response.out.write('<td>%d</td>' % entry.sponsor_id)
+			elif entry.tribute_id:
+				self.response.out.write('<td>%d</td>' % entry.tribute_id)
+			else:
+				self.response.out.write('<td></td>')
+			self.response.out.write('<td>%s</td>' % (entry.data or ''))
+			self.response.out.write('</tr>')
+			start += 1
+		self.response.out.write('</table>')
+		self.response.out.write('<p><a href="/admin/audit?start=%d">Older</a></p>' % start)
+		self.response.out.write('</body></html>')
+
 class UpgradeHandler(webapp2.RequestHandler):
 	def get(self):
 		start = int(self.request.get('start') or 0)
@@ -1809,7 +1838,7 @@ class UpgradeHandler(webapp2.RequestHandler):
 
 	def post(self):
 		if not users.is_current_user_admin():
-			show_login_page(self.response.out, '/admin/delete-registrations')
+			show_login_page(self.response.out, '/admin/upgrade')
 			return
 		root = tournament.get_tournament()
 		start = int(self.request.get('start'))
@@ -1851,6 +1880,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
 							   ('/admin/delete-registrations', DeleteHandler),
+							   ('/admin/audit', AuditHandler),
 							   ('/admin/logout', Logout),
 							   ('/admin/upgrade', UpgradeHandler)],
 							  debug=dev_server)
