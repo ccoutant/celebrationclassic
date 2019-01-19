@@ -27,7 +27,7 @@ class Capabilities(db.Model):
 				("PP" if self.can_edit_payment_processor else "pp"))
 
 	def audit(self):
-		auditing.audit(None, "Updated Admin " + self.email, data = self.to_string())
+		auditing.audit(None, "Updated Admin", data = self.email + ": " + self.to_string())
 
 def all_caps():
 	return Capabilities.all().ancestor(db.Key.from_path('Root', 'CC'))
@@ -65,4 +65,4 @@ def add_user(email, can_update_sponsorships, can_view_registrations,
 						can_edit_tournament_properties = can_edit_tournament_properties,
 						can_edit_payment_processor = can_edit_payment_processor)
 	caps.put()
-	auditing.audit(None, "Added Admin " + caps.email, data = caps.to_string())
+	auditing.audit(None, "Added Admin", data = caps.email + ": " + caps.to_string())

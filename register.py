@@ -360,7 +360,7 @@ class Register(webapp2.RequestHandler):
 		s.put()
 		auditing.audit(root, "Registration Step 1",
 					   sponsor_id = s.id,
-					   data = "%d golfers, %d dinners" % (s.num_golfers, s.num_dinners))
+					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners))
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 		if caps.can_add_registrations and self.request.get('save'):
@@ -475,7 +475,9 @@ class Continue(webapp2.RequestHandler):
 			s.confirmed = True
 		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
-		auditing.audit(root, "Registration Step 2", sponsor_id = s.id)
+		auditing.audit(root, "Registration Step 2",
+					   sponsor_id = s.id,
+					   data = s.first_name + " " + s.last_name)
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 
@@ -996,9 +998,9 @@ class Tribute(webapp2.RequestHandler):
 		logging.info("Tribute ad for %s %s, amount due $%d, pay by %s" %
 					 (ad.first_name, ad.last_name, ad.payment_due, ad.payment_type))
 		action = "Updated" if id_parm else "Added"
-		auditing.audit(root, "%s Tribute Ad for %s %s" % (action, ad.first_name, ad.last_name),
+		auditing.audit(root, "%s Tribute Ad" % action,
 					   tribute_id = tribute_id,
-					   data = "Amount due $%d, pay by %s" % (ad.payment_due, ad.payment_type))
+					   data = "%s %s: due $%d, pay by %s" % (ad.first_name, ad.last_name, ad.payment_due - ad.payment_made, ad.payment_type))
 
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/admin/view/tribute')

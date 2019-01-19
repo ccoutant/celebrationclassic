@@ -310,6 +310,7 @@ class Sponsorships(webapp2.RequestHandler):
 			q.filter("name = ", name)
 			s = q.get()
 			if self.request.get('delete%d' % i) == 'd':
+				auditing.audit(root, "Deleted Sponsorship", data = s.level + "/" + s.name)
 				s.delete()
 			else:
 				try:
@@ -328,7 +329,7 @@ class Sponsorships(webapp2.RequestHandler):
 					s.unique = unique
 					s.sold = sold
 					s.put()
-					auditing.audit(root, "Updated Sponsorship " + name)
+					auditing.audit(root, "Updated Sponsorship", data = s.level + "/" + name)
 		name = self.request.get('name')
 		level = self.request.get('level')
 		sequence = self.request.get('seq')
@@ -341,7 +342,7 @@ class Sponsorships(webapp2.RequestHandler):
 		if name and sequence and price:
 			s = sponsorship.Sponsorship(parent = root, name = name, level = level, sequence = int(sequence), price = int(price), golfers_included = int(golfers_included), unique = unique, sold = sold)
 			s.put()
-			auditing.audit(root, "Added Sponsorship " + name)
+			auditing.audit(root, "Added Sponsorship", data = level + "/" + name)
 		self.redirect('/admin/sponsorships')
 
 def get_tees(flight, gender):
@@ -1618,7 +1619,7 @@ class DeleteFile(webapp2.RequestHandler):
 				if item.blob:
 					blobstore.delete(item.blob.key())
 				item.delete()
-				auditing.audit(root, "Deleted Uploaded File " + path)
+				auditing.audit(root, "Deleted Uploaded File", data = path)
 		self.redirect("/admin/edit")
 
 class UploadFile(webapp2.RequestHandler):
@@ -1639,13 +1640,13 @@ class UploadFile(webapp2.RequestHandler):
 												 path = "/photos/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded Photo " + filename)
+				auditing.audit(root, "Uploaded Photo", data = filename)
 			elif self.request.get('upload-file'):
 				item = uploadedfile.UploadedFile(parent = root, name = filename,
 												 path = "/files/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded File " + filename)
+				auditing.audit(root, "Uploaded File", data = filename)
 		self.redirect("/admin/edit")
 
 def show_edit_form(name, caps, response):
@@ -1722,9 +1723,6 @@ class EditPageHandler(webapp2.RequestHandler):
 			page.preview = is_preview
 			page.draft = is_draft
 			page.put()
-			auditing.audit(t, "Updated Page " + name,
-						   data = ("Version %d, draft %s, preview %s" %
-								   (version, "yes" if is_draft else "no", "yes" if is_preview else "no")))
 		else:
 			versions = detailpage.get_draft_version(name)
 			version += 1
@@ -1734,9 +1732,9 @@ class EditPageHandler(webapp2.RequestHandler):
 			logging.info("saving new: name %s, version %d, draft %s, preview %s" %
 						 (name, version, "yes" if is_draft else "no", "yes" if is_preview else "no"))
 			page.put()
-			auditing.audit(t, "Saved New Page " + name,
-						   data = ("Version %d, draft %s, preview %s" %
-								   (version, "yes" if is_draft else "no", "yes" if is_preview else "no")))
+		auditing.audit(t, "Saved Page",
+					   data = ("%s: version %d%s%s" %
+							   (name, version, " draft" if is_draft else "", " preview" if is_preview else "")))
 		detailpage.set_version(name, version, is_preview or is_draft)
 
 	def post(self):
