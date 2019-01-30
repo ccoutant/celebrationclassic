@@ -669,8 +669,8 @@ class RelayResponse(webapp2.RequestHandler):
 		id = self.request.get('x_cust_id')
 		amount = self.request.get('x_amount')
 		method = self.request.get('x_method')
-		logging.info("relay response for id %s: %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
-					 (id, int(response_code), int(reason_code), auth_code, trans_id, amount, method))
+		logging.info("relay response for id %s: %s, reason %s (%s), auth_code %s, trans_id %s, amount %s, method %s" %
+					 (id, response_code, reason_code, reason_text, auth_code, trans_id, amount, method))
 		pat = re.compile(r'T(\d+)$')
 		m = pat.match(id)
 		if m:
@@ -689,8 +689,8 @@ class RelayResponse(webapp2.RequestHandler):
 					email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount)
 				auditing.audit(root, "Tribute Ad Payment",
 							   tribute_id = tribute_id,
-							   data = ("Response code %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
-									   (int(response_code), int(reason_code), auth_code, trans_id, amount, method)))
+							   data = ("Response code %s, reason %s, auth_code %s, trans_id %s, amount %s, method %s" %
+									   (response_code, reason_code, auth_code, trans_id, amount, method)))
 		else:
 			sponsor_id = None
 			try:
@@ -715,8 +715,8 @@ class RelayResponse(webapp2.RequestHandler):
 						email_cc_receipt(s, card_type, auth_code, amount)
 					auditing.audit(root, "Payment",
 								   sponsor_id = sponsor_id,
-								   data = ("Response code %d, reason %d, auth_code %s, trans_id %s, amount %s, method %s" %
-										   (int(response_code), int(reason_code), auth_code, trans_id, amount, method)))
+								   data = ("Response code %s, reason %s (%s), auth_code %s, trans_id %s, amount %s, method %s" %
+										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)))
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
