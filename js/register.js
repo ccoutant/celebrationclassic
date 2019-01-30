@@ -128,6 +128,12 @@ function recalculate() {
 		dinners_included += included;
 	}
 
+	if (otherbox.value) {
+		var otherval = parseInt(otherbox.value);
+		if (!isNaN(otherval))
+			total += parseInt(otherbox.value);
+	}
+
 	// If no sponsorship, hide the "agree to publish my name" checkbox.
 	if (total > 0)
 		sponsor_agree_div.style.display = "block";
@@ -148,12 +154,6 @@ function recalculate() {
 	if (dinners < 0)
 		dinners = 0;
 	total += dinners * dinner_price;
-
-	if (otherbox.value) {
-		var otherval = parseInt(otherbox.value);
-		if (!isNaN(otherval))
-			total += parseInt(otherbox.value);
-	}
 
 	totalbox.value = total;
 	totalbox_c.value = add_commas(total);
@@ -206,6 +206,7 @@ function install_recalculate_hooks() {
 	angelbox.onclick = recalculate;
 	var otherbox = document.getElementById("entry_other");
 	otherbox.onchange = recalculate;
+	otherbox.onkeyup = recalculate;
 	otherbox.onkeypress = ignore_enter;
 	var agreebox = document.getElementById("entry_agree");
 	agreebox.onclick = recalculate;

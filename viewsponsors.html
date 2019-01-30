@@ -97,12 +97,12 @@ function toggle_display(i) {
 			{% endif %}
 			{% for ss in s.sponsorships %}
 			<p>{{ ss|get_sponsorship_name }}</p>
-			{% if forloop.last %}
-			<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
-			{% endif %}
 			{% endfor %}
 			{% if s.additional_donation %}
 			<p>Additional donation: ${{ s.additional_donation }}</p>
+			{% endif %}
+			{% if s.sponsorships or s.additional_donation %}
+			<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
 			{% endif %}
 		</td>
 		<td align="right">{{ s.num_golfers }}</td>
