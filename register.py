@@ -507,6 +507,8 @@ class Continue(webapp2.RequestHandler):
 			return
 
 		if self.request.get('pay_by_check'):
+			if s.email and net_payment_due > 0:
+				email_check_ack(s, net_payment_due)
 			template_values = {
 				'sponsor': s,
 				'net_payment_due': net_payment_due,
@@ -587,6 +589,45 @@ class Continue(webapp2.RequestHandler):
 			show_continuation_form(self.response, root, s, messages, caps, dev_server)
 
 # Send an email receipt.
+
+check_ack_template = """
+Dear %s,
+
+Thank you for registering for the Celebration Classic Dinner
+and Golf Tournament!
+
+Please mail your check for $%s to:
+
+  Celebration Classic
+  20 Cherry Blossom Rd.
+  Los Gatos, CA 95032
+
+Please make sure that you have provided all of the following
+information for each golfer and dinner guest:
+
+- Name
+- GHIN number or average score (for golfers)
+- Shirt size (for golfers)
+- Dinner selection
+
+To provide any missing information or make changes, please visit
+the following URL:
+
+  http://www.celebrationclassic.org/register?id=%s
+
+If you have any questions, just reply to this email and we'll be
+glad to assist.
+"""
+
+def email_check_ack(s, amount):
+	subject = "Your Celebration Classic Registration"
+	sender = "registration@celebrationclassic.org"
+	body = check_ack_template % (s.first_name, amount, s.id)
+	logging.info("sending email acknowledgment to %s (id %s)" % (s.email, s.id))
+	try:
+		mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
+	except:
+		logging.exception("Could not send email to %s" % s.email)
 
 cc_receipt_template = """
 Dear %s,
