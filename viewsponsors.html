@@ -93,7 +93,7 @@ function toggle_display(i) {
 		</td>
 		<td>
 			{% if s.go_discount_code %}
-			<p>GO campaign {% if s.go_golfers > 12 %}(Angel){% else %}({{ s.go_golfers }} golfers){% endif %}</p>
+			<p>GO campaign {% if s.go_golfers > 12 %}(Angel){% endif %}</p>
 			{% endif %}
 			{% for ss in s.sponsorships %}
 			<p>{{ ss|get_sponsorship_name }}</p>
