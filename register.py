@@ -980,10 +980,13 @@ class Tribute(webapp2.RequestHandler):
 		email = self.request.get('email')
 		phone = self.request.get('phone')
 		ad_size = int(self.request.get('ad_size'))
+		go_campaign = (self.request.get('go_campaign') == 'y')
 		printed_names = self.request.get('printed_names')
 		printed_names = re.sub(r'\s+', ' ', printed_names)
 		price_list = [ 0, 36, 108, 360, 720, 1800, 3600 ]
 		net_payment_due = price_list[ad_size] if ad_size >= 1 and ad_size <= 6 else 0
+		if go_campaign:
+			net_payment_due = 0 if net_payment_due <= 360 else net_payment_due - 360
 		ad = None
 
 		if id_parm:
@@ -1000,6 +1003,7 @@ class Tribute(webapp2.RequestHandler):
 		ad.email = email
 		ad.phone = phone
 		ad.ad_size = ad_size
+		ad.go_campaign = go_campaign
 		ad.printed_names = printed_names
 		ad.payment_due = net_payment_due
 
@@ -1011,7 +1015,7 @@ class Tribute(webapp2.RequestHandler):
 			messages.append('Please enter your email address.')
 		if ad.phone == '':
 			messages.append('Please enter your phone number.')
-		if net_payment_due == 0:
+		if ad_size < 1 or ad_size > 6:
 			messages.append('Please select an ad size.')
 		if past_deadline and not caps.can_add_registrations:
 			messages.append('Sorry, the deadline has passed.')
@@ -1053,13 +1057,11 @@ class Tribute(webapp2.RequestHandler):
 					   tribute_id = tribute_id,
 					   data = "%s %s: due $%d, pay by %s" % (ad.first_name, ad.last_name, ad.payment_due - ad.payment_made, ad.payment_type))
 
-		if caps.can_add_registrations and self.request.get('save'):
+		if self.request.get('save') and caps.can_add_registrations:
 			self.redirect('/admin/view/tribute')
 			return
 
-		cust_id = 'T%d' % tribute_id
-
-		if ad.payment_type == 'check':
+		if ad.payment_type == 'check' or self.request.get('save'):
 			template_values = {
 				'tribute_id': str(tribute_id),
 				'first_name': first_name,
@@ -1075,6 +1077,7 @@ class Tribute(webapp2.RequestHandler):
 		payments_info = payments.get_payments_info(root)
 
 		if payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
+			cust_id = 'T%d' % tribute_id
 			timestamp = int(time.time())
 			fingerprint = hmac.new(payments_info.transaction_key.encode())
 			fingerprint.update(payments_info.api_login_id)

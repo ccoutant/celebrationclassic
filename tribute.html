@@ -21,12 +21,21 @@ function ignore_enter(e) {
 	}
 }
 function recalculate() {
+	var price_list = [0, 36, 108, 360, 720, 1800, 3600];
 	var ad_size_selector = document.getElementById("entry_ad_size");
 	var one_line_div = document.getElementById("oneline");
 	var word_limit_span = document.getElementById("wordlimit")
 	var contact_you_div = document.getElementById("contact_you");
+	var go_campaign_box = document.getElementById("checkbox_go_campaign");
 	var or_par = document.getElementById("or");
+	var amount_due_box = document.getElementById("amount_due");
+	var pay_buttons_span = document.getElementById("pay_buttons");
+	var save_button_span = document.getElementById("save_button");
 	ad_size = parseInt(ad_size_selector.value);
+	var due = price_list[ad_size];
+	if (go_campaign_box.checked)
+		due = (due <= 360) ? 0 : due - 360;
+	amount_due_box.value = due;
 	if (ad_size == 1) {
 		one_line_div.style.display = "block";
 		word_limit_span.innerHTML = "18";
@@ -41,11 +50,25 @@ function recalculate() {
 		contact_you_div.style.display = "block";
 	else
 		contact_you_div.style.display = "none";
+	if (due > 0)
+		pay_buttons_span.style.display = "inline";
+	else
+		pay_buttons_span.style.display = "none";
+{% if capabilities.can_add_registrations %}
+	save_button_span.style.display = "inline";
+{% else %}
+	if (due == 0 && ad_size > 0)
+		save_button_span.style.display = "inline";
+	else
+		save_button_span.style.display = "none";
+{% endif %}
 }
 function install_recalculate_hooks() {
 	var ad_size_selector = document.getElementById("entry_ad_size");
 	ad_size_selector.onchange = recalculate;
-	var one_line_div = document.getElementById("oneline");
+	var go_campaign_box = document.getElementById("checkbox_go_campaign");
+	go_campaign_box.onchange = recalculate;
+	// var one_line_div = document.getElementById("oneline");
 	// one_line_div.onkeypress = ignore_enter;
 }
 window.addEventListener('load', function() {
@@ -56,6 +79,7 @@ window.addEventListener('load', function() {
 <style type="text/css">
 #or { text-align: left; font-style: italic; margin: 1em; }
 #oneline textarea { width: 75%; height: 5em; }
+#pay_buttons, #save_button { display: none; }
 </style>
 {% endblock %}
 
@@ -99,6 +123,13 @@ window.addEventListener('load', function() {
 </div>
 </div>
 
+<div class="form-entry form-checkbox">
+<div class="form-input">
+<div class="checkbox-container"><input type="checkbox" name="go_campaign" id="checkbox_go_campaign" value="y" {% if ad.go_campaign %}checked{% endif %}></div>
+<label class="right" for="checkbox_show_go_campaign">Check here if you are a Shir Hadash GO campaign member.</label>
+</div>
+</div>
+
 </div> <!-- form-section -->
 
 <div class="form-section">
@@ -108,13 +139,20 @@ window.addEventListener('load', function() {
 <label for="entry_ad_size">* Size of Ad</label>
 <select id="entry_ad_size" name="ad_size">
 <option value="0" {% ifequal ad.ad_size 0 %} selected {% endifequal %}>Select one...</option>
-<option value="1" {% ifequal ad.ad_size 1 %} selected {% endifequal %}>The Seed (one line): $36</option>
-<option value="2" {% ifequal ad.ad_size 2 %} selected {% endifequal %}>The Root (business card): $108</option>
-<option value="3" {% ifequal ad.ad_size 3 %} selected {% endifequal %}>The Canopy (&frac14; page): $360</option>
-<option value="4" {% ifequal ad.ad_size 4 %} selected {% endifequal %}>The Valley Oak (&frac12; page): $720</option>
-<option value="5" {% ifequal ad.ad_size 5 %} selected {% endifequal %}>The Giant Sequoia (full page b&amp;w): $1,800</option>
-<option value="6" {% ifequal ad.ad_size 6 %} selected {% endifequal %}>The Giving Tree (full page color): $3,600</option>
+<option value="1" {% ifequal ad.ad_size 1 %} selected {% endifequal %}>The Seed (one line)</option>
+<option value="2" {% ifequal ad.ad_size 2 %} selected {% endifequal %}>The Root (business card)</option>
+<option value="3" {% ifequal ad.ad_size 3 %} selected {% endifequal %}>The Canopy (&frac14; page)</option>
+<option value="4" {% ifequal ad.ad_size 4 %} selected {% endifequal %}>The Valley Oak (&frac12; page)</option>
+<option value="5" {% ifequal ad.ad_size 5 %} selected {% endifequal %}>The Giant Sequoia (full page b&amp;w)</option>
+<option value="6" {% ifequal ad.ad_size 6 %} selected {% endifequal %}>The Giving Tree (full page color)</option>
 </select>
+</div>
+</div>
+
+<div class="form-entry-left">
+<div class="form-input">
+<label for="entry_due">Amount Due</label>
+$<input type="text" name="due" value="{{ ad.payment_due }}" id="amount_due" readonly>
 </div>
 </div>
 
@@ -173,11 +211,13 @@ $<input type="number" name="payment_made" value="{% if ad.payment_made %}{{ ad.p
 
 <div class="form-entry form-submit">
 <div class="form-button">
+<span id="pay_buttons">
 <input type="submit" name="pay_with_cc" value="Pay with Credit Card &rarr;">
 <input type="submit" name="pay_by_check" value="Pay by Check &rarr;">
-{% if capabilities.can_add_registrations %}
+</span>
+<span id="save_button">
 <input type="submit" name="save" value="Save">
-{% endif %}
+</span>
 </div>
 </div>
 

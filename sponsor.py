@@ -91,6 +91,7 @@ class TributeAd(db.Model):
 	phone = db.StringProperty(default = '')
 	email = db.StringProperty(default = '')
 	ad_size = db.IntegerProperty(default = 0)
+	go_campaign = db.BooleanProperty(default = False)
 	printed_names = db.StringProperty(default = '')
 	payment_due = db.IntegerProperty(default = 0)
 	payment_made = db.IntegerProperty(default = 0)
