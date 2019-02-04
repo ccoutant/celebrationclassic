@@ -168,6 +168,21 @@ class MigrateUsers(webapp2.RequestHandler):
 				pass
 		self.redirect('/admin/users')
 
+def update_counters(t):
+	counters = tournament.get_counters(t)
+	q = Sponsor.all().ancestor(t)
+	q.filter("confirmed =", True)
+	q.order("timestamp")
+	num_golfers = 0
+	num_dinners = 0
+	for s in q:
+		num_golfers += s.num_golfers
+		num_dinners += s.num_dinners
+	counters.golfer_count = num_golfers
+	counters.dinner_count = num_dinners
+	counters.put()
+	logging.info("updated golfer_count = %d, dinner_count = %d" % (num_golfers, num_dinners))
+
 # Tournament properties
 
 class ManageTournament(webapp2.RequestHandler):
@@ -178,9 +193,11 @@ class ManageTournament(webapp2.RequestHandler):
 			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament(self.request.get("t"))
+		counters = tournament.get_counters(t)
 		template_values = {
 			'capabilities': caps,
-			'tournament': t
+			'tournament': t,
+			'counters': counters
 			}
 		self.response.out.write(render_to_string('tournament.html', template_values))
 
@@ -191,6 +208,8 @@ class ManageTournament(webapp2.RequestHandler):
 			show_login_page(self.response.out, '/admin/tournament')
 			return
 		t = tournament.get_tournament(self.request.get("original_name"))
+		if self.request.get("num_golfers") == "" or self.request.get("num_dinners") == "":
+			update_counters(t)
 		t.name = self.request.get("new_name")
 		t.published = (self.request.get("published") == "y")
 		t.accepting_registrations = (self.request.get("accepting") == "y")
@@ -218,6 +237,8 @@ class ManageTournament(webapp2.RequestHandler):
 		t.golf_price_late = int(self.request.get("golf_price_late"))
 		t.dinner_price_early = int(self.request.get("dinner_price_early"))
 		t.dinner_price_late = int(self.request.get("dinner_price_late"))
+		t.limit_golfers = int(self.request.get("limit_golfers"))
+		t.limit_dinners = int(self.request.get("limit_dinners"))
 		t.golf_sold_out = (self.request.get("golf_sold_out") == "y")
 		t.dinner_sold_out = (self.request.get("dinner_sold_out") == "y")
 		t.dinner_choices = self.request.get("dinner_choices")
@@ -229,8 +250,8 @@ class ManageTournament(webapp2.RequestHandler):
 		t.blue_course_rating = float(self.request.get("blue_course_rating"))
 		t.blue_course_slope = float(self.request.get("blue_course_slope"))
 		t.put()
-		auditing.audit(t, "Updated tournament properties")
 		tournament.set_tournament_cache(t)
+		auditing.audit(t, "Updated tournament properties")
 		self.redirect('/admin/tournament')
 
 # Payment Gateway
@@ -414,19 +435,25 @@ class ViewRegistrations(webapp2.RequestHandler):
 		q.filter("confirmed =", True)
 		q.order("sort_name")
 		sponsors = q.fetch(limit = None)
+		golfer_count = 0
+		dinner_count = 0
 		for s in sponsors:
 			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 			no_dinners = 0
 			for g in golfers:
-				if g.dinner_choice == 'No Dinner':
+				if g.dinner_choice == 'none':
 					no_dinners += 1
 			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
 			s.net_due = max(0, s.net_due)
+			golfer_count += s.num_golfers
+			dinner_count += s.num_golfers - no_dinners + s.num_dinners
 		template_values = {
 			'sponsors': sponsors,
+			'golfer_count': golfer_count,
+			'dinner_count': dinner_count,
 			'incomplete': '',
 			'capabilities': caps
 			}
@@ -1790,6 +1817,8 @@ class DeleteHandler(webapp2.RequestHandler):
 				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
 				db.delete(guests)
 				auditing.audit(root, "Deleted Registration", sponsor_id = int(id))
+				if s.confirmed:
+					tournament.update_counters(root, -s.num_golfers, -s.num_dinners)
 				s.delete()
 		self.redirect('/admin/delete-registrations')
 

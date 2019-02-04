@@ -184,6 +184,7 @@ class Register(webapp2.RequestHandler):
 	def post(self):
 		messages = []
 		root = tournament.get_tournament()
+		counters = tournament.get_counters(root)
 		# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 		# last until 1 am PDT.)
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
@@ -192,18 +193,19 @@ class Register(webapp2.RequestHandler):
 		golf_price = root.golf_price_early if early_bird else root.golf_price_late
 		dinner_price = root.dinner_price_early if early_bird else root.dinner_price_late
 		caps = capabilities.get_current_user_caps()
+		orig_num_golfers = 0
+		orig_num_dinners = 0
 		id = int(self.request.get('id'))
 		if id:
 			q = Sponsor.all()
 			q.ancestor(root)
 			q.filter('id = ', id)
 			s = q.get()
-			orig_num_golfers = s.num_golfers
-			orig_num_dinners = s.num_dinners
+			if s.confirmed:
+				orig_num_golfers = s.num_golfers
+				orig_num_dinners = s.num_dinners
 		else:
 			s = Sponsor(parent=root)
-			orig_num_golfers = 0
-			orig_num_dinners = 0
 		s.first_name = self.request.get('first_name')
 		s.last_name = self.request.get('last_name')
 		s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
@@ -261,6 +263,7 @@ class Register(webapp2.RequestHandler):
 			messages.append('Please enter your name.')
 		elif not s.first_name or not s.last_name:
 			messages.append('Please enter both first and last name.')
+
 		if not caps.can_add_registrations:
 			if s.address == '':
 				messages.append('Please enter your mailing address.')
@@ -270,10 +273,6 @@ class Register(webapp2.RequestHandler):
 				messages.append('Please enter your email address.')
 			if s.phone == '':
 				messages.append('Please enter your phone number.')
-			if root.golf_sold_out and s.num_golfers > orig_num_golfers:
-				messages.append('Sorry, the golf tournament is sold out.')
-			if root.dinner_sold_out and s.num_dinners > orig_num_dinners:
-				messages.append('Sorry, the dinner is sold out.')
 
 		form_payment_due = int(self.request.get('payment_due'))
 		try:
@@ -339,11 +338,35 @@ class Register(webapp2.RequestHandler):
 					messages.append('You entered an invalid value in the "Discount" field.')
 				s.discount_type = self.request.get('discount_type')
 
+		if not caps.can_add_registrations:
+			if s.num_golfers > orig_num_golfers:
+				if root.golf_sold_out:
+					s.num_golfers = orig_num_golfers
+					messages.append('Sorry, the golf tournament is full.')
+				elif counters.golfer_count + s.num_golfers - orig_num_golfers > root.limit_golfers:
+					open_slots = root.limit_golfers - counters.golfer_count
+					s.num_golfers = orig_num_golfers
+					if open_slots <= 0:
+						messages.append('Sorry, the golf tournament is full.')
+					elif open_slots == 1:
+						messages.append('Sorry, the tournament only has room for 1 more golfer.')
+					else:
+						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
+			if s.num_dinners > orig_num_dinners:
+				if root.dinner_sold_out:
+					s.num_dinners = orig_num_dinners
+					messages.append('Sorry, the dinner is full.')
+				elif counters.dinner_count + s.num_dinners - orig_num_dinners > root.limit_dinners:
+					open_slots = root.limit_dinners - counters.dinner_count
+					s.num_dinners = orig_num_dinners
+					if open_slots <= 0:
+						messages.append('Sorry, the dinner is full.')
+					elif open_slots == 1:
+						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
+					else:
+						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
+
 		if messages or self.request.get('apply_discount'):
-			if root.golf_sold_out and s.num_golfers > orig_num_golfers:
-				s.num_golfers = orig_num_golfers
-			if root.dinner_sold_out and s.num_dinners > orig_num_dinners:
-				s.num_dinners = orig_num_dinners
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
@@ -358,6 +381,8 @@ class Register(webapp2.RequestHandler):
 				logging.info('ID collision for %d; retrying...' % s.id)
 		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
 		s.put()
+		if s.confirmed:
+			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
 		auditing.audit(root, "Registration Step 1",
 					   sponsor_id = s.id,
 					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners))
@@ -375,6 +400,7 @@ class Continue(webapp2.RequestHandler):
 	def post(self):
 		messages = []
 		root = tournament.get_tournament()
+		counters = tournament.get_counters(root)
 		caps = capabilities.get_current_user_caps()
 		id = self.request.get('id')
 		q = Sponsor.all()
@@ -387,6 +413,12 @@ class Continue(webapp2.RequestHandler):
 			show_registration_form(self.response, root, s, messages, caps, dev_server)
 			return
 
+		orig_num_golfers = 0
+		orig_num_dinners = 0
+		if s.confirmed:
+			orig_num_golfers = s.num_golfers
+			orig_num_dinners = s.num_dinners
+
 		for i in range(1, s.num_golfers + 1):
 			handicap_index = self.request.get('index%d' % i)
 			if handicap_index:
@@ -394,9 +426,6 @@ class Continue(webapp2.RequestHandler):
 					val = float(handicap_index)
 				except ValueError:
 					messages.append('Invalid handicap index for golfer #%d; please enter a decimal number.' % i)
-		if messages:
-			show_continuation_form(self.response, root, s, messages, caps, dev_server)
-			return
 
 		q = Golfer.all().ancestor(s.key()).order('sequence')
 		golfers = q.fetch(limit = None)
@@ -471,10 +500,39 @@ class Continue(webapp2.RequestHandler):
 
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
+
+		if (not caps.can_add_registrations) and (not self.request.get('back')):
+			if s.num_golfers > orig_num_golfers:
+				if counters.golfer_count + s.num_golfers - orig_num_golfers > root.limit_golfers:
+					open_slots = root.limit_golfers - counters.golfer_count
+					if open_slots <= 0:
+						messages.append('Sorry, the golf tournament is full.')
+					elif open_slots == 1:
+						messages.append('Sorry, the tournament only has room for 1 more golfer.')
+					else:
+						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
+			if s.num_dinners > orig_num_dinners:
+				if counters.dinner_count + s.num_dinners - orig_num_dinners > root.limit_dinners:
+					open_slots = root.limit_dinners - counters.dinner_count
+					if open_slots <= 0:
+						messages.append('Sorry, the dinner is full.')
+					elif open_slots == 1:
+						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
+					else:
+						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
+
+		if messages:
+			show_continuation_form(self.response, root, s, messages, caps, dev_server)
+			return
+
 		if not self.request.get('back'):
 			s.confirmed = True
+
 		logging.info('Registration Step 2 for ID %d' % s.id)
 		s.put()
+
+		if s.confirmed:
+			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
 		auditing.audit(root, "Registration Step 2",
 					   sponsor_id = s.id,
 					   data = s.first_name + " " + s.last_name)

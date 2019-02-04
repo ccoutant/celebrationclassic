@@ -1,4 +1,6 @@
+import os
 import datetime
+import logging
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
@@ -15,6 +17,8 @@ class Tournament(db.Model):
 	golf_price_late = db.IntegerProperty(default = 0)
 	dinner_price_early = db.IntegerProperty(default = 0)
 	dinner_price_late = db.IntegerProperty(default = 0)
+	limit_golfers = db.IntegerProperty(default = 0)
+	limit_dinners = db.IntegerProperty(default = 0)
 	golf_sold_out = db.BooleanProperty(default = False)
 	dinner_sold_out = db.BooleanProperty(default = False)
 	dinner_choices = db.StringProperty(default = "Beef,Chicken,Fish,Vegetarian")
@@ -44,6 +48,7 @@ def new_tournament(name):
 	return t
 
 def get_tournament(name = None):
+	# logging.debug(os.environ['CURRENT_VERSION_ID'])
 	if name:
 		q = Tournament.all()
 		q.filter("name = ", name)
@@ -61,10 +66,33 @@ def get_tournament(name = None):
 		t = q.get()
 		if t is None:
 			t = new_tournament("new")
+		memcache.set("t", t, 60*60*24)
 	return t
 
 def set_tournament_cache(t):
-	memcache.add("t", t, 60*60*24)
+	memcache.set("t", t, 60*60*24)
 
 def clear_tournament_cache():
 	memcache.delete("t")
+
+class Counters(db.Model):
+	golfer_count = db.IntegerProperty(default = 0)
+	dinner_count = db.IntegerProperty(default = 0)
+
+def get_counters(t):
+	key = db.Key.from_path("Counters", "counters", parent = t.key())
+	counters = db.get(key)
+	if counters is None:
+		counters = Counters(parent = t, key_name = "counters")
+		counters.put()
+	return counters
+
+@db.transactional
+def update_counters(t, delta_golfers, delta_dinners):
+	key = db.Key.from_path("Counters", "counters", parent = t.key())
+	counters = db.get(key)
+	if counters is None:
+		counters = Counters(parent = t, key_name = "counters")
+	counters.golfer_count += delta_golfers
+	counters.dinner_count += delta_dinners
+	counters.put()

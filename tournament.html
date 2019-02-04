@@ -5,6 +5,7 @@
 {% block head %}
 <style type="text/css">
 form table tr th { font-size: 75%; }
+input[type="number"] { width: 5em; }
 </style>
 <script type="text/javascript" language="javascript">
 var months_of_year = [ "January", "February", "March", "April", "May", "June",
@@ -52,12 +53,20 @@ function gen_date_picker(name, month, day, year) {
 <td align="left"><input type="checkbox" name="accepting" value="y" {% if tournament.accepting_registrations %}checked{% endif %}></td>
 </tr>
 <tr>
-<td align="left">Golf Sold Out</td>
-<td align="left"><input type="checkbox" name="golf_sold_out" value="y" {% if tournament.golf_sold_out %}checked{% endif %}></td>
+<td align="left"># Golfers</td>
+<td align="left">
+<input type="number" size="3" name="num_golfers" value="{{ counters.golfer_count }}">
+Limit&nbsp;<input type="number" size="3" name="limit_golfers" value="{{ tournament.limit_golfers }}">
+Sold&nbsp;Out&nbsp;<input type="checkbox" name="golf_sold_out" value="y" {% if tournament.golf_sold_out %}checked{% endif %}>
+</td>
 </tr>
 <tr>
-<td align="left">Dinner Sold Out</td>
-<td align="left"><input type="checkbox" name="dinner_sold_out" value="y" {% if tournament.dinner_sold_out %}checked{% endif %}></td>
+<td align="left"># Dinner-Only Reservations</td>
+<td align="left">
+<input type="number" size="3" name="num_dinners" value="{{ counters.dinner_count }}">
+Limit&nbsp;<input type="number" size="3" name="limit_dinners" value="{{ tournament.limit_dinners }}">
+Sold&nbsp;Out&nbsp;<input type="checkbox" name="dinner_sold_out" value="y" {% if tournament.dinner_sold_out %}checked{% endif %}>
+</td>
 </tr>
 <tr>
 <td align="left">Golf Date</td>
