@@ -10,7 +10,7 @@ import random
 import urllib
 import re
 import webapp2
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.api import memcache, mail
 from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
@@ -28,18 +28,18 @@ dev_server = True if server_software and server_software.startswith("Development
 
 # Show the initial registration form.
 
-def show_registration_form(response, root, s, messages, caps, debug):
+def show_registration_form(response, t, s, messages, caps, debug):
 	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
-	early_bird = today.date() <= root.early_bird_deadline
-	registration_closed = today.date() > root.deadline
-	early_bird_deadline = "%s %d, %d" % (root.early_bird_deadline.strftime("%B"),
-										 root.early_bird_deadline.day,
-										 root.early_bird_deadline.year)
-	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
-							  root.deadline.day,
-							  root.deadline.year)
+	early_bird = today.date() <= t.early_bird_deadline
+	registration_closed = today.date() > t.deadline
+	early_bird_deadline = "%s %d, %d" % (t.early_bird_deadline.strftime("%B"),
+										 t.early_bird_deadline.day,
+										 t.early_bird_deadline.year)
+	deadline = "%s %d, %d" % (t.deadline.strftime("%B"),
+							  t.deadline.day,
+							  t.deadline.year)
 	doubleeagle = sponsorship.get_sponsorships("Double Eagle")
 	holeinone = sponsorship.get_sponsorships("Hole in One")
 	eagle = sponsorship.get_sponsorships("Eagle")
@@ -47,16 +47,16 @@ def show_registration_form(response, root, s, messages, caps, debug):
 	angel = sponsorship.get_sponsorships("Angel")
 	selected_sponsorships = []
 	non_angel_selected = False
-	use_go_discount_code = 1 if root.go_discount_codes else 0
+	use_go_discount_code = 1 if t.go_discount_codes else 0
 	for sskey in s.sponsorships:
-		ss = db.get(sskey)
+		ss = sskey.get()
 		if ss:
 			selected_sponsorships.append(ss.sequence)
 			if ss.sequence != angel[0].sequence:
 				non_angel_selected = True
 	page = detailpage.get_detail_page('register', False)
 	template_values = {
-		'tournament': root,
+		'tournament': t,
 		'sponsor': s,
 		'credits': s.payment_made + s.discount,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
@@ -81,61 +81,65 @@ def show_registration_form(response, root, s, messages, caps, debug):
 
 # Show the continuation form.
 
-def show_continuation_form(response, root, s, messages, caps, debug):
+def show_continuation_form(response, t, s, messages, caps, debug):
 	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
-	registration_closed = today.date() > root.deadline
-	deadline = "%s %d, %d" % (root.deadline.strftime("%B"),
-							  root.deadline.day,
-							  root.deadline.year)
-	dinner_choices = root.dinner_choices.split(',')
+	registration_closed = today.date() > t.deadline
+	deadline = "%s %d, %d" % (t.deadline.strftime("%B"),
+							  t.deadline.day,
+							  t.deadline.year)
+	dinner_choices = t.dinner_choices.split(',')
 	has_registered = s.confirmed
 	has_completed_names = True
 	has_completed_handicaps = True
 	has_selected_sizes = True
 	has_paid = (s.payment_made + s.discount >= s.payment_due)
-	q = Golfer.all().ancestor(s.key()).order('sequence')
-	golfers = q.fetch(s.num_golfers)
-	for i in range(1, s.num_golfers + 1):
-		if i <= len(golfers):
-			golfer = golfers[i - 1]
-			if not golfer.first_name or not golfer.last_name or not golfer.gender:
+	if s.num_golfers:
+		golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+		for i in range(1, s.num_golfers + 1):
+			if i <= len(golfers):
+				golfer = golfers[i - 1]
+				if not golfer.first_name or not golfer.last_name or not golfer.gender:
+					has_completed_names = False
+				if golfer.ghin_number == '' and golfer.average_score == '':
+					has_completed_handicaps = False
+				if not golfer.shirt_size:
+					has_selected_sizes = False
+			else:
 				has_completed_names = False
-			if golfer.ghin_number == '' and golfer.average_score == '':
 				has_completed_handicaps = False
-			if not golfer.shirt_size:
 				has_selected_sizes = False
-		else:
-			has_completed_names = False
-			has_completed_handicaps = False
-			has_selected_sizes = False
-			golfer = Golfer(parent = s, sequence = i)
-			if i == 1:
-				golfer.first_name = s.first_name
-				golfer.last_name = s.last_name
-				golfer.company = s.company
-				golfer.address = s.address
-				golfer.city = s.city
-				golfer.state = s.state
-				golfer.zip = s.zip
-				golfer.phone = s.phone
-				golfer.email = s.email
-			golfers.append(golfer)
-	q = DinnerGuest.all().ancestor(s.key()).order('sequence')
-	dinner_guests = q.fetch(s.num_dinners)
-	for i in range(1, s.num_dinners + 1):
-		if i <= len(dinner_guests):
-			guest = dinner_guests[i - 1]
-			if not guest.first_name or not guest.last_name:
+				golfer = Golfer(tournament = t.key, sponsor = s.key, sequence = i)
+				if i == 1:
+					golfer.first_name = s.first_name
+					golfer.last_name = s.last_name
+					golfer.company = s.company
+					golfer.address = s.address
+					golfer.city = s.city
+					golfer.state = s.state
+					golfer.zip = s.zip
+					golfer.phone = s.phone
+					golfer.email = s.email
+				golfers.append(golfer)
+	else:
+		golfers = []
+	if s.num_dinners:
+		dinner_guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
+		for i in range(1, s.num_dinners + 1):
+			if i <= len(dinner_guests):
+				guest = dinner_guests[i - 1]
+				if not guest.first_name or not guest.last_name:
+					has_completed_names = False
+			else:
 				has_completed_names = False
-		else:
-			has_completed_names = False
-			guest = DinnerGuest(parent = s, sequence = i)
-			if s.num_golfers + i == 1:
-				guest.first_name = s.first_name
-				guest.last_name = s.last_name
-			dinner_guests.append(guest)
+				guest = DinnerGuest(tournament = t.key, sponsor = s.key, sequence = i)
+				if s.num_golfers + i == 1:
+					guest.first_name = s.first_name
+					guest.last_name = s.last_name
+				dinner_guests.append(guest)
+	else:
+		dinner_guests = []
 	template_values = {
 		'deadline': deadline,
 		'registration_closed': registration_closed,
@@ -161,51 +165,47 @@ class Register(webapp2.RequestHandler):
 	# Show a form for a new sponsor or the continuation form,
 	# depending on whether or not the "id" parameter was provided.
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		messages = []
 		if self.request.get('id'):
 			id = self.request.get('id')
-			q = Sponsor.all()
-			q.ancestor(root)
-			q.filter('id = ', int(id))
+			q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == int(id))
 			s = q.get()
 			if s:
 				if self.request.get('page') == '1':
-					show_registration_form(self.response, root, s, messages, caps, dev_server)
+					show_registration_form(self.response, t, s, messages, caps, dev_server)
 				else:
-					show_continuation_form(self.response, root, s, messages, caps, dev_server)
+					show_continuation_form(self.response, t, s, messages, caps, dev_server)
 				return
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 		s = Sponsor(sponsorships = [])
-		show_registration_form(self.response, root, s, messages, caps, dev_server)
+		show_registration_form(self.response, t, s, messages, caps, dev_server)
 
 	# Process the submitted info.
 	def post(self):
 		messages = []
-		root = tournament.get_tournament()
-		counters = tournament.get_counters(root)
+		t = tournament.get_tournament()
+		counters = tournament.get_counters(t)
 		# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 		# last until 1 am PDT.)
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
-		early_bird = today.date() <= root.early_bird_deadline
-		registration_closed = today.date() > root.deadline
-		golf_price = root.golf_price_early if early_bird else root.golf_price_late
-		dinner_price = root.dinner_price_early if early_bird else root.dinner_price_late
+		early_bird = today.date() <= t.early_bird_deadline
+		registration_closed = today.date() > t.deadline
+		golf_price = t.golf_price_early if early_bird else t.golf_price_late
+		dinner_price = t.dinner_price_early if early_bird else t.dinner_price_late
 		caps = capabilities.get_current_user_caps()
 		orig_num_golfers = 0
 		orig_num_dinners = 0
 		id = int(self.request.get('id'))
 		if id:
-			q = Sponsor.all()
-			q.ancestor(root)
-			q.filter('id = ', id)
+			q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == id)
 			s = q.get()
 			if s.confirmed:
 				orig_num_golfers = s.num_golfers
 				orig_num_dinners = s.num_dinners
 		else:
-			s = Sponsor(parent=root)
+			s = Sponsor(parent = t.key)
 		s.first_name = self.request.get('first_name')
 		s.last_name = self.request.get('last_name')
 		s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
@@ -224,18 +224,20 @@ class Register(webapp2.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
+		s.golfer_keys = []
+		s.dinner_keys = []
 
 		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
-			show_registration_form(self.response, root, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, dev_server)
 			return
 
 		discount_applied = False
 		if self.request.get('show_go_campaign'):
-			if root.go_discount_codes:
+			if t.go_discount_codes:
 				discount_code = self.request.get('discount_code')
 				if discount_code and s.discount == 0:
-					codes = [ pair.split(':') for pair in root.go_discount_codes.split(',') ]
+					codes = [ pair.split(':') for pair in t.go_discount_codes.split(',') ]
 					codes = dict(codes)
 					if discount_code in codes:
 						s.go_discount_code = discount_code
@@ -289,7 +291,7 @@ class Register(webapp2.RequestHandler):
 		for ss in sponsorships:
 			k = '%s:%d:%d:%d' % (ss.level, ss.sequence, ss.price, ss.golfers_included)
 			if k in selected:
-				s.sponsorships.append(ss.key())
+				s.sponsorships.append(ss.key)
 				sponsorship_names.append(ss.name)
 				if ss.price != go_discount:
 					s.payment_due += ss.price
@@ -340,11 +342,11 @@ class Register(webapp2.RequestHandler):
 
 		if not caps.can_add_registrations:
 			if s.num_golfers > orig_num_golfers:
-				if root.golf_sold_out:
+				if t.golf_sold_out:
 					s.num_golfers = orig_num_golfers
 					messages.append('Sorry, the golf tournament is full.')
-				elif counters.golfer_count + s.num_golfers - orig_num_golfers > root.limit_golfers:
-					open_slots = root.limit_golfers - counters.golfer_count
+				elif counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
+					open_slots = t.limit_golfers - counters.golfer_count
 					s.num_golfers = orig_num_golfers
 					if open_slots <= 0:
 						messages.append('Sorry, the golf tournament is full.')
@@ -353,11 +355,11 @@ class Register(webapp2.RequestHandler):
 					else:
 						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
 			if s.num_dinners > orig_num_dinners:
-				if root.dinner_sold_out:
+				if t.dinner_sold_out:
 					s.num_dinners = orig_num_dinners
 					messages.append('Sorry, the dinner is full.')
-				elif counters.dinner_count + s.num_dinners - orig_num_dinners > root.limit_dinners:
-					open_slots = root.limit_dinners - counters.dinner_count
+				elif counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
+					open_slots = t.limit_dinners - counters.dinner_count
 					s.num_dinners = orig_num_dinners
 					if open_slots <= 0:
 						messages.append('Sorry, the dinner is full.')
@@ -367,32 +369,33 @@ class Register(webapp2.RequestHandler):
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages or self.request.get('apply_discount'):
-			show_registration_form(self.response, root, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, dev_server)
 			return
 
-		if s.id == 0:
+		if s.sponsor_id == 0:
 			while True:
-				s.id = random.randrange(100000,999999)
-				q = Sponsor.all()
-				q.ancestor(root)
-				q.filter('id = ', s.id)
-				result = q.get()
-				if not result: break
-				logging.info('ID collision for %d; retrying...' % s.id)
-		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.id, s.num_golfers, s.num_dinners))
+				trial_id = random.randrange(100000,999999)
+				q = Sponsor.query(ancestor = t.key)
+				q = q.filter(Sponsor.sponsor_id == trial_id)
+				result = q.get(keys_only = True)
+				if result is None:
+					s.sponsor_id = trial_id
+					break
+				logging.info('ID collision for %d; retrying...' % trial_id)
+		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.sponsor_id, s.num_golfers, s.num_dinners))
 		s.put()
 		if s.confirmed:
-			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
-		auditing.audit(root, "Registration Step 1",
-					   sponsor_id = s.id,
+			tournament.update_counters(t, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
+		auditing.audit(t, "Registration Step 1",
+					   sponsor_id = s.sponsor_id,
 					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners),
 					   request = self.request)
-		memcache.delete('%s/admin/view/golfers' % root.name)
-		memcache.delete('%s/admin/view/dinners' % root.name)
+		memcache.delete('%s/admin/view/golfers' % t.name)
+		memcache.delete('%s/admin/view/dinners' % t.name)
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/admin/view/registrations')
 			return
-		self.redirect('/register?id=%d' % s.id)
+		self.redirect('/register?id=%d' % s.sponsor_id)
 
 # Registration Step 2.
 
@@ -400,18 +403,16 @@ class Continue(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
 		messages = []
-		root = tournament.get_tournament()
-		counters = tournament.get_counters(root)
+		t = tournament.get_tournament()
+		counters = tournament.get_counters(t)
 		caps = capabilities.get_current_user_caps()
 		id = self.request.get('id')
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter('id = ', int(id))
+		q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == int(id))
 		s = q.get()
-		if not s:
+		if s is None:
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 			s = Sponsor(sponsorships = [])
-			show_registration_form(self.response, root, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, dev_server)
 			return
 
 		orig_num_golfers = 0
@@ -420,21 +421,20 @@ class Continue(webapp2.RequestHandler):
 			orig_num_golfers = s.num_golfers
 			orig_num_dinners = s.num_dinners
 
-		for i in range(1, s.num_golfers + 1):
-			handicap_index = self.request.get('index%d' % i)
-			if handicap_index:
-				try:
-					val = float(handicap_index)
-				except ValueError:
-					messages.append('Invalid handicap index for golfer #%d; please enter a decimal number.' % i)
-
-		q = Golfer.all().ancestor(s.key()).order('sequence')
-		golfers = q.fetch(limit = None)
-		for i in range(1, s.num_golfers + 1):
-			if len(golfers) < i:
-				golfers.append(Golfer(parent = s, sequence = i))
-			golfer = golfers[i-1]
-			golfer.active = True
+		golfers = ndb.get_multi(s.golfer_keys)
+		if len(golfers) < s.num_golfers:
+			# Initialize new golfer instances.
+			for i in range(len(golfers), s.num_golfers + 1):
+				golfers.append(Golfer(tournament = t.key, sponsor = s.key, sequence = i + 1, active = True))
+		elif len(golfers) > s.num_golfers:
+			# Mark excess golfer instances as not active, so we can filter
+			# them out when querying all golfers.
+			for i in range(s.num_golfers, len(golfers)):
+				golfers[i].active = False
+		for golfer in golfers:
+			if not golfer.active:
+				break
+			i = golfer.sequence
 			golfer.first_name = self.request.get('first_name%d' % i)
 			golfer.last_name = self.request.get('last_name%d' % i)
 			if golfer.last_name:
@@ -459,6 +459,7 @@ class Continue(webapp2.RequestHandler):
 						golfer.has_index = True
 						golfer.index_info_modified = True
 				except ValueError:
+					messages.append('Invalid handicap index for golfer #%d; please enter a decimal number.' % i)
 					logging.error("Invalid handicap index '%s'" % handicap_index)
 					if golfer.has_index:
 						golfer.index_info_modified = True
@@ -479,33 +480,36 @@ class Continue(webapp2.RequestHandler):
 			golfer.ghin_number = ghin_number
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
 			golfer.dinner_choice = self.request.get('golfer_dinner%d' % i)
-			golfer.put()
+		ndb.put_multi(golfers)
+		s.golfer_keys = [ g.key for g in golfers ]
 
-		# Mark excess golfer instances as not active, so we can filter
-		# them out when querying all golfers.
-		if len(golfers) > s.num_golfers:
-			for i in range(s.num_golfers, len(golfers)):
-				golfers[i].active = False
-				golfers[i].put()
-
-		q = DinnerGuest.all().ancestor(s.key()).order('sequence')
-		dinner_guests = q.fetch(s.num_dinners)
-		for i in range(1, s.num_dinners + 1):
-			if len(dinner_guests) < i:
-				dinner_guests.append(DinnerGuest(parent = s, sequence = i))
-			guest = dinner_guests[i-1]
+		dinner_guests = ndb.get_multi(s.dinner_keys)
+		if len(dinner_guests) < s.num_dinners:
+			# Initialize new DinnerGuest instances.
+			for i in range(len(dinner_guests), s.num_dinners + 1):
+				dinner_guests.append(DinnerGuest(tournament = t.key, sponsor = s.key, sequence = i + 1, active = True))
+		elif len(dinner_guests) > s.num_dinners:
+			# Mark excess golfer instances as not active, so we can filter
+			# them out when querying all golfers.
+			for i in range(s.num_dinners, len(dinner_guests)):
+				dinner_guests[i].active = False
+		for guest in dinner_guests:
+			if not guest.active:
+				break
+			i = guest.sequence
 			guest.first_name = self.request.get('guest_first_name%d' % i)
 			guest.last_name = self.request.get('guest_last_name%d' % i)
 			guest.dinner_choice = self.request.get('guest_dinner%d' % i)
-			guest.put()
+		ndb.put_multi(dinner_guests)
+		s.dinner_keys = [ g.key for g in dinner_guests ]
 
 		s.pairing = self.request.get('pairing')
 		s.dinner_seating = self.request.get('dinner_seating')
 
 		if (not caps.can_add_registrations) and (not self.request.get('back')):
 			if s.num_golfers > orig_num_golfers:
-				if counters.golfer_count + s.num_golfers - orig_num_golfers > root.limit_golfers:
-					open_slots = root.limit_golfers - counters.golfer_count
+				if counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
+					open_slots = t.limit_golfers - counters.golfer_count
 					if open_slots <= 0:
 						messages.append('Sorry, the golf tournament is full.')
 					elif open_slots == 1:
@@ -513,8 +517,8 @@ class Continue(webapp2.RequestHandler):
 					else:
 						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
 			if s.num_dinners > orig_num_dinners:
-				if counters.dinner_count + s.num_dinners - orig_num_dinners > root.limit_dinners:
-					open_slots = root.limit_dinners - counters.dinner_count
+				if counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
+					open_slots = t.limit_dinners - counters.dinner_count
 					if open_slots <= 0:
 						messages.append('Sorry, the dinner is full.')
 					elif open_slots == 1:
@@ -523,31 +527,34 @@ class Continue(webapp2.RequestHandler):
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages:
-			show_continuation_form(self.response, root, s, messages, caps, dev_server)
+			show_continuation_form(self.response, t, s, messages, caps, dev_server)
 			return
 
 		if not self.request.get('back'):
 			s.confirmed = True
 
-		logging.info('Registration Step 2 for ID %d' % s.id)
+		logging.info('Registration Step 2 for ID %d' % s.sponsor_id)
 		s.put()
 
 		if s.confirmed:
-			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
-		auditing.audit(root, "Registration Step 2",
-					   sponsor_id = s.id,
+			tournament.update_counters(t, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
+		auditing.audit(t, "Registration Step 2",
+					   sponsor_id = s.sponsor_id,
 					   data = s.first_name + " " + s.last_name,
 					   request = self.request)
-		memcache.delete('%s/admin/view/golfers' % root.name)
-		memcache.delete('%s/admin/view/dinners' % root.name)
+		memcache.delete('%s/admin/view/golfers' % t.name)
+		memcache.delete('%s/admin/view/dinners' % t.name)
 
 		# Mark unique sponsorships as sold.
-		for k in s.sponsorships:
-			ss = db.get(k)
+		ss_changed = []
+		for sskey in s.sponsorships:
+			ss = sskey.get()
 			if ss and ss.unique:
 				ss.sold = True;
-				ss.put()
-				sponsorship.clear_sponsorships_cache()
+				ss_changed.append(ss)
+		if ss_changed:
+			ndb.put_multi(ss_changed)
+			sponsorship.clear_sponsorships_cache()
 
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/admin/view/registrations')
@@ -574,17 +581,17 @@ class Continue(webapp2.RequestHandler):
 				'net_payment_due': net_payment_due,
 				'capabilities': caps
 			}
-			logging.info('Pay by check, ID %d' % s.id)
+			logging.info('Pay by check, ID %d' % s.sponsor_id)
 			self.response.out.write(render_to_string('paybycheck.html', template_values))
 			return
 
 		sponsorship_names = []
 		for sskey in s.sponsorships:
-			ss = db.get(sskey)
+			ss = sskey.get()
 			if ss:
 				sponsorship_names.append(ss.name)
 
-		payments_info = payments.get_payments_info(root)
+		payments_info = payments.get_payments_info(t)
 
 		if payments_info.gateway_url and 'acceptiva' in payments_info.gateway_url:
 			parms = [('cst', '60605a'),
@@ -594,7 +601,7 @@ class Continue(webapp2.RequestHandler):
 					 ('numberofgolfers', s.num_golfers),
 					 ('numberofdinnerguests', s.num_dinners),
 					 ('amount_20_20_amt', net_payment_due),
-					 ('idnumberhidden', s.id),
+					 ('idnumberhidden', s.sponsor_id),
 					 ('fname', s.first_name),
 					 ('lname', s.last_name),
 					 ('address', s.address),
@@ -603,7 +610,7 @@ class Continue(webapp2.RequestHandler):
 					 ('zip', s.zip),
 					 ('phone', s.phone),
 					 ('email', s.email)]
-			logging.info('Pay by acceptiva, ID %d' % s.id)
+			logging.info('Pay by acceptiva, ID %d' % s.sponsor_id)
 			self.redirect('%s?%s' % (payments_info.gateway_url, urllib.urlencode(parms)))
 
 		elif payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
@@ -611,7 +618,7 @@ class Continue(webapp2.RequestHandler):
 			fingerprint = hmac.new(payments_info.transaction_key.encode())
 			fingerprint.update(payments_info.api_login_id)
 			fingerprint.update('^')
-			fingerprint.update(str(s.id))
+			fingerprint.update(str(s.sponsor_id))
 			fingerprint.update('^')
 			fingerprint.update(str(timestamp))
 			fingerprint.update('^')
@@ -621,13 +628,13 @@ class Continue(webapp2.RequestHandler):
 			api_fields = [
 				('x_test_request', 'TRUE' if payments_info.test_mode else 'FALSE'),
 				('x_login', payments_info.api_login_id),
-				('x_fp_sequence', str(s.id)),
+				('x_fp_sequence', str(s.sponsor_id)),
 				('x_fp_timestamp', str(timestamp)),
 				('x_fp_hash', fingerprint.hexdigest()),
 				('x_version', '3.1'),
 				('x_method', 'CC'),
 				('x_type', 'AUTH_CAPTURE'),
-				('x_cust_id', s.id),
+				('x_cust_id', s.sponsor_id),
 				('x_description', description),
 				('x_email_customer', 'FALSE'),
 				('x_delim_data', 'FALSE'),
@@ -641,12 +648,12 @@ class Continue(webapp2.RequestHandler):
 				'net_payment_due': str(net_payment_due),
 				'capabilities': caps
 			}
-			logging.info('Pay by authorize.net, ID %d' % s.id)
+			logging.info('Pay by authorize.net, ID %d' % s.sponsor_id)
 			self.response.out.write(render_to_string('paybycredit.html', template_values))
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			show_continuation_form(self.response, root, s, messages, caps, dev_server)
+			show_continuation_form(self.response, t, s, messages, caps, dev_server)
 
 # Send an email receipt.
 
@@ -682,8 +689,8 @@ glad to assist.
 def email_check_ack(s, amount):
 	subject = "Your Celebration Classic Registration"
 	sender = "registration@celebrationclassic.org"
-	body = check_ack_template % (s.first_name, amount, s.id)
-	logging.info("sending email acknowledgment to %s (id %s)" % (s.email, s.id))
+	body = check_ack_template % (s.first_name, amount, s.sponsor_id)
+	logging.info("sending email acknowledgment to %s (id %s)" % (s.email, s.sponsor_id))
 	try:
 		mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
 	except:
@@ -721,8 +728,8 @@ glad to assist.
 def email_cc_receipt(s, card_type, auth_code, amount):
 	subject = "Your Celebration Classic Registration"
 	sender = "registration@celebrationclassic.org"
-	body = cc_receipt_template % (s.first_name, card_type, amount, auth_code, s.id)
-	logging.info("sending email receipt to %s (id %s)" % (s.email, s.id))
+	body = cc_receipt_template % (s.first_name, card_type, amount, auth_code, s.sponsor_id)
+	logging.info("sending email receipt to %s (id %s)" % (s.email, s.sponsor_id))
 	try:
 		mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
 	except:
@@ -759,8 +766,8 @@ def email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount):
 class RelayResponse(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
-		root = tournament.get_tournament()
-		payments_info = payments.get_payments_info(root)
+		t = tournament.get_tournament()
+		payments_info = payments.get_payments_info(t)
 		response_code = self.request.get('x_response_code')
 		reason_code = self.request.get('x_response_reason_code')
 		reason_text = self.request.get('x_response_reason_text')
@@ -776,7 +783,7 @@ class RelayResponse(webapp2.RequestHandler):
 		m = pat.match(id)
 		if m:
 			tribute_id = int(m.group(1))
-			ad = TributeAd.get_by_id(tribute_id, parent = root)
+			ad = TributeAd.get_by_id(tribute_id, parent = t.key)
 			if ad and int(response_code) == 1:
 				ad.payment_type = method
 				ad.transaction_code = trans_id
@@ -788,13 +795,13 @@ class RelayResponse(webapp2.RequestHandler):
 				ad.put()
 				if ad.email:
 					email_cc_tribute_receipt(ad, tribute_id, card_type, auth_code, amount)
-				auditing.audit(root, "Tribute Ad Payment",
+				auditing.audit(t, "Tribute Ad Payment",
 							   tribute_id = tribute_id,
 							   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
 									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
 							   request = self.request)
 			else:
-				auditing.audit(root, "Tribute Ad Payment Failed",
+				auditing.audit(t, "Tribute Ad Payment Failed",
 							   tribute_id = tribute_id,
 							   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
 									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
@@ -806,9 +813,7 @@ class RelayResponse(webapp2.RequestHandler):
 			except ValueError:
 				logging.error("Invalid id \"%s\"" % id)
 			if sponsor_id is not None:
-				q = Sponsor.all()
-				q.ancestor(root)
-				q.filter('id = ', sponsor_id)
+				q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == sponsor_id)
 				s = q.get()
 				if s and int(response_code) == 1:
 					s.payment_type = method
@@ -821,13 +826,13 @@ class RelayResponse(webapp2.RequestHandler):
 					s.put()
 					if s.email:
 						email_cc_receipt(s, card_type, auth_code, amount)
-					auditing.audit(root, "Golf/Dinner Payment",
+					auditing.audit(t, "Golf/Dinner Payment",
 								   sponsor_id = sponsor_id,
 								   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
 										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
 								   request = self.request)
 				else:
-					auditing.audit(root, "Golf/Dinner Payment Failed",
+					auditing.audit(t, "Golf/Dinner Payment Failed",
 								   sponsor_id = sponsor_id,
 								   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
 										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
@@ -862,7 +867,7 @@ class RelayResponse(webapp2.RequestHandler):
 class Receipt(webapp2.RequestHandler):
 	# Process the submitted info.
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		response_code = self.request.get('response_code')
 		reason_code = self.request.get('reason_code')
@@ -877,7 +882,7 @@ class Receipt(webapp2.RequestHandler):
 			tribute_id = int(m.group(1))
 			ad = None
 			try:
-				ad = TributeAd.get_by_id(tribute_id, parent = root)
+				ad = TributeAd.get_by_id(tribute_id, parent = t.key)
 			except:
 				logging.error("Invalid tribute_id \"%s\"" % id)
 			if not ad:
@@ -907,9 +912,7 @@ class Receipt(webapp2.RequestHandler):
 			except ValueError:
 				logging.error("Invalid id \"%s\"" % id)
 			if sponsor_id is not None:
-				q = Sponsor.all()
-				q.ancestor(root)
-				q.filter('id = ', sponsor_id)
+				q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == sponsor_id)
 				s = q.get()
 			if not s:
 				self.response.out.write('<html><head>\n')
@@ -936,7 +939,7 @@ class Receipt(webapp2.RequestHandler):
 class PostPayment(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		name = self.request.get('contactname')
 		id = self.request.get('idnumberhidden')
 		payment_made = self.request.get('amount_20_20_amt')
@@ -944,9 +947,7 @@ class PostPayment(webapp2.RequestHandler):
 		transcode = self.request.get('transcode')
 		logging.info("post payment for id %s: amount %s, paytype %s, transcode %s" %
 					 (id, payment_made, paytype, transcode))
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter('id = ', int(id))
+		q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == int(id))
 		s = q.get()
 		if not s:
 			self.response.set_status(204, 'ID Not Found')
@@ -1001,9 +1002,9 @@ class FakeAcceptiva(webapp2.RequestHandler):
 # Handle a request for a tribute ad.
 
 class Tribute(webapp2.RequestHandler):
-	def show_form(self, root, ad, tribute_id, messages):
+	def show_form(self, t, ad, tribute_id, messages):
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
-		past_deadline = today.date() > root.tribute_deadline
+		past_deadline = today.date() > t.tribute_deadline
 		page = detailpage.get_detail_page('tribute', False)
 		caps = capabilities.get_current_user_caps()
 		template_values = {
@@ -1017,25 +1018,25 @@ class Tribute(webapp2.RequestHandler):
 		self.response.out.write(render_to_string('tribute.html', template_values))
 
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		messages = []
 		id_parm = self.request.get('id')
 		if id_parm:
 			try:
-				ad = TributeAd.get_by_id(int(id_parm), parent = root)
+				ad = TributeAd.get_by_id(int(id_parm), parent = t.key)
 				if ad:
-					self.show_form(root, ad, id_parm, messages)
+					self.show_form(t, ad, id_parm, messages)
 					return
 				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
 			except:
 				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
-		ad = TributeAd()
-		self.show_form(root, ad, "", messages)
+		ad = TributeAd(parent = t.key)
+		self.show_form(t, ad, "", messages)
 
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
-		past_deadline = today.date() > root.tribute_deadline
+		past_deadline = today.date() > t.tribute_deadline
 		caps = capabilities.get_current_user_caps()
 		messages = []
 		id_parm = self.request.get('id') or ""
@@ -1055,12 +1056,12 @@ class Tribute(webapp2.RequestHandler):
 
 		if id_parm:
 			try:
-				ad = TributeAd.get_by_id(int(id_parm), parent = root)
+				ad = TributeAd.get_by_id(int(id_parm), parent = t.key)
 			except:
 				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
 
 		if not ad:
-			ad = TributeAd(parent = root)
+			ad = TributeAd(parent = t.key)
 
 		ad.first_name = first_name
 		ad.last_name = last_name
@@ -1102,7 +1103,7 @@ class Tribute(webapp2.RequestHandler):
 				ad.auth_code = self.request.get('authcode')
 
 		if messages:
-			self.show_form(root, ad, id_parm, messages)
+			self.show_form(t, ad, id_parm, messages)
 			return
 
 		if caps.can_add_registrations and self.request.get('save'):
@@ -1113,11 +1114,11 @@ class Tribute(webapp2.RequestHandler):
 			ad.payment_type = 'credit'
 
 		ad.put()
-		tribute_id = ad.key().id()
+		tribute_id = ad.key.id()
 		logging.info("Tribute ad for %s %s, amount due $%d, pay by %s" %
 					 (ad.first_name, ad.last_name, ad.payment_due, ad.payment_type))
 		action = "Updated" if id_parm else "Added"
-		auditing.audit(root, "%s Tribute Ad" % action,
+		auditing.audit(t, "%s Tribute Ad" % action,
 					   tribute_id = tribute_id,
 					   data = "%s %s: due $%d, pay by %s" % (ad.first_name, ad.last_name, ad.payment_due - ad.payment_made, ad.payment_type),
 					   request = self.request)
@@ -1139,7 +1140,7 @@ class Tribute(webapp2.RequestHandler):
 			self.response.out.write(render_to_string('paybycheck-tribute.html', template_values))
 			return
 
-		payments_info = payments.get_payments_info(root)
+		payments_info = payments.get_payments_info(t)
 
 		if payments_info.gateway_url and 'authorize.net' in payments_info.gateway_url:
 			cust_id = 'T%d' % tribute_id
@@ -1185,7 +1186,7 @@ class Tribute(webapp2.RequestHandler):
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			self.show_form(root, ad, str(tribute_id), messages)
+			self.show_form(t, ad, str(tribute_id), messages)
 
 app = webapp2.WSGIApplication([('/register', Register),
 							   ('/continue', Continue),

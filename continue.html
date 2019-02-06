@@ -18,7 +18,7 @@
 {% if not registration_closed %}
 <p>If you don&rsquo;t have all the information you need yet
 (or you haven&rsquo;t yet decided what to have for dinner),
-just <b><a href="/register?id={{ sponsor.id }}">bookmark this page</a></b>
+just <b><a href="/register?id={{ sponsor.sponsor_id }}">bookmark this page</a></b>
 so you can come back to it later.
 You can proceed to the checkout step and pay even if you
 haven&rsquo;t completed this form.
@@ -54,7 +54,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 {% endfor %}
 
 <form action="/continue" method="post" accept-charset="utf-8" novalidate>
-<input type="hidden" name="id" value="{{ sponsor.id }}">
+<input type="hidden" name="id" value="{{ sponsor.sponsor_id }}">
 
 <div id="continue-form" class="form">
 

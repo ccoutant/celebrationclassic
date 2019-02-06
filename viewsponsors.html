@@ -83,8 +83,8 @@ function toggle_display(i) {
 <tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
-		<td nowrap>{% if incomplete == 'unpaid' or incomplete == 'incomplete' %}<input type="checkbox" name="selected_items" value="{{ s.id }}">{% endif %}
-		<a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
+		<td nowrap>{% if incomplete == 'unpaid' or incomplete == 'incomplete' %}<input type="checkbox" name="selected_items" value="{{ s.sponsor_id }}">{% endif %}
+		<a href="/register?id={{ s.sponsor_id }}">{{ s.sponsor_id }}</a></td>
 		<td>{{ s.first_name }} {{ s.last_name }}</td>
 		<td>
 			{% if s.company %}<p>{{ s.company }}</p>{% endif %}
@@ -115,7 +115,7 @@ function toggle_display(i) {
 		<td nowrap>
 			<p>Total: ${{ s.payment_due }}
 			{% if capabilities.can_add_registrations and s.confirmed %}
-			<a href="/register?id={{ s.id }}&page=1"><button name="edit_payment" type="button">Edit Payment</button></a>
+			<a href="/register?id={{ s.sponsor_id }}&page=1"><button name="edit_payment" type="button">Edit Payment</button></a>
 			{% endif %}
 			</p>
 			{% if s.discount %}

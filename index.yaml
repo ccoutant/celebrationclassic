@@ -29,6 +29,12 @@ indexes:
   properties:
   - name: sequence
 
+- kind: AuctionItem
+  ancestor: yes
+  properties:
+  - name: which
+  - name: sequence
+
 - kind: AuditEntry
   ancestor: yes
   properties:
@@ -44,6 +50,26 @@ indexes:
   ancestor: yes
   properties:
   - name: sequence
+
+- kind: Golfer
+  properties:
+  - name: active
+  - name: tournament
+  - name: sort_name
+
+- kind: Golfer
+  properties:
+  - name: active
+  - name: tournament
+  - name: sort_name
+  - name: average_score
+  - name: cart
+  - name: first_name
+  - name: gender
+  - name: handicap_index
+  - name: has_index
+  - name: last_name
+  - name: tees
 
 - kind: Golfer
   ancestor: yes

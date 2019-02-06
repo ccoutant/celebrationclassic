@@ -20,7 +20,7 @@ p.description { margin-bottom: 0.5em; }
 
 <form action="/admin/edit" method="post" accept-charset="utf-8">
 
-<p><i>Last modified {{ timestamp }}
+<p><i>{% if timestamp %}Last modified {{ timestamp }}{% endif %}
 ({% if page.draft %}Draft {% endif %}{% if page.preview %}Preview {% endif %}Version {{ page.version }})</i></p>
 
 <p><label for="pagetitle">Title:</label> <input name="pagetitle" type="text" size="60" value="{{ page.title }}"></p>

@@ -17,7 +17,7 @@
 Your credit card information will be transmitted securely directly to our payment processor,
 and will not be stored on our server.</p>
 
-<p>You may return to the <a href="/register?id={{ sponsor.id }}">registration page</a>
+<p>You may return to the <a href="/register?id={{ sponsor.sponsor_id }}">registration page</a>
 any time to complete your registration.</p>
 
 <form action="{{ gateway_url }}" method="post" accept-charset="utf-8">
@@ -109,7 +109,7 @@ $<input type="text" id="entry_net_payment_due" name="x_amount" value="{{ net_pay
 
 <div class="form-entry form-submit">
 <div class="form-button">
-<a href="/register?id={{ sponsor.id }}"><button type="button" name="back">&larr; Back</button></a>
+<a href="/register?id={{ sponsor.sponsor_id }}"><button type="button" name="back">&larr; Back</button></a>
 <input type="submit" name="buy_button" value="Submit Payment">
 </div>
 </div>

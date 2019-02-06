@@ -1,35 +1,35 @@
 import os
 import datetime
 import logging
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.api import memcache
 
-class Tournament(db.Model):
-	name = db.StringProperty()
-	published = db.BooleanProperty(default = False)
-	accepting_registrations = db.BooleanProperty(default = False)
-	golf_date = db.DateProperty()
-	dinner_date = db.DateProperty()
-	early_bird_deadline = db.DateProperty()
-	deadline = db.DateProperty()
-	tribute_deadline = db.DateProperty()
-	golf_price_early = db.IntegerProperty(default = 0)
-	golf_price_late = db.IntegerProperty(default = 0)
-	dinner_price_early = db.IntegerProperty(default = 0)
-	dinner_price_late = db.IntegerProperty(default = 0)
-	limit_golfers = db.IntegerProperty(default = 0)
-	limit_dinners = db.IntegerProperty(default = 0)
-	golf_sold_out = db.BooleanProperty(default = False)
-	dinner_sold_out = db.BooleanProperty(default = False)
-	dinner_choices = db.StringProperty(default = "Beef,Chicken,Fish,Vegetarian")
-	go_discount_codes = db.StringProperty(default = "")
-	red_course_rating = db.FloatProperty(default = 72.0)
-	red_course_slope = db.FloatProperty(default = 113.0)
-	white_course_rating = db.FloatProperty(default = 72.0)
-	white_course_slope = db.FloatProperty(default = 113.0)
-	blue_course_rating = db.FloatProperty(default = 72.0)
-	blue_course_slope = db.FloatProperty(default = 113.0)
-	timestamp = db.DateTimeProperty(auto_now_add = True)
+class Tournament(ndb.Model):
+	name = ndb.StringProperty()
+	published = ndb.BooleanProperty(default = False)
+	accepting_registrations = ndb.BooleanProperty(default = False)
+	golf_date = ndb.DateProperty()
+	dinner_date = ndb.DateProperty()
+	early_bird_deadline = ndb.DateProperty()
+	deadline = ndb.DateProperty()
+	tribute_deadline = ndb.DateProperty()
+	golf_price_early = ndb.IntegerProperty(default = 0)
+	golf_price_late = ndb.IntegerProperty(default = 0)
+	dinner_price_early = ndb.IntegerProperty(default = 0)
+	dinner_price_late = ndb.IntegerProperty(default = 0)
+	limit_golfers = ndb.IntegerProperty(default = 0)
+	limit_dinners = ndb.IntegerProperty(default = 0)
+	golf_sold_out = ndb.BooleanProperty(default = False)
+	dinner_sold_out = ndb.BooleanProperty(default = False)
+	dinner_choices = ndb.StringProperty(default = "Beef,Chicken,Fish,Vegetarian")
+	go_discount_codes = ndb.StringProperty(default = "")
+	red_course_rating = ndb.FloatProperty(default = 72.0)
+	red_course_slope = ndb.FloatProperty(default = 113.0)
+	white_course_rating = ndb.FloatProperty(default = 72.0)
+	white_course_slope = ndb.FloatProperty(default = 113.0)
+	blue_course_rating = ndb.FloatProperty(default = 72.0)
+	blue_course_slope = ndb.FloatProperty(default = 113.0)
+	timestamp = ndb.DateTimeProperty(auto_now_add = True)
 
 def new_tournament(name):
 	tdate = datetime.date.today() + datetime.timedelta(180)
@@ -50,8 +50,8 @@ def new_tournament(name):
 def get_tournament(name = None):
 	# logging.debug(os.environ['CURRENT_VERSION_ID'])
 	if name:
-		q = Tournament.all()
-		q.filter("name = ", name)
+		q = Tournament.query()
+		q = q.filter(Tournament.name == name)
 		t = q.get()
 		if t is not None:
 			return t
@@ -60,9 +60,9 @@ def get_tournament(name = None):
 		t = memcache.get("t")
 		if t is not None:
 			return t
-		q = Tournament.all()
-		q.filter("published = ", True)
-		q.order("-timestamp")
+		q = Tournament.query()
+		q = q.filter(Tournament.published == True)
+		q = q.order(-Tournament.timestamp)
 		t = q.get()
 		if t is None:
 			t = new_tournament("new")
@@ -75,22 +75,22 @@ def set_tournament_cache(t):
 def clear_tournament_cache():
 	memcache.delete("t")
 
-class Counters(db.Model):
-	golfer_count = db.IntegerProperty(default = 0)
-	dinner_count = db.IntegerProperty(default = 0)
+class Counters(ndb.Model):
+	golfer_count = ndb.IntegerProperty(default = 0)
+	dinner_count = ndb.IntegerProperty(default = 0)
 
 def get_counters(t):
-	key = db.Key.from_path("Counters", "counters", parent = t.key())
-	counters = db.get(key)
+	key = ndb.Key("Counters", "counters", parent = t.key)
+	counters = key.get()
 	if counters is None:
-		counters = Counters(parent = t, key_name = "counters")
+		counters = Counters(parent = t.key, key_name = "counters")
 		counters.put()
 	return counters
 
-@db.transactional
+@ndb.transactional
 def update_counters(t, delta_golfers, delta_dinners):
-	key = db.Key.from_path("Counters", "counters", parent = t.key())
-	counters = db.get(key)
+	key = ndb.Key("Counters", "counters", parent = t.key)
+	counters = key.get()
 	if counters is None:
 		counters = Counters(parent = t, key_name = "counters")
 	counters.golfer_count += delta_golfers

@@ -1,4 +1,4 @@
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from django.utils.safestring import mark_safe
 from django.template import Library
 import sponsorship
@@ -7,8 +7,8 @@ import markdown2
 register = Library()
 
 @register.filter
-def get_sponsorship_name(value):
-	ss = db.get(value)
+def get_sponsorship_name(key):
+	ss = key.get()
 	return ss.name
 
 @register.filter
@@ -22,4 +22,4 @@ def get_ad_size(value):
 
 @register.filter
 def get_id(object):
-	return object.key().id()
+	return object.key.id()

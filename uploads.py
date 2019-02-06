@@ -2,23 +2,19 @@
 
 import logging
 import webapp2
-from google.appengine.ext import db, blobstore
-from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.ext import ndb
 
 import uploadedfile
 
 class ServeFileHandler(blobstore_handlers.BlobstoreDownloadHandler):
 	def get(self, name):
-		query = uploadedfile.UploadedFile.all()
-		query.filter("path = ", name)
-		item = query.get()
+		q = uploadedfile.UploadedFile.query()
+		q = q.filter(uploadedfile.UploadedFile.path == name)
+		item = q.get()
 		if item:
-			if item.blob:
-				self.send_blob(item.blob)
-			else:
-				self.response.headers['Content-Type'] = 'image/jpeg'
-				self.response.headers['Cache-Control'] = 'public, max-age=86400;'
-				self.response.out.write(item.contents)
+			self.response.headers['Content-Type'] = 'image/jpeg'
+			self.response.headers['Cache-Control'] = 'public, max-age=86400;'
+			self.response.out.write(item.contents)
 		else:
 			self.error(404)
 			self.response.out.write('<html><head>\n')

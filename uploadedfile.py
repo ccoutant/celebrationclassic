@@ -1,8 +1,7 @@
-from google.appengine.ext import db, blobstore
+from google.appengine.ext import ndb
 
-class UploadedFile(db.Model):
-	name = db.StringProperty(required = True)
-	path = db.StringProperty()
-	blob = blobstore.BlobReferenceProperty()
-	contents = db.BlobProperty()
-	last_modified = db.DateTimeProperty(required = True, auto_now = True)
+class UploadedFile(ndb.Model):
+	name = ndb.StringProperty(required = True)
+	path = ndb.StringProperty()
+	contents = ndb.BlobProperty()
+	last_modified = ndb.DateTimeProperty(required = True, auto_now = True)

@@ -39,7 +39,10 @@ class PageHandler(webapp2.RequestHandler):
 			self.response.out.write('<p>The requested page "%s" was not found on this server.</p>\n' % name)
 			self.response.out.write('</body></html>\n')
 			return
-		last_modified = max(page.last_modified, t.timestamp)
+		if page.last_modified:
+			last_modified = max(page.last_modified, t.timestamp)
+		else:
+			last_modified = t.timestamp
 		modified = True
 		if not user_signed_in and 'If-Modified-Since' in self.request.headers:
 			try:

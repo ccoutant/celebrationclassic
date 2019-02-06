@@ -18,12 +18,12 @@ class Auction(webapp2.RequestHandler):
 		t = tournament.get_tournament()
 		dinner_date = "%s, %s %d, %d" % (t.dinner_date.strftime("%A"), t.dinner_date.strftime("%B"),
 										 t.dinner_date.day, t.dinner_date.year)
-		live_auction_items = auctionitem.get_auction_items()
+		live_auction_items = auctionitem.get_auction_items(t, 'l')
 		live_intro = ""
 		if live_auction_items and live_auction_items[0].sequence == 0:
 			live_intro = live_auction_items[0].description
 			live_auction_items = live_auction_items[1:]
-		silent_auction_items = auctionitem.get_silent_auction_items()
+		silent_auction_items = auctionitem.get_auction_items(t, 's')
 		silent_intro = ""
 		if silent_auction_items and silent_auction_items[0].sequence == 0:
 			silent_intro = silent_auction_items[0].description
@@ -39,16 +39,17 @@ class Auction(webapp2.RequestHandler):
 			}
 		self.response.out.write(render_to_string('auction.html', template_values))
 
-class ServeThumbnail(webapp2.RequestHandler):
+class ServeImage(webapp2.RequestHandler):
 	def get(self, id):
-		thumb = auctionitem.Thumbnail.get_by_id(long(id))
-		if thumb:
+		t = tournament.get_tournament()
+		item = auctionitem.AuctionItem.get_by_id(long(id), parent = t.key)
+		if item.image:
 			self.response.headers['Content-Type'] = 'image/jpeg'
 			self.response.headers['Cache-Control'] = 'public, max-age=86400;'
-			self.response.out.write(thumb.image)
+			self.response.out.write(item.image)
 		else:
 			self.error(404)
 
 app = webapp2.WSGIApplication([('/auction', Auction),
-							   ('/img/(.*)', ServeThumbnail)],
+							   ('/img/(.*)', ServeImage)],
 							  debug=dev_server)

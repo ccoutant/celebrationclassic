@@ -40,8 +40,8 @@
 <tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
-		<td><input type="checkbox" name="selected_items" value="{{ s.id }}">
-		<a href="/register?id={{ s.id }}">{{ s.id }}</a></td>
+		<td><input type="checkbox" name="selected_items" value="{{ s.sponsor_id }}">
+		<a href="/register?id={{ s.sponsor_id }}">{{ s.sponsor_id }}</a></td>
 		<td>{{ s.first_name }} {{ s.last_name }}</td>
 		<td>
 			{% if s.company %}<p>{{ s.company }}</p>{% endif %}

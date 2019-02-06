@@ -67,7 +67,7 @@
 {% for g in golfers %}
 	<tr class="golfer" valign="baseline">
 		<td align="right">{{ g.count }}
-			<input type="hidden" name="key_{{ g.count }}" value="{{ g.golfer.key }}">
+			<input type="hidden" name="key_{{ g.count }}" value="{{ g.golfer.key.urlsafe }}">
 			<input type="hidden" name="hash_{{ g.count }}" value="{{ g.index_hash }}">
 		</td>
 		<td>{{ g.golfer_name }}</td>

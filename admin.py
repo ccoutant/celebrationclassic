@@ -9,8 +9,7 @@ import webapp2
 import datetime
 import hashlib
 import json
-from google.appengine.ext import db, blobstore
-from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.ext import ndb
 from google.appengine.api import users, memcache, images, mail
 from django.template.loaders.filesystem import Loader
 from django.template.loader import render_to_string
@@ -64,10 +63,9 @@ class ManageUsers(webapp2.RequestHandler):
 		if not users.is_current_user_admin():
 			show_login_page(self.response.out, self.request.uri)
 			return
-		root = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		q = capabilities.all_caps()
-		q.order("email")
+		q = q.order(capabilities.Capabilities.email)
 		allcaps = q.fetch(30)
 		for u in allcaps:
 			u.capbits = make_bitmask(u.can_update_sponsorships,
@@ -88,8 +86,8 @@ class ManageUsers(webapp2.RequestHandler):
 		if not users.is_current_user_admin():
 			show_login_page(self.response.out, '/admin/users')
 			return
-		root = tournament.get_tournament()
 		count = int(self.request.get('count'))
+		updated_records = [ ]
 		for i in range(1, count + 1):
 			email = self.request.get('email%d' % i)
 			us = True if self.request.get('us%d' % i) == 'u' else False
@@ -114,8 +112,10 @@ class ManageUsers(webapp2.RequestHandler):
 					u.can_edit_content = ec
 					u.can_edit_tournament_properties = et
 					u.can_edit_payment_processor = pp
-					u.put()
+					updated_records.append(u)
 					u.audit()
+		if updated_records:
+			ndb.put_multi(updated_records)
 		email = self.request.get('email')
 		if email:
 			us = True if self.request.get('us') == 'u' else False
@@ -138,41 +138,11 @@ class ManageUsers(webapp2.RequestHandler):
 		memcache.flush_all()
 		self.redirect('/admin/users')
 
-# Migrate admin users from Tournament-as-parent to "Root"-as-parent.
-
-class MigrateUsers(webapp2.RequestHandler):
-	def get(self):
-		self.response.out.write('<html><head><title>Migrate Users</title></head>')
-		self.response.out.write('<body><form action="/admin/migrate-users" method="post">')
-		self.response.out.write('<input type="submit" name="upgrade" value="Migrate">')
-		self.response.out.write('</form></body></html>')
-
-	def post(self):
-		if not users.is_current_user_admin():
-			show_login_page(self.response.out, self.request.uri)
-			return
-		root = tournament.get_tournament()
-		q = capabilities.Capabilities.all().ancestor(root)
-		for u in q:
-			try:
-				capabilities.add_user(email = u.email,
-									  can_update_sponsorships = u.can_update_sponsorships,
-									  can_view_registrations = u.can_view_registrations,
-									  can_add_registrations = u.can_add_registrations,
-									  can_update_auction = u.can_update_auction,
-									  can_edit_content = u.can_edit_content,
-									  can_edit_tournament_properties = u.can_edit_tournament_properties,
-									  can_edit_payment_processor = u.can_edit_payment_processor)
-			except:
-				logging.debug("exception adding user %s" % u.email)
-				pass
-		self.redirect('/admin/users')
-
 def update_counters(t):
 	counters = tournament.get_counters(t)
-	q = Sponsor.all().ancestor(t)
-	q.filter("confirmed =", True)
-	q.order("timestamp")
+	q = Sponsor.query(ancestor = t.key)
+	q = q.filter(Sponsor.confirmed == True)
+	q = q.order(Sponsor.timestamp)
 	num_golfers = 0
 	num_dinners = 0
 	for s in q:
@@ -278,9 +248,9 @@ class PaymentGateway(webapp2.RequestHandler):
 			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament()
-		payment_gateway = payments.Payments.all().ancestor(t).get()
+		payment_gateway = payments.Payments.query(ancestor = t.key).get()
 		if payment_gateway is None:
-			payment_gateway = payments.Payments(parent = t)
+			payment_gateway = payments.Payments(parent = t.key)
 		payment_gateway.gateway_url = self.request.get("gateway_url")
 		payment_gateway.relay_url = self.request.get("relay_url")
 		payment_gateway.receipt_url = self.request.get("receipt_url")
@@ -300,8 +270,8 @@ class Sponsorships(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_sponsorships:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		root = tournament.get_tournament()
-		sponsorships = sponsorship.Sponsorship.all().ancestor(root).order("sequence").fetch(30)
+		t = tournament.get_tournament()
+		sponsorships = sponsorship.Sponsorship.query(ancestor = t.key).order(sponsorship.Sponsorship.sequence).fetch(30)
 		next_seq = 1
 		last_level = "Double Eagle"
 		for s in sponsorships:
@@ -321,18 +291,17 @@ class Sponsorships(webapp2.RequestHandler):
 		if caps is None or not caps.can_update_sponsorships:
 			show_login_page(self.response.out, '/admin/sponsorships')
 			return
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		sponsorship.clear_sponsorships_cache()
 		count = int(self.request.get('count'))
 		for i in range(1, count + 1):
 			name = self.request.get('name%d' % i)
-			q = sponsorship.Sponsorship.all()
-			q.ancestor(root)
-			q.filter("name = ", name)
+			q = sponsorship.Sponsorship.query(ancestor = t.key)
+			q = q.filter(sponsorship.Sponsorship.name == name)
 			s = q.get()
 			if self.request.get('delete%d' % i) == 'd':
-				auditing.audit(root, "Deleted Sponsorship", data = s.level + "/" + s.name, request = self.request)
-				s.delete()
+				auditing.audit(t, "Deleted Sponsorship", data = s.level + "/" + s.name, request = self.request)
+				s.key.delete()
 			else:
 				try:
 					price = int(self.request.get('price%s' % i))
@@ -350,7 +319,7 @@ class Sponsorships(webapp2.RequestHandler):
 					s.unique = unique
 					s.sold = sold
 					s.put()
-					auditing.audit(root, "Updated Sponsorship", data = s.level + "/" + name, request = self.request)
+					auditing.audit(t, "Updated Sponsorship", data = s.level + "/" + name, request = self.request)
 		name = self.request.get('name')
 		level = self.request.get('level')
 		sequence = self.request.get('seq')
@@ -361,9 +330,16 @@ class Sponsorships(webapp2.RequestHandler):
 		unique = True if self.request.get('unique') == 'u' else False
 		sold = True if self.request.get('sold') == 's' else False
 		if name and sequence and price:
-			s = sponsorship.Sponsorship(parent = root, name = name, level = level, sequence = int(sequence), price = int(price), golfers_included = int(golfers_included), unique = unique, sold = sold)
+			s = sponsorship.Sponsorship(parent = t.key,
+										name = name,
+										level = level,
+										sequence = int(sequence),
+										price = int(price),
+										golfers_included = int(golfers_included),
+										unique = unique,
+										sold = sold)
 			s.put()
-			auditing.audit(root, "Added Sponsorship", data = level + "/" + name, request = self.request)
+			auditing.audit(t, "Added Sponsorship", data = level + "/" + name, request = self.request)
 		self.redirect('/admin/sponsorships')
 
 def get_tees(flight, gender):
@@ -379,7 +355,7 @@ def calc_course_handicap(tournament, handicap_index, tees):
 
 class ViewGolfer(object):
 	def __init__(self, t, s, g, count):
-		self.sponsor_id = s.id
+		self.sponsor_id = s.sponsor_id
 		self.sponsor_name = s.first_name + " " + s.last_name
 		self.golfer = g
 		if g.first_name or g.last_name:
@@ -412,7 +388,7 @@ class ViewGolfer(object):
 
 class ViewDinner(object):
 	def __init__(self, s, first_name, last_name, choice, sequence, count):
-		self.sponsor_id = s.id
+		self.sponsor_id = s.sponsor_id
 		self.sponsor_name = s.first_name + " " + s.last_name
 		if first_name or last_name:
 			self.guest_name = first_name + " " + last_name
@@ -425,24 +401,24 @@ class ViewDinner(object):
 
 class ViewRegistrations(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		sponsors = q.fetch(limit = None)
 		golfer_count = 0
 		dinner_count = 0
 		for s in sponsors:
-			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 			no_dinners = 0
-			for g in golfers:
-				if g.dinner_choice == 'none':
-					no_dinners += 1
+			if s.num_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+				for g in golfers:
+					if g.dinner_choice == 'none':
+						no_dinners += 1
 			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
@@ -461,32 +437,33 @@ class ViewRegistrations(webapp2.RequestHandler):
 
 class ViewIncomplete(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		sponsors = []
 		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 			golfers_complete = 0
 			ndinners = 0
 			no_dinners = 0
-			for g in golfers:
-				if g.first_name and g.last_name and g.gender and (g.ghin_number or g.average_score) and g.shirt_size:
-					golfers_complete += 1
-				if g.dinner_choice:
-					ndinners += 1
-				if g.dinner_choice == 'No Dinner':
-					no_dinners += 1
-			guests = DinnerGuest.all().ancestor(s.key()).fetch(s.num_dinners)
-			for g in guests:
-				if g.first_name and g.last_name and g.dinner_choice:
-					ndinners += 1
+			if s.num_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+				for g in golfers:
+					if g.first_name and g.last_name and g.gender and (g.ghin_number or g.average_score) and g.shirt_size:
+						golfers_complete += 1
+					if g.dinner_choice:
+						ndinners += 1
+					if g.dinner_choice == 'No Dinner':
+						no_dinners += 1
+			if s.num_dinners:
+				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
+				for g in guests:
+					if g.first_name and g.last_name and g.dinner_choice:
+						ndinners += 1
 			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
@@ -506,22 +483,22 @@ class ViewIncomplete(webapp2.RequestHandler):
 
 class ViewUnpaid(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		sponsors = []
 		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).fetch(s.num_golfers)
 			no_dinners = 0
-			for g in golfers:
-				if g.dinner_choice == 'No Dinner':
-					no_dinners += 1
+			if s.num_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+				for g in golfers:
+					if g.dinner_choice == 'No Dinner':
+						no_dinners += 1
 			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
@@ -540,15 +517,14 @@ class ViewUnpaid(webapp2.RequestHandler):
 
 class ViewDinnerSurvey(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		sponsors = []
 		for s in q:
 			if s.num_golfers > 0 and s.email:
@@ -563,15 +539,14 @@ class ViewDinnerSurvey(webapp2.RequestHandler):
 
 class ViewUnconfirmed(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", False)
-		q.order("timestamp")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == False)
+		q = q.order(Sponsor.timestamp)
 		sponsors = q.fetch(100)
 		for s in sponsors:
 			s.adjusted_dinners = s.num_golfers + s.num_dinners
@@ -590,32 +565,34 @@ class ViewUnconfirmed(webapp2.RequestHandler):
 
 class ViewGolfers(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('%s/admin/view/golfers' % root.name)
-		if html:
-			self.response.out.write(html)
-			return
+		# html = memcache.get('%s/admin/view/golfers' % t.name)
+		# if html:
+		#	self.response.out.write(html)
+		#	return
 		all_golfers = []
 		counter = 1
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
+			if s.num_golfers == 0:
+				continue
+			golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
 			for g in golfers:
-				all_golfers.append(ViewGolfer(root, s, g, counter))
+				all_golfers.append(ViewGolfer(t, s, g, counter))
 				counter += 1
 			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				g = Golfer(parent = s, sequence = i, name = '', gender = '',
+				g = Golfer(tournament = t.key, sponsor = s.key, sequence = i,
+						   sort_name = '', first_name = '', last_name = '', gender = '',
 						   company = '', address = '', city = '', phone = '', email = '',
-						   golf_index = '', average_score = '', ghin_number = '',
+						   handicap_index = 0.0, average_score = '', ghin_number = '',
 						   shirt_size = '', dinner_choice = '')
-				all_golfers.append(ViewGolfer(root, s, g, counter))
+				all_golfers.append(ViewGolfer(t, s, g, counter))
 				counter += 1
 		shirt_sizes = { }
 		for g in all_golfers:
@@ -629,25 +606,25 @@ class ViewGolfers(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfers.html', template_values)
-		memcache.add('%s/admin/view/golfers' % root.name, html, 60*60*24)
+		# memcache.add('%s/admin/view/golfers' % t.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewGolfersByName(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
 		all_golfers = []
-		q = Golfer.all()
-		q.ancestor(root)
-		q.filter("active =", True)
-		q.order("sort_name")
+		q = Golfer.query()
+		q = q.filter(Golfer.tournament == t.key)
+		q = q.filter(Golfer.active == True)
+		q = q.order(Golfer.sort_name)
 		counter = 1
 		for g in q:
-			s = g.parent()
-			all_golfers.append(ViewGolfer(root, s, g, counter))
+			s = g.sponsor.get()
+			all_golfers.append(ViewGolfer(t, s, g, counter))
 			counter += 1
 		template_values = {
 			'golfers': all_golfers,
@@ -658,7 +635,7 @@ class ViewGolfersByName(webapp2.RequestHandler):
 
 class UpdateHandicap(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
@@ -667,20 +644,21 @@ class UpdateHandicap(webapp2.RequestHandler):
 		if self.request.get('start'):
 			start = int(self.request.get('start'))
 		all_golfers = []
-		q = Golfer.all()
-		q.ancestor(root)
-		q.filter("active =", True)
-		q.order("sort_name")
-		golfers = q.fetch(offset = start - 1, limit = 21)
+		q = Golfer.query()
+		q = q.filter(Golfer.tournament == t.key)
+		q = q.filter(Golfer.active == True)
+		q = q.order(Golfer.sort_name)
+		golfer_keys = q.fetch(offset = start - 1, limit = 21, keys_only = True)
 		prev_page_offset = 0 if start == 1 else max(1, start - 20)
 		next_page_offset = 0
-		if len(golfers) == 21:
+		if len(golfer_keys) == 21:
 			next_page_offset = start + 20
-			golfers = golfers[:20]
+			golfer_keys = golfer_keys[:20]
 		counter = start
+		golfers = ndb.get_multi(golfer_keys)
 		for g in golfers:
-			s = g.parent()
-			vg = ViewGolfer(root, s, g, counter)
+			s = g.sponsor.get()
+			vg = ViewGolfer(t, s, g, counter)
 			h = hashlib.md5()
 			h.update(g.ghin_number or '-')
 			h.update(vg.handicap_index_str or '-')
@@ -701,7 +679,7 @@ class UpdateHandicap(webapp2.RequestHandler):
 		self.response.out.write(html)
 
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, '/admin/view/golfers/handicap')
@@ -710,8 +688,9 @@ class UpdateHandicap(webapp2.RequestHandler):
 		this_page_offset = int(self.request.get('this_page_offset'))
 		next_page_offset = int(self.request.get('next_page_offset'))
 		count = int(self.request.get('count'))
+		golfers_to_update = []
 		for i in range(this_page_offset, this_page_offset + count):
-			key = self.request.get('key_%d' % i)
+			key = ndb.Key(urlsafe = self.request.get('key_%d' % i))
 			index_hash = self.request.get('hash_%d' % i)
 			ghin_number = self.request.get('ghin_%d' % i)
 			handicap_index = self.request.get('index_%d' % i)
@@ -725,9 +704,9 @@ class UpdateHandicap(webapp2.RequestHandler):
 			if h.hexdigest() == index_hash:
 				continue
 			try:
-				g = Golfer.get(key)
+				g = key.get()
 			except:
-				logging.error("Invalid key '%s'" % key)
+				logging.error("Invalid key for golfer #%d" % i)
 				continue
 			logging.info("Updating handicap info for golfer #%d" % i)
 			g.ghin_number = ghin_number
@@ -744,8 +723,10 @@ class UpdateHandicap(webapp2.RequestHandler):
 				g.has_index = False
 			g.average_score = average_score
 			g.index_info_modified = False
-			g.put()
-		memcache.delete('%s/admin/view/golfers' % root.name)
+			golfers_to_update.append(g)
+		if golfers_to_update:
+			ndb.put_multi(golfers_to_update)
+		# memcache.delete('%s/admin/view/golfers' % t.name)
 		if self.request.get('prevpage'):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
 		elif self.request.get('nextpage'):
@@ -754,8 +735,8 @@ class UpdateHandicap(webapp2.RequestHandler):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % this_page_offset)
 
 class JsonBuilder:
-	def __init__(self, root):
-		self.root = root
+	def __init__(self, t):
+		self.t = t
 		self.build_teams()
 		self.build_golfers_and_groups()
 		self.check_consistency()
@@ -774,9 +755,9 @@ class JsonBuilder:
 		self.golfers_by_team = []
 		self.golfer_nums_by_id = {}
 		self.teams_by_golfer_id_fwd = {}
-		q = Team.all().ancestor(self.root).order("name")
+		q = Team.query(ancestor = self.t.key).order(Team.name)
 		for t in q:
-			t_id = t.key().id()
+			t_id = t.key.id()
 			team_num = len(self.teams) + 1
 			team = {
 				'team_num': team_num,
@@ -811,31 +792,32 @@ class JsonBuilder:
 		self.golfers = []
 		self.groups = []
 		self.teams_by_golfer_id_rev = {}
-		q = Sponsor.all().ancestor(self.root).filter("confirmed =", True).order("sort_name")
+		q = Sponsor.query(ancestor = self.t.key).filter(Sponsor.confirmed == True).order(Sponsor.sort_name)
 		for s in q:
-			q = Golfer.all().ancestor(s.key()).order("sequence")
+			if s.num_golfers == 0:
+				continue
 			group_golfer_nums = []
-			for g in q.fetch(s.num_golfers):
-				g_id = g.key().id()
+			for g in ndb.get_multi(s.golfer_keys[:s.num_golfers]):
+				g_id = g.key.id()
 				golfer_num = len(self.golfers) + 1
 				t = None
 				team_num = 0
 				try:
 					t = g.team
 				except:
-					logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.id))
+					logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.sponsor_id))
 					g.team = None
 					g.put()
-				vg = ViewGolfer(self.root, s, g, golfer_num)
+				vg = ViewGolfer(self.t, s, g, golfer_num)
 				if t:
-					t_id = t.key().id()
+					t_id = t.key.id()
 					team_num = self.teams_by_id[t_id]
 					if not g_id in self.teams_by_golfer_id_fwd:
-						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.id, t.name))
+						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.sponsor_id, t.name))
 					elif self.teams_by_golfer_id_fwd[g_id] != team_num:
 						other_team_num = self.teams_by_golfer_id_fwd[g_id]
 						other_team = self.teams[other_team_num - 1]
-						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.id, t.name, other_team['name']))
+						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.sponsor_id, t.name, other_team['name']))
 				else:
 					t_id = -1
 				self.teams_by_golfer_id_rev[g_id] = team_num
@@ -863,8 +845,8 @@ class JsonBuilder:
 				self.golfers.append(golfer)
 			group = {
 				'group_num': len(self.groups) + 1,
-				'key': s.key().id(),
-				'id': str(s.id),
+				'key': s.key.id(),
+				'id': str(s.sponsor_id),
 				'first_name': s.first_name,
 				'last_name': s.last_name,
 				'golfer_nums': group_golfer_nums,
@@ -893,8 +875,8 @@ class JsonBuilder:
 		return json.dumps(self.golfers)
 
 class TeamsUpdater:
-	def __init__(self, root, golfers_json, groups_json, teams_json):
-		self.root = root
+	def __init__(self, t, golfers_json, groups_json, teams_json):
+		self.t = t
 		self.golfers = json.loads(golfers_json)
 		self.groups = json.loads(groups_json)
 		self.teams = json.loads(teams_json)
@@ -905,12 +887,12 @@ class TeamsUpdater:
 		for t in self.teams:
 			team_id = t['key']
 			if team_id:
-				team = Team.get_by_id(int(team_id), parent = self.root)
+				team = Team.get_by_id(int(team_id), parent = self.t.key)
 				if not team:
 					logging.error("no team with id %s" % team_id)
 					continue
 			else:
-				team = Team(parent = self.root)
+				team = Team(parent = self.t.key)
 			team.name = t['name']
 			team.pairing = t['pairing_prefs']
 			self.team_entities.append((t['team_num'], team))
@@ -937,11 +919,11 @@ class TeamsUpdater:
 				group_num = g['group_num']
 				group = self.groups[group_num - 1]
 				s_id = group['key']
-				s = Sponsor.get_by_id(s_id, parent = self.root)
+				s = Sponsor.get_by_id(s_id, parent = self.t.key)
 				if not s:
 					logging.error("no sponsor with key %d" % s_id)
 					continue
-				golfer = Golfer.get_by_id(g_id, parent = s)
+				golfer = Golfer.get_by_id(g_id)
 				if not golfer:
 					logging.error("no golfer with key %d" % g_id)
 					continue
@@ -962,7 +944,7 @@ class TeamsUpdater:
 				g_id = g['key']
 				(golfer, modified) = self.golfers_by_id[g_id]
 				# logging.debug("Update teams pass 2: team %d golfer %d (%s)" % (team_num, g_id, "modified" if modified else "not modified"))
-				golfers_in_team.append(golfer.key())
+				golfers_in_team.append(golfer.key)
 				if modified:
 					golfers_to_update.append(golfer)
 			team.golfers = golfers_in_team
@@ -970,7 +952,7 @@ class TeamsUpdater:
 				self.team_renumber.append(0)
 				t['key'] = ''
 				try:
-					team.delete()
+					team.key.delete()
 					logging.warning("Deleting empty team %d \"%s\"" % (team_num, team.name))
 				except:
 					logging.warning("Empty team %d \"%s\" not saved" % (team_num, team.name))
@@ -978,12 +960,12 @@ class TeamsUpdater:
 				self.team_renumber.append(new_team_num)
 				new_team_num += 1
 				try:
-					t_id = team.key().id()
+					t_id = team.key.id()
 					logging.info("Updating team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
 				except:
 					logging.info("Adding new team %d \"%s\" with %d golfers" % (team_num, team.name, len(team.golfers)))
 				team.put()
-				t['key'] = team.key().id()
+				t['key'] = team.key.id()
 				for golfer in golfers_to_update:
 					golfer.team = team
 
@@ -991,7 +973,7 @@ class TeamsUpdater:
 		for g_id in self.golfers_by_id:
 			(golfer, modified) = self.golfers_by_id[g_id]
 			if modified:
-				logging.info("Updating golfer %s %s (%d)" % (golfer.first_name, golfer.last_name, golfer.key().id()))
+				logging.info("Updating golfer %s %s (%d)" % (golfer.first_name, golfer.last_name, golfer.key.id()))
 				golfer.put()
 
 	def update_json(self):
@@ -1025,12 +1007,12 @@ class TeamsUpdater:
 
 class Pairing(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		json_builder = JsonBuilder(root)
+		json_builder = JsonBuilder(t)
 		template_values = {
 			'messages': [],
 			'groups_json': json_builder.groups_json(),
@@ -1050,7 +1032,7 @@ class Pairing(webapp2.RequestHandler):
 		self.response.out.write('</body></html>\n')
 
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, '/admin/view/golfers/teams')
@@ -1061,13 +1043,13 @@ class Pairing(webapp2.RequestHandler):
 		# logging.debug("golfers: " + golfers_json)
 		# logging.debug("groups: " + groups_json)
 		# logging.debug("teams: " + teams_json)
-		updater = TeamsUpdater(root, golfers_json, groups_json, teams_json)
+		updater = TeamsUpdater(t, golfers_json, groups_json, teams_json)
 		updater.update_teams_pass1()
 		updater.update_golfers_pass1()
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
-		memcache.delete('%s/admin/view/golfers' % root.name)
+		memcache.delete('%s/admin/view/golfers' % t.name)
 		template_values = {
 			'messages': [],
 			'groups_json': updater.groups_json(),
@@ -1101,7 +1083,7 @@ def sort_by_starting_hole(team):
 
 class ViewGolfersByTeam(webapp2.RequestHandler):
 	def get(self, bywhat):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
@@ -1111,25 +1093,29 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			'first_name', 'last_name', 'gender', 'cart', 'tees',
 			'has_index', 'handicap_index', 'average_score'
 		)
-		golfers = db.Query(Golfer, projection=projection_fields).ancestor(root).filter("active =", True).order("sort_name")
+		q = Golfer.query()
+		q = q.filter(Golfer.tournament == t.key)
+		q = q.filter(Golfer.active == True)
+		q = q.order(Golfer.sort_name)
+		golfers = q.fetch(limit = None, projection = projection_fields)
 		golfers_by_key = {}
 		for g in golfers:
-			golfers_by_key[g.key().id()] = g
+			golfers_by_key[g.key.id()] = g
 		teams = []
-		q = Team.all().ancestor(root).order("name")
+		q = Team.query(ancestor = t.key).order(Team.name)
 		for t in q:
 			golfers_in_team = []
 			course_handicaps = []
 			for g_key in t.golfers:
 				g_id = g_key.id()
 				if not g_id in golfers_by_key:
-					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, t.name, t.key().id()))
+					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, t.name, t.key.id()))
 					continue
 				g = golfers_by_key[g_id]
 				tees = get_tees(t.flight, g.gender)
 				handicap_index = g.get_handicap_index()
 				if handicap_index is not None:
-					course_handicap = calc_course_handicap(root, handicap_index, tees)
+					course_handicap = calc_course_handicap(t, handicap_index, tees)
 				else:
 					course_handicap = 'n/a'
 				course_handicaps.append(course_handicap)
@@ -1143,7 +1129,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				golfers_in_team.append(golfer)
 			team_handicap = calculate_team_handicap(course_handicaps)
 			team = {
-				'key': t.key().id(),
+				'key': t.key.id(),
 				'name': t.name,
 				'starting_hole': t.starting_hole,
 				'flight': t.flight,
@@ -1164,7 +1150,7 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		self.response.out.write(html)
 
 	def post(self, bywhat):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, '/admin/view/golfers/byteams')
@@ -1173,47 +1159,48 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		for i in range(1, num_teams + 1):
 			t_id = int(self.request.get('team_%d_key' % i))
 			starting_hole = self.request.get('team_%d_start' % i)
-			team = Team.get_by_id(t_id, parent = root)
+			team = Team.get_by_id(t_id, parent = t.key)
 			if not team:
 				logging.error("No team with id %d" % t_id)
-			else:
+			elif team.starting_hole != starting_hole:
 				team.starting_hole = starting_hole
 				team.put()
 		self.redirect('/admin/view/golfers/%s' % bywhat)
 
 class ViewDinners(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		html = memcache.get('%s/admin/view/dinners' % root.name)
-		if html:
-			self.response.out.write(html)
-			return
+		# html = memcache.get('%s/admin/view/dinners' % t.name)
+		# if html:
+		#	self.response.out.write(html)
+		#	return
 		all_dinners = []
 		counter = 1
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("sort_name")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.sort_name)
 		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
-			for g in golfers:
-				if g.dinner_choice != 'No Dinner':
-					all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence, counter))
+			if s.num_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+				for g in golfers:
+					if g.dinner_choice != 'No Dinner':
+						all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence, counter))
+						counter += 1
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					all_dinners.append(ViewDinner(s, '', '', '', i, counter))
 					counter += 1
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				all_dinners.append(ViewDinner(s, '', '', '', i, counter))
-				counter += 1
-			guests = DinnerGuest.all().ancestor(s.key()).order("sequence").fetch(s.num_dinners)
-			for g in guests:
-				all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence + s.num_golfers, counter))
-				counter += 1
-			for i in range(len(guests) + 1, s.num_dinners + 1):
-				all_dinners.append(ViewDinner(s, '', '', '', i + s.num_golfers, counter))
-				counter += 1
+			if s.num_dinners:
+				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
+				for g in guests:
+					all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence + s.num_golfers, counter))
+					counter += 1
+				for i in range(len(guests) + 1, s.num_dinners + 1):
+					all_dinners.append(ViewDinner(s, '', '', '', i + s.num_golfers, counter))
+					counter += 1
 		dinner_choices = { }
 		for d in all_dinners:
 			key = d.dinner_choice if d.dinner_choice else 'unspecified'
@@ -1226,19 +1213,18 @@ class ViewDinners(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewguests.html', template_values)
-		memcache.add('%s/admin/view/dinners' % root.name, html, 60*60*24)
+		# memcache.add('%s/admin/view/dinners' % t.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewTributeAds(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = TributeAd.all()
-		q.ancestor(root)
-		q.order("timestamp")
+		q = TributeAd.query(ancestor = t.key)
+		q = q.order(TributeAd.timestamp)
 		ads = q.fetch(limit = None)
 		template_values = {
 			'ads': ads,
@@ -1252,15 +1238,14 @@ def csv_encode(val):
 
 class DownloadRegistrationsCSV(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.timestamp)
 		csv = []
 		csv.append(','.join(['ID', 'first_name', 'last_name', 'company',
 							 'address', 'city', 'state', 'zip', 'email', 'phone',
@@ -1269,10 +1254,10 @@ class DownloadRegistrationsCSV(webapp2.RequestHandler):
 		for s in q:
 			sponsorships = []
 			for sskey in s.sponsorships:
-				ss = db.get(sskey)
+				ss = sskey.get()
 				sponsorships.append(ss.name)
 			csv.append(','.join([csv_encode(x)
-								 for x in [s.id, s.first_name, s.last_name, s.company, s.address,
+								 for x in [s.sponsor_id, s.first_name, s.last_name, s.company, s.address,
 										   s.city, s.state, s.zip, s.email, s.phone,
 										   ','.join(sponsorships),
 										   s.num_golfers, s.num_golfers + s.num_dinners,
@@ -1285,15 +1270,14 @@ class DownloadRegistrationsCSV(webapp2.RequestHandler):
 
 class DownloadGolfersCSV(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.timestamp)
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
 							 'address', 'city', 'state', 'zip',
@@ -1303,7 +1287,9 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 							 'contact_first_name', 'contact_last_name']))
 		counter = 1
 		for s in q:
-			golfers = Golfer.all().ancestor(s.key()).order("sequence").fetch(s.num_golfers)
+			if s.num_golfers == 0:
+				continue
+			golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
 			for g in golfers:
 				team_name = ''
 				starting_hole = ''
@@ -1328,7 +1314,7 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 					handicap_index_str = ''
 					tournament_index = ''
 				if handicap_index is not None:
-					course_handicap = str(calc_course_handicap(root, handicap_index, tees))
+					course_handicap = str(calc_course_handicap(t, handicap_index, tees))
 				else:
 					course_handicap = ''
 				counter += 1
@@ -1354,37 +1340,37 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 
 class DownloadDinnersCSV(webapp2.RequestHandler):
 	def get(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
 			return
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.filter("confirmed =", True)
-		q.order("timestamp")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.filter(Sponsor.confirmed == True)
+		q = q.order(Sponsor.timestamp)
 		csv = []
 		csv.append(','.join(['first_name', 'last_name', 'dinner_choice', 'seating_pref',
 							 'contact_first_name', 'contact_last_name']))
 		for s in q:
-			q = Golfer.all().ancestor(s.key())
-			golfers = q.fetch(s.num_golfers)
-			for g in golfers:
-				if g.dinner_choice != 'No Dinner':
+			if s.num_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+				for g in golfers:
+					if g.dinner_choice != 'No Dinner':
+						csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
+																	 g.dinner_choice, s.dinner_seating,
+																	 s.first_name, s.last_name]]))
+				for i in range(len(golfers) + 1, s.num_golfers + 1):
+					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
+																 s.first_name, s.last_name]]))
+			if s.num_dinners:
+				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
+				for g in guests:
 					csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
 																 g.dinner_choice, s.dinner_seating,
 																 s.first_name, s.last_name]]))
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
-				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
-															 s.first_name, s.last_name]]))
-			guests = DinnerGuest.all().ancestor(s.key()).order("sequence").fetch(s.num_dinners)
-			for g in guests:
-				csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
-															 g.dinner_choice, s.dinner_seating,
-															 s.first_name, s.last_name]]))
-			for i in range(len(guests) + 1, s.num_dinners + 1):
-				csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
-															 s.first_name, s.last_name]]))
+				for i in range(len(guests) + 1, s.num_dinners + 1):
+					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
+																 s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 		self.response.headers['Content-Disposition'] = 'attachment;filename=dinners.csv'
 		self.response.out.write('\n'.join(csv))
@@ -1476,7 +1462,7 @@ glad to assist.
 
 class SendEmail(webapp2.RequestHandler):
 	def post(self, what):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_view_registrations:
 			show_login_page(self.response.out, self.request.uri)
@@ -1488,10 +1474,10 @@ class SendEmail(webapp2.RequestHandler):
 		elif what == 'unpaid':
 			today = datetime.datetime.now() - datetime.timedelta(hours=8)
 			body_template = unpaid_email_template_part1
-			if today.date() <= root.early_bird_deadline:
-				early_bird_deadline = "%s %d, %d" % (root.early_bird_deadline.strftime("%B"),
-													 root.early_bird_deadline.day,
-													 root.early_bird_deadline.year)
+			if today.date() <= t.early_bird_deadline:
+				early_bird_deadline = "%s %d, %d" % (t.early_bird_deadline.strftime("%B"),
+													 t.early_bird_deadline.day,
+													 t.early_bird_deadline.year)
 				body_template += unpaid_email_template_part2 % early_bird_deadline
 			body_template += unpaid_email_template_part3
 		elif what == 'dinnersurvey':
@@ -1508,13 +1494,12 @@ class SendEmail(webapp2.RequestHandler):
 		selected_items = self.request.get_all('selected_items')
 		num_sent = 0
 		for id in selected_items:
-			q = Sponsor.all()
-			q.ancestor(root)
-			q.filter('id = ', int(id))
+			q = Sponsor.query(ancestor = t.key)
+			q = q.filter(Sponsor.sponsor_id == int(id))
 			s = q.get()
 			if s:
-				body = body_template % (s.first_name, s.id)
-				logging.info("sending mail to %s (id %s)" % (s.email, s.id))
+				body = body_template % (s.first_name, s.sponsor_id)
+				logging.info("sending mail to %s (id %s)" % (s.email, s.sponsor_id))
 				mail.send_mail(sender=sender, to=s.email, subject=subject, body=body)
 				if dev_server:
 					logging.info(body)
@@ -1530,30 +1515,25 @@ class SendEmail(webapp2.RequestHandler):
 class ManageAuction(webapp2.RequestHandler):
 	# Show the form.
 	def get(self):
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_auction:
 			show_login_page(self.response.out, self.request.uri)
 			return
 		which_auction = self.request.get('which_auction')
 		if self.request.get('key'):
-			key = self.request.get('key')
-			if which_auction == 'l':
-				item = auctionitem.AuctionItem.get(key)
-			else:
-				item = auctionitem.SilentAuctionItem.get(key)
+			id = self.request.get('key')
+			item = auctionitem.AuctionItem.get_by_id(int(id), parent = t.key)
 			template_values = {
 				'item': item,
 				'which_auction': which_auction,
-				'key': key,
+				'key': id,
 				'upload_url': '/admin/upload-auction',
 				'capabilities': caps
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		elif self.request.get('new'):
-			if which_auction == 'l':
-				auction_items = auctionitem.get_auction_items()
-			else:
-				auction_items = auctionitem.get_silent_auction_items()
+			auction_items = auctionitem.get_auction_items(t, which_auction)
 			if auction_items:
 				seq = auction_items[-1].sequence + 1
 			else:
@@ -1568,8 +1548,8 @@ class ManageAuction(webapp2.RequestHandler):
 				}
 			self.response.out.write(render_to_string('editauction.html', template_values))
 		else:
-			live_auction_items = auctionitem.get_auction_items()
-			silent_auction_items = auctionitem.get_silent_auction_items()
+			live_auction_items = auctionitem.get_auction_items(t, 'l')
+			silent_auction_items = auctionitem.get_auction_items(t, 's')
 			template_values = {
 				'live_auction_items': live_auction_items,
 				'silent_auction_items': silent_auction_items,
@@ -1580,55 +1560,44 @@ class ManageAuction(webapp2.RequestHandler):
 class UploadAuctionItem(webapp2.RequestHandler):
 	# Process the submitted info.
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_update_auction:
 			show_login_page(self.response.out, '/admin/auction')
 			return
-		auctionitem.clear_auction_item_cache(root)
+		auctionitem.clear_auction_item_cache(t)
 		which_auction = self.request.get('which_auction')
-		key = self.request.get('key')
-		if which_auction == 'l':
-			if key:
-				item = auctionitem.AuctionItem.get(key)
-			else:
-				item = auctionitem.AuctionItem(parent = root)
+		id = self.request.get('key')
+		if id:
+			item = auctionitem.AuctionItem.get_by_id(int(id), parent = t.key)
 		else:
-			if key:
-				item = auctionitem.SilentAuctionItem.get(key)
-			else:
-				item = auctionitem.SilentAuctionItem(parent = root)
+			item = auctionitem.AuctionItem(parent = t.key, which = which_auction)
 		item.sequence = int(self.request.get('sequence'))
 		desc = self.request.get('description')
 		desc = desc.replace('\r\n', '\n')
 		item.description = desc
-		upload_files = self.request.POST.getall('file')
-		if upload_files:
-			if item.photo_blob:
-				blobstore.delete(item.photo_blob.key())
-				item.photo_blob = None
-			if item.thumbnail_id:
-				auctionitem.Thumbnail.get_by_id(item.thumbnail_id).delete()
-			thumbnail = auctionitem.Thumbnail()
+		uploads = self.request.POST.getall('file')
+		try:
 			if dev_server:
-				thumbnail.image = upload_files[0].file.getvalue()
-				item.thumbnail_width = 200
-				item.thumbnail_height = 100
+				item.image = uploads[0].file.getvalue()
+				item.image_width = 200
+				item.image_height = 100
 			else:
-				img = images.Image(upload_files[0].file.getvalue())
+				img = images.Image(uploads[0].file.getvalue())
 				img.resize(width = 200)
-				thumbnail.image = img.execute_transforms(output_encoding = images.JPEG)
-				item.thumbnail_width = img.width
-				item.thumbnail_height = img.height
-			thumbnail.put()
-			item.thumbnail_id = thumbnail.key().id()
+				item.image = img.execute_transforms(output_encoding = images.JPEG)
+				item.image_width = img.width
+				item.image_height = img.height
+			uploads[0].file.close()
+		except:
+			logging.debug("No uploaded file.")
 		item.put()
-		auditing.audit(root, "Added Auction Item", data = desc, request = self.request)
+		auditing.audit(t, "Added Auction Item", data = desc, request = self.request)
 		self.redirect("/admin/auction")
 
 class DeleteFile(webapp2.RequestHandler):
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
 			show_login_page(self.response.out, '/admin/edit')
@@ -1638,51 +1607,53 @@ class DeleteFile(webapp2.RequestHandler):
 		else:
 			items_to_delete = self.request.get_all('delete-file')
 		for path in items_to_delete:
-			q = uploadedfile.UploadedFile.all()
-			q.ancestor(root)
-			q.filter("path =", path)
-			item = q.get()
-			if item:
-				if item.blob:
-					blobstore.delete(item.blob.key())
-				item.delete()
-				auditing.audit(root, "Deleted Uploaded File", data = path, request = self.request)
+			q = uploadedfile.UploadedFile.query(ancestor = t.key)
+			q = q.filter(uploadedfile.UploadedFile.path == path)
+			k = q.get(keys_only = True)
+			if k:
+				k.delete()
+				auditing.audit(t, "Deleted Uploaded File", data = path, request = self.request)
 		self.redirect("/admin/edit")
 
 class UploadFile(webapp2.RequestHandler):
 	def post(self):
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if caps is None or not caps.can_edit_content:
 			show_login_page(self.response.out, '/admin/edit')
 			return
 		uploads = self.request.POST.getall('file')
-		if uploads:
+		try:
 			filename = uploads[0].filename
 			contents = uploads[0].file.getvalue()
 			uploads[0].file.close()
 			logging.debug("upload file %s, size %d" % (filename, len(contents)))
 			if self.request.get('upload-photo'):
-				item = uploadedfile.UploadedFile(parent = root, name = filename,
+				item = uploadedfile.UploadedFile(parent = t.key, name = filename,
 												 path = "/photos/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded Photo", data = filename, request = self.request)
+				auditing.audit(t, "Uploaded Photo", data = filename, request = self.request)
 			elif self.request.get('upload-file'):
-				item = uploadedfile.UploadedFile(parent = root, name = filename,
+				item = uploadedfile.UploadedFile(parent = t.key, name = filename,
 												 path = "/files/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded File", data = filename, request = self.request)
+				auditing.audit(t, "Uploaded File", data = filename, request = self.request)
+		except:
+			logging.info("No uploaded file.")
 		self.redirect("/admin/edit")
 
 def show_edit_form(name, caps, response):
 	page = detailpage.get_detail_page(name, True)
 	logging.info("showing %s, version %d, draft %s, preview %s" %
 				 (page.name, page.version, "yes" if page.draft else "no", "yes" if page.preview else "no"))
+	last_modified = ""
+	if page.last_modified:
+		last_modified = page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific)
 	template_values = {
 		'page': page,
-		'timestamp': page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific),
+		'timestamp': last_modified,
 		'capabilities': caps
 		}
 	response.out.write(render_to_string('admineditpage.html', template_values))
@@ -1700,20 +1671,22 @@ class EditPageHandler(webapp2.RequestHandler):
 			published_version = detailpage.get_published_version(name)
 			draft_version = detailpage.get_draft_version(name)
 			page = detailpage.get_detail_page(name, True)
+			last_modified = ""
+			if page.last_modified:
+				last_modified = page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific)
 			page_info = {
 				'name': name,
 				'path': path,
 				'published_version': published_version,
 				'draft_version': draft_version,
 				'is_draft': draft_version > published_version,
-				'last_modified': page.last_modified.replace(tzinfo=tz.utc).astimezone(tz.pacific)
+				'last_modified': last_modified
 				}
 			pages.append(page_info)
 		photos = []
 		files = []
-		q = uploadedfile.UploadedFile.all()
-		q.ancestor(t)
-		q.order("name")
+		q = uploadedfile.UploadedFile.query(ancestor = t.key)
+		q = q.order(uploadedfile.UploadedFile.name)
 		for item in q:
 			if item.path.startswith('/photos/'):
 				photos.append(item)
@@ -1738,13 +1711,12 @@ class EditPageHandler(webapp2.RequestHandler):
 		content = self.request.get('pagecontent')
 		t = tournament.get_tournament()
 		if was_preview:
-			q = detailpage.DetailPage.all()
-			q.ancestor(t)
-			q.filter("name = ", name)
-			q.filter("version = ", version)
+			q = detailpage.DetailPage.query(ancestor = t.key)
+			q = q.filter(detailpage.DetailPage.name == name)
+			q = q.filter(detailpage.DetailPage.version == version)
 			page = q.get()
 			logging.info("saving %s: name %s, version %d, draft %s, preview %s" %
-						 (page.key().id(), name, version, "yes" if is_draft else "no", "yes" if is_preview else "no"))
+						 (page.key.id(), name, version, "yes" if is_draft else "no", "yes" if is_preview else "no"))
 			page.title = title
 			page.content = content
 			page.preview = is_preview
@@ -1753,7 +1725,7 @@ class EditPageHandler(webapp2.RequestHandler):
 		else:
 			versions = detailpage.get_draft_version(name)
 			version += 1
-			page = detailpage.DetailPage(parent = t, name = name, version = version,
+			page = detailpage.DetailPage(parent = t.key, name = name, version = version,
 										 title = title, content = content,
 										 draft = is_draft, preview = is_preview)
 			logging.info("saving new: name %s, version %d, draft %s, preview %s" %
@@ -1790,11 +1762,10 @@ class DeleteHandler(webapp2.RequestHandler):
 		if not users.is_current_user_admin():
 			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
-		q = Sponsor.all()
-		q.ancestor(root)
-		q.order("timestamp")
+		q = Sponsor.query(ancestor = t.key)
+		q = q.order(Sponsor.timestamp)
 		sponsors = q.fetch(limit = None)
 		template_values = {
 			'sponsors': sponsors,
@@ -1806,20 +1777,18 @@ class DeleteHandler(webapp2.RequestHandler):
 		if not users.is_current_user_admin():
 			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		if self.request.get('delete'):
 			ids_to_delete = self.request.get_all('selected_items')
 			for id in ids_to_delete:
-				s = Sponsor.all().ancestor(root).filter('id =', int(id)).get()
-				golfers = Golfer.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
-				db.delete(golfers)
-				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
-				db.delete(guests)
-				auditing.audit(root, "Deleted Registration", sponsor_id = int(id), request = self.request)
+				s = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == int(id)).get()
+				ndb.delete_multi(s.golfer_keys)
+				ndb.delete_multi(s.dinner_keys)
+				auditing.audit(t, "Deleted Registration", sponsor_id = int(id), request = self.request)
 				if s.confirmed:
-					tournament.update_counters(root, -s.num_golfers, -s.num_dinners)
-				s.delete()
+					tournament.update_counters(t, -s.num_golfers, -s.num_dinners)
+				s.key.delete()
 		self.redirect('/admin/delete-registrations')
 
 class AuditHandler(webapp2.RequestHandler):
@@ -1828,8 +1797,8 @@ class AuditHandler(webapp2.RequestHandler):
 			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
 		start = int(self.request.get('start') or 0)
-		q = auditing.get_audit_entries().order('-timestamp')
-		entries = q.fetch(offset = start, limit = 25)
+		q = auditing.get_audit_entries().order(-auditing.AuditEntry.timestamp)
+		entries = q.fetch(offset = start, limit = 20)
 		self.response.out.write("""<!DOCTYPE html>
 <html>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -1895,20 +1864,77 @@ class UpgradeHandler(webapp2.RequestHandler):
 		if not users.is_current_user_admin():
 			show_login_page(self.response.out, '/admin/upgrade')
 			return
-		root = tournament.get_tournament()
+		t = tournament.get_tournament()
 		start = int(self.request.get('start'))
-		q = Sponsor.all().ancestor(root).order("timestamp")
+		q = Sponsor.query(ancestor = t.key).order(Sponsor.timestamp)
 		sponsors = q.fetch(offset = start, limit = 20)
+		sponsors_to_update = [ ]
 		for s in sponsors:
-			s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
-			s.put()
+			modified = False
+			try:
+				if s.id:
+					s.sponsor_id = s.id
+					del s.id
+					modified = True
+			except:
+				logging.info("Sponsor record already updated: %d" % s.sponsor_id)
+				pass
+			if s.num_golfers > 0:
+				old_golfers = Golfer.query(ancestor = s.key).order(Golfer.sequence).fetch(limit = None)
+				new_golfers = []
+				for oldg in old_golfers:
+					newg = Golfer(tournament = t.key, sponsor = s.key)
+					newg.sequence = oldg.sequence
+					newg.active = oldg.active
+					newg.sort_name = oldg.sort_name
+					newg.first_name = oldg.first_name
+					newg.last_name = oldg.last_name
+					newg.gender = oldg.gender
+					newg.company = oldg.company
+					newg.address = oldg.address
+					newg.city = oldg.city
+					newg.state = oldg.state
+					newg.zip = oldg.zip
+					newg.phone = oldg.phone
+					newg.email = oldg.email
+					newg.average_score = oldg.average_score
+					newg.ghin_number = oldg.ghin_number
+					newg.has_index = oldg.has_index
+					newg.handicap_index = oldg.handicap_index
+					newg.shirt_size = oldg.shirt_size
+					newg.dinner_choice = oldg.dinner_choice
+					new_golfers.append(newg)
+				ndb.put_multi(new_golfers)
+				s.golfer_keys = [ g.key for g in new_golfers ]
+				logging.info("Updated %d golfers: %s" % (len(new_golfers), ",".join([str(k.id()) for k in s.golfer_keys])))
+				modified = True
+			if s.num_dinners > 0:
+				old_dinners = DinnerGuest.query(ancestor = s.key).order(DinnerGuest.sequence).fetch(limit = None)
+				new_dinners = []
+				for oldg in old_dinners:
+					newg = DinnerGuest(tournament = t.key, sponsor = s.key)
+					newg.sequence = oldg.sequence
+					newg.active = (oldg.sequence < s.num_dinners)
+					newg.first_name = oldg.first_name
+					newg.last_name = oldg.last_name
+					newg.dinner_choice = oldg.dinner_choice
+					new_dinners.append(newg)
+				ndb.put_multi(new_dinners)
+				s.dinner_keys = [ g.key for g in new_dinners ]
+				logging.info("Updated %d dinners: %s" % (len(new_golfers), ",".join([str(k.id()) for k in s.dinner_keys])))
+				modified = True
+			if modified:
+				logging.info("Updated sponsor %d" % s.sponsor_id)
+				sponsors_to_update.append(s)
+		if sponsors_to_update:
+			ndb.put_multi(sponsors_to_update)
 		count = len(sponsors)
-		logging.info("Upgraded registrations %d through %d" % (start, start + count - 1))
-		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, count))
+		nmod = len(sponsors_to_update)
+		logging.info("Updated %d registrations from %d through %d" % (nmod, start, start + count - 1))
+		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, nmod))
 
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
-							   ('/admin/migrate-users', MigrateUsers),
 							   ('/admin/tournament', ManageTournament),
 							   ('/admin/payments', PaymentGateway),
 							   ('/admin/auction', ManageAuction),

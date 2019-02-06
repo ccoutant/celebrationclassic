@@ -30,8 +30,8 @@
 	<tr valign="top">
 {% if item.sequence > 0 %}
 		<td class="photo">
-		{% if item.thumbnail_id %}
-		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		{% if item.image %}
+		<img src="/img/{{ item.key.id }}" alt="" width="{{ item.image_width }}" height="{{ item.image_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}
@@ -42,7 +42,7 @@
 {% endif %}
 
 		{{ item.description|markdown }}
-		<p class="edit"><a href="/admin/auction?key={{ item.key }}&which_auction=l"><input type="button" name="edit" value="Edit"></a></p>
+		<p class="edit"><a href="/admin/auction?key={{ item.key.id }}&which_auction=l"><input type="button" name="edit" value="Edit"></a></p>
 		</td>
 	</tr>
 {% endfor %}
@@ -67,8 +67,8 @@
 	<tr valign="top">
 {% if item.sequence > 0 %}
 		<td class="photo">
-		{% if item.thumbnail_id %}
-		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		{% if item.image %}
+		<img src="/img/{{ item.key.id }}" alt="" width="{{ item.iamge_width }}" height="{{ item.image_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}
@@ -78,7 +78,7 @@
 		<td class="description" colspan="2">
 {% endif %}
 		{{ item.description|markdown }}
-		<p class="edit"><a href="/admin/auction?key={{ item.key }}&which_auction=s"><input type="button" name="edit" value="Edit"></a></p>
+		<p class="edit"><a href="/admin/auction?key={{ item.key.id }}&which_auction=s"><input type="button" name="edit" value="Edit"></a></p>
 		</td>
 	</tr>
 {% endfor %}

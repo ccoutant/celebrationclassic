@@ -56,7 +56,7 @@
 			<p>Due: $<script type="text/javascript" language="javascript">document.write({{ ad.payment_due }} - {{ ad.payment_made }});</script></p>
 		</td>
 {% if capabilities.can_add_registrations %}
-		<td align="left"><a href="/tribute?id={{ ad|get_id }}"><button name="edit_ad" type="button">Edit</button></a></td>
+		<td align="left"><a href="/tribute?id={{ ad.key.id }}"><button name="edit_ad" type="button">Edit</button></a></td>
 {% endif %}
 	</tr>
 {% endfor %}

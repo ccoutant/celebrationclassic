@@ -19,11 +19,11 @@ p.description { margin-bottom: 0.5em; }
 
 <form action="{{ upload_url }}" method="post" enctype="multipart/form-data" accept-charset="utf-8">
 
-{% if item.thumbnail_id %}
-<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+{% if item.image %}
+<img src="/img/{{ item.key.id }}" alt="" width="{{ item.image_width }}" height="{{ item.image_height }}">
 {% endif %}
 
-<p>{% if item.thumbnail_id %}Replace{% else %}Upload{% endif %} photo (max. 32MB): <input type="file" name="file"></p>
+<p>{% if item.image %}Replace{% else %}Upload{% endif %} photo (max. 32MB): <input type="file" name="file"></p>
 
 <p class="description">Item Description:</p>
 

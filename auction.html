@@ -29,8 +29,8 @@
 {% for item in live_auction_items %}
 	<tr valign="top">
 		<td class="photo">
-		{% if item.thumbnail_id %}
-		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		{% if item.image %}
+		<img src="/img/{{ item.key.id }}" alt="" width="{{ item.image_width }}" height="{{ item.image_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}
@@ -62,7 +62,7 @@ on {{ dinner_date }}.</p>
 	<tr valign="top">
 		<td class="photo">
 		{% if item.thumbnail_id %}
-		<img src="/img/{{ item.thumbnail_id }}" alt="" width="{{ item.thumbnail_width }}" height="{{ item.thumbnail_height }}">
+		<img src="/img/{{ item.key.id }}" alt="" width="{{ item.image_width }}" height="{{ item.image_height }}">
 		{% else %}
 		<p>(No photo available)</p>
 		{% endif %}

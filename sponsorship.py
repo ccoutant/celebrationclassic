@@ -1,43 +1,42 @@
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.api import memcache
 
 import tournament
 
 # Sponsorship information.
 
-class Sponsorship(db.Model):
-	name = db.StringProperty()
-	level = db.StringProperty()
-	sequence = db.IntegerProperty()
-	price = db.IntegerProperty()
-	unique = db.BooleanProperty()
-	sold = db.BooleanProperty()
-	golfers_included = db.IntegerProperty()
+class Sponsorship(ndb.Model):
+	name = ndb.StringProperty()
+	level = ndb.StringProperty()
+	sequence = ndb.IntegerProperty()
+	price = ndb.IntegerProperty()
+	unique = ndb.BooleanProperty()
+	sold = ndb.BooleanProperty()
+	golfers_included = ndb.IntegerProperty()
 
 # Get a list of sponsorships.
 
 def get_sponsorships(level):
-	root = tournament.get_tournament()
-	sponsorships = memcache.get('%s/%s' % (root.name, level))
+	t = tournament.get_tournament()
+	sponsorships = memcache.get('%s/%s' % (t.name, level))
 	if sponsorships is not None:
 		return sponsorships
-	q = Sponsorship.all()
-	q.ancestor(root)
+	q = Sponsorship.query(ancestor = t.key)
 	if level != "all":
-		q.filter("level = ", level)
-	q.order("sequence")
+		q = q.filter(Sponsorship.level == level)
+	q = q.order(Sponsorship.sequence)
 	sponsorships = q.fetch(30)
 	if not sponsorships:
-		s = Sponsorship(parent = root, name = level, level = level, sequence = 1, price = 1000, unique = False, sold = False, golfers_included = 4)
+		s = Sponsorship(parent = t.key, name = level, level = level, sequence = 1, price = 1000, unique = False, sold = False, golfers_included = 4)
 		sponsorships.append(s)
-	memcache.add('%s/%s' % (root.name, level), sponsorships, 60*60*24)
+	memcache.add('%s/%s' % (t.name, level), sponsorships, 60*60*24)
 	return sponsorships
 
 def clear_sponsorships_cache():
-	root = tournament.get_tournament()
-	memcache.delete_multi(["%s/all" % root.name,
-						   "%s/Double Eagle" % root.name,
-						   "%s/Hole in One" % root.name,
-						   "%s/Eagle" % root.name,
-						   "%s/Birdie" % root.name,
-						   "%s/Angel" % root.name])
+	t = tournament.get_tournament()
+	memcache.delete_multi(["%s/all" % t.name,
+						   "%s/Double Eagle" % t.name,
+						   "%s/Hole in One" % t.name,
+						   "%s/Eagle" % t.name,
+						   "%s/Birdie" % t.name,
+						   "%s/Angel" % t.name])
