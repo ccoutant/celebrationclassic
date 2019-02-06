@@ -251,7 +251,7 @@ class ManageTournament(webapp2.RequestHandler):
 		t.blue_course_slope = float(self.request.get("blue_course_slope"))
 		t.put()
 		tournament.set_tournament_cache(t)
-		auditing.audit(t, "Updated tournament properties")
+		auditing.audit(t, "Updated tournament properties", request = self.request)
 		self.redirect('/admin/tournament')
 
 # Payment Gateway
@@ -288,7 +288,7 @@ class PaymentGateway(webapp2.RequestHandler):
 		payment_gateway.transaction_key = self.request.get("transaction_key")
 		payment_gateway.test_mode = self.request.get("test_mode") == "true"
 		payment_gateway.put()
-		auditing.audit(t, "Updated payment gateway")
+		auditing.audit(t, "Updated payment gateway", request = self.request)
 		self.redirect('/admin/payments')
 
 # Sponsorship information.
@@ -331,7 +331,7 @@ class Sponsorships(webapp2.RequestHandler):
 			q.filter("name = ", name)
 			s = q.get()
 			if self.request.get('delete%d' % i) == 'd':
-				auditing.audit(root, "Deleted Sponsorship", data = s.level + "/" + s.name)
+				auditing.audit(root, "Deleted Sponsorship", data = s.level + "/" + s.name, request = self.request)
 				s.delete()
 			else:
 				try:
@@ -350,7 +350,7 @@ class Sponsorships(webapp2.RequestHandler):
 					s.unique = unique
 					s.sold = sold
 					s.put()
-					auditing.audit(root, "Updated Sponsorship", data = s.level + "/" + name)
+					auditing.audit(root, "Updated Sponsorship", data = s.level + "/" + name, request = self.request)
 		name = self.request.get('name')
 		level = self.request.get('level')
 		sequence = self.request.get('seq')
@@ -363,7 +363,7 @@ class Sponsorships(webapp2.RequestHandler):
 		if name and sequence and price:
 			s = sponsorship.Sponsorship(parent = root, name = name, level = level, sequence = int(sequence), price = int(price), golfers_included = int(golfers_included), unique = unique, sold = sold)
 			s.put()
-			auditing.audit(root, "Added Sponsorship", data = level + "/" + name)
+			auditing.audit(root, "Added Sponsorship", data = level + "/" + name, request = self.request)
 		self.redirect('/admin/sponsorships')
 
 def get_tees(flight, gender):
@@ -1623,7 +1623,7 @@ class UploadAuctionItem(webapp2.RequestHandler):
 			thumbnail.put()
 			item.thumbnail_id = thumbnail.key().id()
 		item.put()
-		auditing.audit(root, "Added Auction Item", data = desc)
+		auditing.audit(root, "Added Auction Item", data = desc, request = self.request)
 		self.redirect("/admin/auction")
 
 class DeleteFile(webapp2.RequestHandler):
@@ -1646,7 +1646,7 @@ class DeleteFile(webapp2.RequestHandler):
 				if item.blob:
 					blobstore.delete(item.blob.key())
 				item.delete()
-				auditing.audit(root, "Deleted Uploaded File", data = path)
+				auditing.audit(root, "Deleted Uploaded File", data = path, request = self.request)
 		self.redirect("/admin/edit")
 
 class UploadFile(webapp2.RequestHandler):
@@ -1667,13 +1667,13 @@ class UploadFile(webapp2.RequestHandler):
 												 path = "/photos/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded Photo", data = filename)
+				auditing.audit(root, "Uploaded Photo", data = filename, request = self.request)
 			elif self.request.get('upload-file'):
 				item = uploadedfile.UploadedFile(parent = root, name = filename,
 												 path = "/files/%s" % filename,
 												 contents = contents)
 				item.put()
-				auditing.audit(root, "Uploaded File", data = filename)
+				auditing.audit(root, "Uploaded File", data = filename, request = self.request)
 		self.redirect("/admin/edit")
 
 def show_edit_form(name, caps, response):
@@ -1816,7 +1816,7 @@ class DeleteHandler(webapp2.RequestHandler):
 				db.delete(golfers)
 				guests = DinnerGuest.all().ancestor(s.key()).fetch(limit = None, keys_only = True)
 				db.delete(guests)
-				auditing.audit(root, "Deleted Registration", sponsor_id = int(id))
+				auditing.audit(root, "Deleted Registration", sponsor_id = int(id), request = self.request)
 				if s.confirmed:
 					tournament.update_counters(root, -s.num_golfers, -s.num_dinners)
 				s.delete()
@@ -1829,15 +1829,43 @@ class AuditHandler(webapp2.RequestHandler):
 			return
 		start = int(self.request.get('start') or 0)
 		q = auditing.get_audit_entries().order('-timestamp')
-		entries = q.fetch(offset = start, limit = 20)
-		self.response.out.write('<html><head><title>Audit</title></head>')
-		self.response.out.write('<body><table border="0" cellpadding="5" cellspacing="0">')
+		entries = q.fetch(offset = start, limit = 25)
+		self.response.out.write("""<!DOCTYPE html>
+<html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head><title>Audit</title></head>
+<link rel="icon" href="/favicon.png" type="image/png" />
+<link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,700,700i" rel="stylesheet" />
+<style type="text/css">
+body { margin: 20px; font-size: 10pt; }
+body, div, h1, h2, h3, p, th, td, li, dd { font-family: "Nunito Sans", sans-serif; }
+table { margin: 0 auto; }
+th, td { padding: 0.5em 1em; }
+td.nw { white-space: nowrap; }
+p { text-align: center; }
+</style>
+</head>
+""")
+		self.response.out.write('<body><table border="0" cellpadding="0" cellspacing="0">')
+		self.response.out.write('<tr valign="top">')
+		self.response.out.write('<th align="left">Timestamp</th>')
+		self.response.out.write('<th align="left">User</th>')
+		self.response.out.write('<th align="left">Tournament</th>')
+		self.response.out.write('<th align="left">Description</th>')
+		self.response.out.write('<th align="left">ID</th>')
+		self.response.out.write('<th align="left">Data</th>')
+		self.response.out.write('</tr>')
 		for entry in entries:
 			self.response.out.write('<tr valign="top">')
-			self.response.out.write(entry.timestamp.replace(tzinfo=tz.utc).astimezone(tz.pacific).strftime('<td>%Y-%b-%d %H:%M:%S</td>'))
-			self.response.out.write('<td>%s</td>' % entry.user)
+			self.response.out.write(entry.timestamp.replace(tzinfo=tz.utc).astimezone(tz.pacific).strftime('<td class="nw">%y-%b-%d %H:%M:%S</td>'))
+			if entry.ipaddr:
+				loc = 'title="%s"' % (entry.ipaddr + ' / ' + entry.location)
+			else:
+				loc = ''
+			self.response.out.write('<td %s>%s</td>' % (loc, entry.user))
 			self.response.out.write('<td>%s</td>' % entry.tournament)
-			self.response.out.write('<td>%s</td>' % entry.desc)
+			self.response.out.write('<td class="nw">%s</td>' % entry.desc)
 			if entry.sponsor_id:
 				self.response.out.write('<td>%d</td>' % entry.sponsor_id)
 			elif entry.tribute_id:
@@ -1848,7 +1876,7 @@ class AuditHandler(webapp2.RequestHandler):
 			self.response.out.write('</tr>')
 			start += 1
 		self.response.out.write('</table>')
-		self.response.out.write('<p><a href="/admin/audit?start=%d">Older</a></p>' % start)
+		self.response.out.write('<p><a href="/admin/audit?start=%d">Older &rarr;</a></p>' % start)
 		self.response.out.write('</body></html>')
 
 class UpgradeHandler(webapp2.RequestHandler):

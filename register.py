@@ -385,7 +385,8 @@ class Register(webapp2.RequestHandler):
 			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
 		auditing.audit(root, "Registration Step 1",
 					   sponsor_id = s.id,
-					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners))
+					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners),
+					   request = self.request)
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 		if caps.can_add_registrations and self.request.get('save'):
@@ -535,7 +536,8 @@ class Continue(webapp2.RequestHandler):
 			tournament.update_counters(root, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
 		auditing.audit(root, "Registration Step 2",
 					   sponsor_id = s.id,
-					   data = s.first_name + " " + s.last_name)
+					   data = s.first_name + " " + s.last_name,
+					   request = self.request)
 		memcache.delete('%s/admin/view/golfers' % root.name)
 		memcache.delete('%s/admin/view/dinners' % root.name)
 
@@ -789,12 +791,14 @@ class RelayResponse(webapp2.RequestHandler):
 				auditing.audit(root, "Tribute Ad Payment",
 							   tribute_id = tribute_id,
 							   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
-									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)))
+									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
+							   request = self.request)
 			else:
 				auditing.audit(root, "Tribute Ad Payment Failed",
 							   tribute_id = tribute_id,
 							   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
-									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)))
+									   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
+							   request = self.request)
 		else:
 			sponsor_id = None
 			try:
@@ -820,12 +824,14 @@ class RelayResponse(webapp2.RequestHandler):
 					auditing.audit(root, "Golf/Dinner Payment",
 								   sponsor_id = sponsor_id,
 								   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
-										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)))
+										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
+								   request = self.request)
 				else:
 					auditing.audit(root, "Golf/Dinner Payment Failed",
 								   sponsor_id = sponsor_id,
 								   data = ("Response code %s, reason %s (\"%s\"), auth_code %s, trans_id %s, amount %s, method %s" %
-										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)))
+										   (response_code, reason_code, reason_text, auth_code, trans_id, amount, method)),
+								   request = self.request)
 		parms = [
 			('response_code', response_code),
 			('reason_code', reason_code),
@@ -1113,7 +1119,8 @@ class Tribute(webapp2.RequestHandler):
 		action = "Updated" if id_parm else "Added"
 		auditing.audit(root, "%s Tribute Ad" % action,
 					   tribute_id = tribute_id,
-					   data = "%s %s: due $%d, pay by %s" % (ad.first_name, ad.last_name, ad.payment_due - ad.payment_made, ad.payment_type))
+					   data = "%s %s: due $%d, pay by %s" % (ad.first_name, ad.last_name, ad.payment_due - ad.payment_made, ad.payment_type),
+					   request = self.request)
 
 		if self.request.get('save') and caps.can_add_registrations:
 			self.redirect('/admin/view/tribute')
