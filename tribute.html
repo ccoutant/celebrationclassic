@@ -27,7 +27,6 @@ function recalculate() {
 	var word_limit_span = document.getElementById("wordlimit")
 	var contact_you_div = document.getElementById("contact_you");
 	var go_campaign_box = document.getElementById("checkbox_go_campaign");
-	var or_par = document.getElementById("or");
 	var amount_due_box = document.getElementById("amount_due");
 	var pay_buttons_span = document.getElementById("pay_buttons");
 	var save_button_span = document.getElementById("save_button");
@@ -38,14 +37,14 @@ function recalculate() {
 	amount_due_box.value = due;
 	if (ad_size == 1) {
 		one_line_div.style.display = "block";
-		word_limit_span.innerHTML = "18";
-		or_par.style.display = "none";
+		word_limit_span.innerHTML = " (max. 18 words)";
 	} else if (ad_size == 2) {
 		one_line_div.style.display = "block";
-		word_limit_span.innerHTML = "54";
-		or_par.style.display = "block";
-	} else
-		one_line_div.style.display = "none";
+		word_limit_span.innerHTML = " (max. 54 words)";
+	} else {
+		one_line_div.style.display = "block";
+		word_limit_span.innerHTML = "";
+	}
 	if (ad_size > 1)
 		contact_you_div.style.display = "block";
 	else
@@ -77,7 +76,6 @@ window.addEventListener('load', function() {
 });
 </script>
 <style type="text/css">
-#or { text-align: left; font-style: italic; margin: 1em; }
 #oneline textarea { width: 75%; height: 5em; }
 #pay_buttons, #save_button { display: none; }
 </style>
@@ -158,15 +156,15 @@ $<input type="text" name="due" value="{{ ad.payment_due }}" id="amount_due" read
 
 <div id="oneline" class="form-entry form-text">
 <div class="form-input">
-<label class="above" for="entry_printednames"><i>Please enter your text (max. <span id="wordlimit">18</span> words):</i></label>
+<label class="above" for="entry_printednames"><i>Please enter your text<span id="wordlimit"></span>:</i></label>
 <textarea name="printed_names" id="entry_printednames">{{ ad.printed_names }}</textarea>
-<p id="or">&mdash; OR &mdash;</p>
 </div>
 </div>
 
 <div id="contact_you" class="form-entry form-text">
-<p><i>Please forward your business card, logo, or image, in JPEG format, to
-<a href="mailto:golftributes2019@shirhadash.org">golftributes2019@shirhadash.org</a>.</i></p>
+<p><i>If you would like to include a business card, logo or image, please send it in JPEG format to
+<a href="mailto:golftributes2019@shirhadash.org">golftributes2019@shirhadash.org</a>.
+Our layout designer will format the ad within the size parameters.</i></p>
 </div>
 
 </div> <!-- form-section -->

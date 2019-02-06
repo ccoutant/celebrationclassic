@@ -17,7 +17,7 @@ def markdown(value):
 
 @register.filter
 def get_ad_size(value):
-	ad_sizes = [ '', 'One Line', 'Business Card', 'Quarter Page', 'Half Page', 'Full Page', 'Full Page Color' ]
+	ad_sizes = [ u'', u'One Line', u'Business Card', u'\u00bc Page', u'\u00bd Page', u'Full Page', u'Full Page Color' ]
 	return ad_sizes[value]
 
 @register.filter
