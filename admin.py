@@ -1915,7 +1915,7 @@ class UpgradeHandler(webapp2.RequestHandler):
 				for oldg in old_dinners:
 					newg = DinnerGuest(tournament = t.key, sponsor = s.key)
 					newg.sequence = oldg.sequence
-					newg.active = (oldg.sequence < s.num_dinners)
+					newg.active = (oldg.sequence <= s.num_dinners)
 					newg.first_name = oldg.first_name
 					newg.last_name = oldg.last_name
 					newg.dinner_choice = oldg.dinner_choice
