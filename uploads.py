@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 
 import uploadedfile
 
-class ServeFileHandler(blobstore_handlers.BlobstoreDownloadHandler):
+class ServeFileHandler(webapp2.RequestHandler):
 	def get(self, name):
 		q = uploadedfile.UploadedFile.query()
 		q = q.filter(uploadedfile.UploadedFile.path == name)
