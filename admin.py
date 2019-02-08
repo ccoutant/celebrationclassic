@@ -428,6 +428,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 			dinner_count += s.num_golfers - no_dinners + s.num_dinners
 		template_values = {
 			'sponsors': sponsors,
+			'sponsor_count': len(sponsors),
 			'golfer_count': golfer_count,
 			'dinner_count': dinner_count,
 			'incomplete': '',
