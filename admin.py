@@ -1869,70 +1869,11 @@ class UpgradeHandler(webapp2.RequestHandler):
 		start = int(self.request.get('start'))
 		q = Sponsor.query(ancestor = t.key).order(Sponsor.timestamp)
 		sponsors = q.fetch(offset = start, limit = 20)
-		sponsors_to_update = [ ]
 		for s in sponsors:
-			modified = False
-			try:
-				if s.id:
-					s.sponsor_id = s.id
-					del s.id
-					modified = True
-			except:
-				logging.info("Sponsor record already updated: %d" % s.sponsor_id)
-				pass
-			if s.num_golfers > 0:
-				old_golfers = Golfer.query(ancestor = s.key).order(Golfer.sequence).fetch(limit = None)
-				new_golfers = []
-				for oldg in old_golfers:
-					newg = Golfer(tournament = t.key, sponsor = s.key)
-					newg.sequence = oldg.sequence
-					newg.active = oldg.active
-					newg.sort_name = oldg.sort_name
-					newg.first_name = oldg.first_name
-					newg.last_name = oldg.last_name
-					newg.gender = oldg.gender
-					newg.company = oldg.company
-					newg.address = oldg.address
-					newg.city = oldg.city
-					newg.state = oldg.state
-					newg.zip = oldg.zip
-					newg.phone = oldg.phone
-					newg.email = oldg.email
-					newg.average_score = oldg.average_score
-					newg.ghin_number = oldg.ghin_number
-					newg.has_index = oldg.has_index
-					newg.handicap_index = oldg.handicap_index
-					newg.shirt_size = oldg.shirt_size
-					newg.dinner_choice = oldg.dinner_choice
-					new_golfers.append(newg)
-				ndb.put_multi(new_golfers)
-				s.golfer_keys = [ g.key for g in new_golfers ]
-				logging.info("Updated %d golfers: %s" % (len(new_golfers), ",".join([str(k.id()) for k in s.golfer_keys])))
-				modified = True
-			if s.num_dinners > 0:
-				old_dinners = DinnerGuest.query(ancestor = s.key).order(DinnerGuest.sequence).fetch(limit = None)
-				new_dinners = []
-				for oldg in old_dinners:
-					newg = DinnerGuest(tournament = t.key, sponsor = s.key)
-					newg.sequence = oldg.sequence
-					newg.active = (oldg.sequence <= s.num_dinners)
-					newg.first_name = oldg.first_name
-					newg.last_name = oldg.last_name
-					newg.dinner_choice = oldg.dinner_choice
-					new_dinners.append(newg)
-				ndb.put_multi(new_dinners)
-				s.dinner_keys = [ g.key for g in new_dinners ]
-				logging.info("Updated %d dinners: %s" % (len(new_golfers), ",".join([str(k.id()) for k in s.dinner_keys])))
-				modified = True
-			if modified:
-				logging.info("Updated sponsor %d" % s.sponsor_id)
-				sponsors_to_update.append(s)
-		if sponsors_to_update:
-			ndb.put_multi(sponsors_to_update)
+			pass
 		count = len(sponsors)
-		nmod = len(sponsors_to_update)
-		logging.info("Updated %d registrations from %d through %d" % (nmod, start, start + count - 1))
-		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, nmod))
+		logging.info("Updated %d sponsors %d through %d" % (count, start, start + count - 1))
+		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, count))
 
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
