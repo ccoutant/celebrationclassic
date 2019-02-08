@@ -1,6 +1,6 @@
 from google.appengine.ext import ndb
 
-class Sponsor(ndb.Expando):
+class Sponsor(ndb.Model):
 	sponsor_id = ndb.IntegerProperty(default = 0)
 	first_name = ndb.StringProperty(default = '')
 	last_name = ndb.StringProperty(default = '')
