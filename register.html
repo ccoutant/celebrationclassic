@@ -29,6 +29,16 @@ window.addEventListener('load', function() {
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
+{% if in_progress %}
+<div class="inprogress">
+<p>You have an existing registration for {{ in_progress.first_name }} {{ in_progress.last_name }}.
+Click the button below to continue working on your existing registration,
+or fill out the form below to make an additional registration.
+</p>
+<p class="button"><a href="/register?id={{ in_progress.sponsor_id }}"><button>Go to Existing Registration</button></a></p>
+</div>
+{% endif %}
+
 {% if tournament.golf_price_late or capabilities.can_add_registrations %}
 
 <form action="/register" method="post" accept-charset="utf-8" novalidate>

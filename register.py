@@ -28,7 +28,7 @@ dev_server = True if server_software and server_software.startswith("Development
 
 # Show the initial registration form.
 
-def show_registration_form(response, t, s, messages, caps, debug):
+def show_registration_form(response, t, s, messages, caps, in_progress, debug):
 	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
@@ -74,6 +74,7 @@ def show_registration_form(response, t, s, messages, caps, debug):
 		'selected': selected_sponsorships,
 		'page': page,
 		'messages': messages,
+		'in_progress': in_progress,
 		'capabilities': caps,
 		'debug': debug
 	}
@@ -168,19 +169,34 @@ class Register(webapp2.RequestHandler):
 		t = tournament.get_tournament()
 		caps = capabilities.get_current_user_caps()
 		messages = []
-		if self.request.get('id'):
-			id = self.request.get('id')
-			q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == int(id))
-			s = q.get()
-			if s:
-				if self.request.get('page') == '1':
-					show_registration_form(self.response, t, s, messages, caps, dev_server)
-				else:
-					show_continuation_form(self.response, t, s, messages, caps, dev_server)
-				return
-			messages.append('Sorry, we could not find a registration for ID %s' % id)
+		sponsor_id = self.request.get('id')
+		if sponsor_id:
+			try:
+				id = int(sponsor_id)
+			except ValueError:
+				pass
+			else:
+				q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == id)
+				s = q.get()
+				if s:
+					if self.request.get('page') == '1':
+						show_registration_form(self.response, t, s, messages, caps, '', dev_server)
+					else:
+						show_continuation_form(self.response, t, s, messages, caps, dev_server)
+					return
+			messages.append('Sorry, we could not find a registration for ID %s' % sponsor_id)
 		s = Sponsor(sponsorships = [])
-		show_registration_form(self.response, t, s, messages, caps, dev_server)
+		in_progress = None
+		existing_id = self.request.cookies.get('sponsorid')
+		if existing_id:
+			try:
+				id = int(existing_id)
+			except ValueError:
+				self.request.cookies.delete('sponsorid')
+			else:
+				q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == id)
+				in_progress = q.get()
+		show_registration_form(self.response, t, s, messages, caps, in_progress, dev_server)
 
 	# Process the submitted info.
 	def post(self):
@@ -229,7 +245,7 @@ class Register(webapp2.RequestHandler):
 
 		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
-			show_registration_form(self.response, t, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
 			return
 
 		discount_applied = False
@@ -369,7 +385,7 @@ class Register(webapp2.RequestHandler):
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages or self.request.get('apply_discount'):
-			show_registration_form(self.response, t, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
 			return
 
 		if s.sponsor_id == 0:
@@ -395,6 +411,8 @@ class Register(webapp2.RequestHandler):
 		if caps.can_add_registrations and self.request.get('save'):
 			self.redirect('/admin/view/registrations')
 			return
+		if not caps.can_add_registrations:
+			self.response.set_cookie('sponsorid', str(s.sponsor_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))
 		self.redirect('/register?id=%d' % s.sponsor_id)
 
 # Registration Step 2.
@@ -412,7 +430,7 @@ class Continue(webapp2.RequestHandler):
 		if s is None:
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 			s = Sponsor(sponsorships = [])
-			show_registration_form(self.response, t, s, messages, caps, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
 			return
 
 		orig_num_golfers = 0
@@ -535,6 +553,9 @@ class Continue(webapp2.RequestHandler):
 
 		logging.info('Registration Step 2 for ID %d' % s.sponsor_id)
 		s.put()
+
+		if not caps.can_add_registrations:
+			self.response.set_cookie('sponsorid', str(s.sponsor_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))
 
 		if s.confirmed:
 			tournament.update_counters(t, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
@@ -1002,7 +1023,7 @@ class FakeAcceptiva(webapp2.RequestHandler):
 # Handle a request for a tribute ad.
 
 class Tribute(webapp2.RequestHandler):
-	def show_form(self, t, ad, tribute_id, messages):
+	def show_form(self, t, ad, tribute_id, messages, existing_ad):
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
 		past_deadline = today.date() > t.tribute_deadline
 		page = detailpage.get_detail_page('tribute', False)
@@ -1013,6 +1034,7 @@ class Tribute(webapp2.RequestHandler):
 			'messages': messages,
 			'ad': ad,
 			'tribute_id': tribute_id,
+			'existing_ad': existing_ad,
 			'past_deadline': past_deadline
 			}
 		self.response.out.write(render_to_string('tribute.html', template_values))
@@ -1023,15 +1045,26 @@ class Tribute(webapp2.RequestHandler):
 		id_parm = self.request.get('id')
 		if id_parm:
 			try:
-				ad = TributeAd.get_by_id(int(id_parm), parent = t.key)
+				num_id = int(id_parm)
+			except ValueError:
+				pass
+			else:
+				ad = TributeAd.get_by_id(num_id, parent = t.key)
 				if ad:
-					self.show_form(t, ad, id_parm, messages)
+					self.show_form(t, ad, id_parm, messages, "")
 					return
-				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
-			except:
-				messages.append("Could not find a Tribute Ad with id %s" % id_parm)
+			messages.append("Sorry, we could not find a Tribute Ad with ID %s" % id_parm)
 		ad = TributeAd(parent = t.key)
-		self.show_form(t, ad, "", messages)
+		existing_ad = None
+		id_from_cookie = self.request.cookies.get('tributeid')
+		if id_from_cookie:
+			try:
+				num_id = int(id_from_cookie)
+			except ValueError:
+				self.request.cookies.delete('tributeid')
+			else:
+				existing_ad = TributeAd.get_by_id(num_id, parent = t.key)
+		self.show_form(t, ad, "", messages, existing_ad)
 
 	def post(self):
 		t = tournament.get_tournament()
@@ -1103,7 +1136,7 @@ class Tribute(webapp2.RequestHandler):
 				ad.auth_code = self.request.get('authcode')
 
 		if messages:
-			self.show_form(t, ad, id_parm, messages)
+			self.show_form(t, ad, id_parm, messages, '')
 			return
 
 		if caps.can_add_registrations and self.request.get('save'):
@@ -1126,6 +1159,9 @@ class Tribute(webapp2.RequestHandler):
 		if self.request.get('save') and caps.can_add_registrations:
 			self.redirect('/admin/view/tribute')
 			return
+
+		if not caps.can_add_registrations:
+			self.response.set_cookie('tributeid', str(tribute_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))
 
 		if ad.payment_type == 'check' or self.request.get('save'):
 			template_values = {
@@ -1186,7 +1222,7 @@ class Tribute(webapp2.RequestHandler):
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			self.show_form(t, ad, str(tribute_id), messages)
+			self.show_form(t, ad, str(tribute_id), messages, '')
 
 app = webapp2.WSGIApplication([('/register', Register),
 							   ('/continue', Continue),

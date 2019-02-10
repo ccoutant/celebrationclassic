@@ -91,6 +91,17 @@ window.addEventListener('load', function() {
 {% if past_deadline %}
 <p class="message">Sorry, the deadline for submitting tribute ads has passed.</p>
 {% else %}
+
+{% if existing_ad %}
+<div class="inprogress">
+<p>You have an existing {{ existing_ad.ad_size|get_ad_size }} ad.
+Click the button below to view or change your existing tribute ad,
+or fill out the form below to submit an additional tribute ad.
+</p>
+<p class="button"><a href="/tribute?id={{ existing_ad.key.id }}"><button>Go to Existing Tribute Ad</button></a></p>
+</div>
+{% endif %}
+
 <form action="/tribute" method="post" accept-charset="utf-8">
 
 <input type="hidden" name="id" value="{{ tribute_id }}">
