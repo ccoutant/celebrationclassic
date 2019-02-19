@@ -28,7 +28,11 @@ dev_server = True if server_software and server_software.startswith("Development
 
 # Show the initial registration form.
 
-def show_registration_form(response, t, s, messages, caps, in_progress, debug):
+def show_registration_form(response, t, s, messages, caps,
+						   golf_wait = False,
+						   dinner_wait = False,
+						   in_progress = None,
+						   debug = False):
 	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
@@ -55,8 +59,18 @@ def show_registration_form(response, t, s, messages, caps, in_progress, debug):
 			if ss.sequence != angel[0].sequence:
 				non_angel_selected = True
 	page = detailpage.get_detail_page('register', False)
+	counters = tournament.get_counters(t)
+	golf_sold_out = False
+	dinner_sold_out = False
+	if not registration_closed and not s.confirmed:
+		if t.golf_sold_out or (counters.golfer_count >= t.limit_golfers) or golf_wait:
+			golf_sold_out = True
+		if t.dinner_sold_out or (counters.dinner_count >= t.limit_dinners) or dinner_wait:
+			dinner_sold_out = True
 	template_values = {
 		'tournament': t,
+		'golf_sold_out': golf_sold_out,
+		'dinner_sold_out': dinner_sold_out,
 		'sponsor': s,
 		'credits': s.payment_made + s.discount,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
@@ -82,7 +96,7 @@ def show_registration_form(response, t, s, messages, caps, in_progress, debug):
 
 # Show the continuation form.
 
-def show_continuation_form(response, t, s, messages, caps, debug):
+def show_continuation_form(response, t, s, messages, caps, debug = False):
 	# Get today's date in PST. (We won't worry about DST, so early bird pricing will
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
@@ -180,9 +194,9 @@ class Register(webapp2.RequestHandler):
 				s = q.get()
 				if s:
 					if self.request.get('page') == '1':
-						show_registration_form(self.response, t, s, messages, caps, '', dev_server)
+						show_registration_form(self.response, t, s, messages, caps, debug = dev_server)
 					else:
-						show_continuation_form(self.response, t, s, messages, caps, dev_server)
+						show_continuation_form(self.response, t, s, messages, caps, debug = dev_server)
 					return
 			messages.append('Sorry, we could not find a registration for ID %s' % sponsor_id)
 		s = Sponsor(sponsorships = [])
@@ -196,7 +210,7 @@ class Register(webapp2.RequestHandler):
 			else:
 				q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == id)
 				in_progress = q.get()
-		show_registration_form(self.response, t, s, messages, caps, in_progress, dev_server)
+		show_registration_form(self.response, t, s, messages, caps, in_progress = in_progress, debug = dev_server)
 
 	# Process the submitted info.
 	def post(self):
@@ -245,7 +259,7 @@ class Register(webapp2.RequestHandler):
 
 		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
-			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
 
 		discount_applied = False
@@ -356,36 +370,42 @@ class Register(webapp2.RequestHandler):
 					messages.append('You entered an invalid value in the "Discount" field.')
 				s.discount_type = self.request.get('discount_type')
 
+		golf_wait = False
+		dinner_wait = False
 		if not caps.can_add_registrations:
 			if s.num_golfers > orig_num_golfers:
 				if t.golf_sold_out:
 					s.num_golfers = orig_num_golfers
-					messages.append('Sorry, the golf tournament is full.')
+					golf_wait = True
+					messages.append('Sorry, the golf tournament is sold out.')
 				elif counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
 					open_slots = t.limit_golfers - counters.golfer_count
 					s.num_golfers = orig_num_golfers
+					golf_wait = True
 					if open_slots <= 0:
-						messages.append('Sorry, the golf tournament is full.')
+						messages.append('Sorry, the golf tournament is sold out.')
 					elif open_slots == 1:
-						messages.append('Sorry, the tournament only has room for 1 more golfer.')
+						messages.append('Sorry, the golf tournament only has room for 1 more golfer.')
 					else:
-						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
+						messages.append('Sorry, the golf tournament only has room for %d more golfers.' % open_slots)
 			if s.num_dinners > orig_num_dinners:
 				if t.dinner_sold_out:
 					s.num_dinners = orig_num_dinners
-					messages.append('Sorry, the dinner is full.')
+					dinner_wait = True
+					messages.append('Sorry, the dinner is sold out.')
 				elif counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
 					open_slots = t.limit_dinners - counters.dinner_count
 					s.num_dinners = orig_num_dinners
+					dinner_wait = True
 					if open_slots <= 0:
-						messages.append('Sorry, the dinner is full.')
+						messages.append('Sorry, the dinner is sold out.')
 					elif open_slots == 1:
 						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
 					else:
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages or self.request.get('apply_discount'):
-			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, debug = dev_server, golf_wait = golf_wait, dinner_wait = dinner_wait)
 			return
 
 		if s.sponsor_id == 0:
@@ -430,7 +450,7 @@ class Continue(webapp2.RequestHandler):
 		if s is None:
 			messages.append('Sorry, we could not find a registration for ID %s' % id)
 			s = Sponsor(sponsorships = [])
-			show_registration_form(self.response, t, s, messages, caps, None, dev_server)
+			show_registration_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
 
 		orig_num_golfers = 0
@@ -529,7 +549,7 @@ class Continue(webapp2.RequestHandler):
 				if counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
 					open_slots = t.limit_golfers - counters.golfer_count
 					if open_slots <= 0:
-						messages.append('Sorry, the golf tournament is full.')
+						messages.append('Sorry, the golf tournament is sold out.')
 					elif open_slots == 1:
 						messages.append('Sorry, the tournament only has room for 1 more golfer.')
 					else:
@@ -538,14 +558,14 @@ class Continue(webapp2.RequestHandler):
 				if counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
 					open_slots = t.limit_dinners - counters.dinner_count
 					if open_slots <= 0:
-						messages.append('Sorry, the dinner is full.')
+						messages.append('Sorry, the dinner is sold out.')
 					elif open_slots == 1:
 						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
 					else:
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages:
-			show_continuation_form(self.response, t, s, messages, caps, dev_server)
+			show_continuation_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
 
 		if not self.request.get('back'):
@@ -674,7 +694,7 @@ class Continue(webapp2.RequestHandler):
 
 		else:
 			messages.append('Sorry, we are not yet accepting credit card payments.')
-			show_continuation_form(self.response, t, s, messages, caps, dev_server)
+			show_continuation_form(self.response, t, s, messages, caps, debug = dev_server)
 
 # Send an email receipt.
 
