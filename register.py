@@ -236,6 +236,8 @@ class Register(webapp2.RequestHandler):
 				orig_num_dinners = s.num_dinners
 		else:
 			s = Sponsor(parent = t.key)
+			s.golfer_keys = []
+			s.dinner_keys = []
 		s.first_name = self.request.get('first_name')
 		s.last_name = self.request.get('last_name')
 		s.sort_name = s.last_name.lower() + ',' + s.first_name.lower()
@@ -254,8 +256,25 @@ class Register(webapp2.RequestHandler):
 		s.num_golfers = int(self.request.get('num_golfers'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
-		s.golfer_keys = []
-		s.dinner_keys = []
+
+		# If the number of golfers or dinners have changed,
+		# mark new ones active and old ones inactive.
+		for k in s.golfer_keys:
+			g = k.get()
+			if g.active and g.sequence > s.num_golfers:
+				g.active = False
+				g.put()
+			elif not g.active and g.sequence <= s.num_golfers:
+				g.active = True
+				g.put()
+		for k in s.dinner_keys:
+			g = k.get()
+			if g.active and g.sequence > s.num_dinners:
+				g.active = False
+				g.put()
+			elif not g.active and g.sequence <= s.num_dinners:
+				g.active = True
+				g.put()
 
 		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
@@ -460,15 +479,23 @@ class Continue(webapp2.RequestHandler):
 			orig_num_dinners = s.num_dinners
 
 		golfers = ndb.get_multi(s.golfer_keys)
+		golfers_to_delete = []
 		if len(golfers) < s.num_golfers:
 			# Initialize new golfer instances.
-			for i in range(len(golfers), s.num_golfers + 1):
+			for i in range(len(golfers), s.num_golfers):
 				golfers.append(Golfer(tournament = t.key, sponsor = s.key, sequence = i + 1, active = True))
 		elif len(golfers) > s.num_golfers:
 			# Mark excess golfer instances as not active, so we can filter
-			# them out when querying all golfers.
+			# them out when querying all golfers. Delete any that have no
+			# information worth saving.
+			extras_have_names = False
 			for i in range(s.num_golfers, len(golfers)):
 				golfers[i].active = False
+				if golfers[i].first_name or golfers[i].last_name:
+					extras_have_names = True
+			if not extras_have_names:
+				golfers_to_delete += [g.key for g in golfers[s.num_golfers:]]
+				golfers = golfers[:s.num_golfers]
 		for golfer in golfers:
 			if not golfer.active:
 				break
@@ -522,15 +549,23 @@ class Continue(webapp2.RequestHandler):
 		s.golfer_keys = [ g.key for g in golfers ]
 
 		dinner_guests = ndb.get_multi(s.dinner_keys)
+		dinners_to_delete = []
 		if len(dinner_guests) < s.num_dinners:
 			# Initialize new DinnerGuest instances.
-			for i in range(len(dinner_guests), s.num_dinners + 1):
+			for i in range(len(dinner_guests), s.num_dinners):
 				dinner_guests.append(DinnerGuest(tournament = t.key, sponsor = s.key, sequence = i + 1, active = True))
 		elif len(dinner_guests) > s.num_dinners:
-			# Mark excess golfer instances as not active, so we can filter
-			# them out when querying all golfers.
+			# Mark excess DinnerGuest instances as not active, so we can filter
+			# them out when querying all dinner guests. Delete any that have
+			# no information worth saving.
+			extras_have_names = False
 			for i in range(s.num_dinners, len(dinner_guests)):
 				dinner_guests[i].active = False
+				if dinner_guests[i].first_name or dinner_guests[i].last_name:
+					extras_have_names = True
+			if not extras_have_names:
+				dinners_to_delete += [g.key for g in dinner_guests[s.num_dinners:]]
+				dinner_guests = dinner_guests[:s.num_dinners]
 		for guest in dinner_guests:
 			if not guest.active:
 				break
@@ -573,6 +608,10 @@ class Continue(webapp2.RequestHandler):
 
 		logging.info('Registration Step 2 for ID %d' % s.sponsor_id)
 		s.put()
+		if golfers_to_delete:
+			ndb.delete_multi(golfers_to_delete)
+		if dinners_to_delete:
+			ndb.delete_multi(dinners_to_delete)
 
 		if not caps.can_add_registrations:
 			self.response.set_cookie('sponsorid', str(s.sponsor_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))

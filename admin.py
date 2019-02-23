@@ -1852,13 +1852,15 @@ p { text-align: center; }
 class UpgradeHandler(webapp2.RequestHandler):
 	def get(self):
 		start = int(self.request.get('start') or 0)
+		commit = int(self.request.get('commit') or 0)
 		count = self.request.get('count')
 		self.response.out.write('<html><head><title>Upgrade</title></head>')
+		self.response.out.write('<body><form action="/admin/upgrade" method="post">')
 		if count:
 			self.response.out.write('<p>Upgraded %s records.</p>' % count)
-		self.response.out.write('<body><form action="/admin/upgrade" method="post">')
-		self.response.out.write('<input type="text" name="start" value="%d">' % start)
-		self.response.out.write('<input type="submit" name="upgrade" value="Upgrade">')
+		self.response.out.write('Start: <input type="text" name="start" value="%d">' % start)
+		self.response.out.write('<br>Commit: <input type="text" name="commit" value="%d">' % commit)
+		self.response.out.write('<br><input type="submit" name="upgrade" value="Upgrade">')
 		self.response.out.write('</form></body></html>')
 
 	def post(self):
@@ -1867,13 +1869,119 @@ class UpgradeHandler(webapp2.RequestHandler):
 			return
 		t = tournament.get_tournament()
 		start = int(self.request.get('start'))
+		commit = int(self.request.get('commit'))
 		q = Sponsor.query(ancestor = t.key).order(Sponsor.timestamp)
 		sponsors = q.fetch(offset = start, limit = 20)
 		for s in sponsors:
-			pass
+			golfers = Golfer.query().filter(Golfer.sponsor == s.key).order(Golfer.sequence).fetch(limit = None, keys_only = True)
+			golfers_to_delete = set(golfers) - set(s.golfer_keys)
+			all_dinners = DinnerGuest.query().filter(DinnerGuest.sponsor == s.key).order(DinnerGuest.sequence).fetch(limit = None, keys_only = True)
+			dinners_to_delete = set(all_dinners) - set(s.dinner_keys)
+			logging.debug("sponsor id: %d, %d golfers, %d dinners" % (s.sponsor_id, s.num_golfers, s.num_dinners))
+			logging.debug("golfers to delete: " + ",".join(str(k.id()) for k in golfers_to_delete))
+			logging.debug("dinners to delete: " + ",".join(str(k.id()) for k in dinners_to_delete))
+			if golfers_to_delete and commit:
+				ndb.delete_multi(golfers_to_delete)
+			if dinners_to_delete and commit:
+				ndb.delete_multi(dinners_to_delete)
+			seq = 1
+			for k in s.golfer_keys:
+				g = k.get()
+				mod = False
+				if seq != g.sequence:
+					logging.debug("golfer %d has wrong sequence, %d should be %d" % (k.id(), g.sequence, seq))
+					g.sequence = seq
+					mod = True
+				if seq > s.num_golfers and g.active:
+					logging.debug("golfer %d (#%d) should not be active" % (k.id(), seq))
+					g.active = False
+					mod = True
+				elif seq <= s.num_golfers and not g.active:
+					logging.debug("golfer %d (#%d) should be active" % (k.id(), seq))
+					g.active = True
+					mod = True
+				if mod and commit:
+					g.put()
+				seq += 1
+			seq = 1
+			for k in s.dinner_keys:
+				g = k.get()
+				mod = False
+				if seq != g.sequence:
+					logging.debug("dinner %d has wrong sequence, %d should be %d" % (k.id(), g.sequence, seq))
+					g.sequence = seq
+					mod = True
+				if seq > s.num_dinners and g.active:
+					logging.debug("dinner %d (#%d) should not be active" % (k.id(), seq))
+					g.active = False
+					mod = True
+				elif seq <= s.num_dinners and not g.active:
+					logging.debug("dinner %d (#%d) should be active" % (k.id(), seq))
+					g.active = True
+					mod = True
+				if mod and commit:
+					g.put()
+				seq += 1
 		count = len(sponsors)
-		logging.info("Updated %d sponsors %d through %d" % (count, start, start + count - 1))
-		self.redirect('/admin/upgrade?start=%d&count=%d' % (start + count, count))
+		# logging.info("Updated %d sponsors %d through %d" % (count, start, start + count - 1))
+		self.redirect('/admin/upgrade?start=%d&count=%d&commit=%d' % (start + count, count, commit))
+
+class FindOrphansHandler(webapp2.RequestHandler):
+	def get(self):
+		if not users.is_current_user_admin():
+			show_login_page(self.response.out, '/admin/find-orphans')
+			return
+		t = tournament.get_tournament()
+		sponsor_keys = Sponsor.query(ancestor = t.key).order(Sponsor.timestamp).fetch(limit = None, keys_only = True)
+		all_golfers = set(Golfer.query().filter(Golfer.tournament == t.key).fetch(limit = None, keys_only = True))
+		all_dinners = set(DinnerGuest.query().filter(DinnerGuest.tournament == t.key).fetch(limit = None, keys_only = True))
+		extra_golfers = []
+		extra_dinners = []
+		for k in sponsor_keys:
+			s = k.get()
+			if s.num_golfers < len(s.golfer_keys):
+				extra_golfers += s.golfer_keys[s.num_golfers:]
+				logging.debug("Sponsor %d contains extra golfers" % s.sponsor_id)
+			if s.num_dinners < len(s.dinner_keys):
+				extra_dinners += s.dinner_keys[s.num_dinners:]
+				logging.debug("Sponsor %d contains extra dinners" % s.sponsor_id)
+			s_golfers = set(s.golfer_keys)
+			if s_golfers - all_golfers:
+				logging.debug("Sponsor %d contains dangling golfer keys" % s.sponsor_id)
+			all_golfers = all_golfers - s_golfers
+			s_dinners = set(s.dinner_keys)
+			if s_dinners - all_dinners:
+				logging.debug("Sponsor %d contains dangling dinner keys" % s.sponsor_id)
+			all_dinners = all_dinners - s_dinners
+		logging.debug("Found %d orphaned golfers" % len(all_golfers))
+		logging.debug("Found %d orphaned dinners" % len(all_dinners))
+		self.response.out.write('<html><head><title>Orphans</title></head>')
+		self.response.out.write('<body>')
+		self.response.out.write('<h1>Orphaned Golfers</h1>')
+		self.response.out.write('<table>')
+		for k in all_golfers:
+			g = k.get()
+			self.response.out.write('<tr><td>%d</td><td>%s %s</td></tr>' % (k.id(), g.first_name, g.last_name))
+		self.response.out.write('</table>')
+		self.response.out.write('<h1>Extra Golfers</h1>')
+		self.response.out.write('<table>')
+		for k in extra_golfers:
+			g = k.get()
+			self.response.out.write('<tr><td>%d</td><td>%s %s</td><td>%d</td></tr>' % (k.id(), g.first_name, g.last_name, g.sponsor.id()))
+		self.response.out.write('</table>')
+		self.response.out.write('<h1>Orphaned Dinners</h1>')
+		self.response.out.write('<table>')
+		for k in all_dinners:
+			g = k.get()
+			self.response.out.write('<tr><td>%d</td><td>%s %s</td></tr>' % (k.id(), g.first_name, g.last_name))
+		self.response.out.write('</table>')
+		self.response.out.write('<h1>Extra Dinners</h1>')
+		self.response.out.write('<table>')
+		for k in extra_dinners:
+			g = k.get()
+			self.response.out.write('<tr><td>%d</td><td>%s %s</td><td>%d</td></tr>' % (k.id(), g.first_name, g.last_name, g.sponsor.id()))
+		self.response.out.write('</table>')
+		self.response.out.write('</body></html>')
 
 app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/users', ManageUsers),
@@ -1905,5 +2013,6 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/delete-registrations', DeleteHandler),
 							   ('/admin/audit', AuditHandler),
 							   ('/admin/logout', Logout),
-							   ('/admin/upgrade', UpgradeHandler)],
+							   ('/admin/upgrade', UpgradeHandler),
+							   ('/admin/find-orphans', FindOrphansHandler)],
 							  debug=dev_server)

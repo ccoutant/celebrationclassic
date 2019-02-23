@@ -47,6 +47,11 @@ indexes:
   - name: email
 
 - kind: DinnerGuest
+  properties:
+  - name: sponsor
+  - name: sequence
+
+- kind: DinnerGuest
   ancestor: yes
   properties:
   - name: sequence
@@ -70,6 +75,11 @@ indexes:
   - name: has_index
   - name: last_name
   - name: tees
+
+- kind: Golfer
+  properties:
+  - name: sponsor
+  - name: sequence
 
 - kind: Golfer
   ancestor: yes
