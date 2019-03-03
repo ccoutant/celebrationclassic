@@ -968,7 +968,7 @@ class TeamsUpdater:
 				team.put()
 				t['key'] = team.key.id()
 				for golfer in golfers_to_update:
-					golfer.team = team
+					golfer.team = team.key
 
 	def update_golfers_pass2(self):
 		for g_id in self.golfers_by_id:
