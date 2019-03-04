@@ -129,6 +129,12 @@ gen_date_picker("tribute_deadline", {{ tournament.tribute_deadline.month|default
 <td align="left"><input type="text" size="30" name="go_discount_codes" value="{{ tournament.go_discount_codes|default:"" }}"></td>
 </tr>
 <tr>
+<td align="left">Wait List Email</td>
+<td align="left">
+<input type="text" size="30" name="wait_list_email" value="{{ tournament.wait_list_email }}">
+</td>
+</tr>
+<tr>
 <td align="left">Dinner Choices</td>
 <td align="left">
 <input type="text" size="30" name="dinner_choices" value="{{ tournament.dinner_choices }}">

@@ -39,18 +39,15 @@ or fill out the form below to make an additional registration.
 </div>
 {% endif %}
 
-{% if golf_sold_out and dinner_sold_out %}
-The golf tournament and dinner are currently sold out.
-If you would like to be placed on a waiting list, please
-<a href="mailto:shanda@shirhadash.org?subject=Celebration%20Classic%20Wait%20List">send us an email message</a>.
-{% elif golf_sold_out %}
-The golf tournament is currently sold out.
-If you would like to be placed on a waiting list, please
-<a href="mailto:shanda@shirhadash.org?subject=Celebration%20Classic%20Wait%20List">send us an email message</a>.
-{% elif dinner_sold_out %}
-The dinner is currently sold out.
-If you would like to be placed on a waiting list, please
-<a href="mailto:shanda@shirhadash.org?subject=Celebration%20Classic%20Wait%20List">send us an email message</a>.
+{% if golf_sold_out or dinner_sold_out %}
+<p>{% if golf_sold_out and dinner_sold_out %}Online reservations are currently unavailable.
+{% elif golf_sold_out %}Online reservations for the golf tournament are currently unavailable.
+{% elif dinner_sold_out %}Online reservations for the dinner are currently unavailable.
+{% endif %}{% if tournament.wait_list_email %}Please
+<a href="mailto:{{ tournament.wait_list_email }}?subject=Celebration%20Classic%Reservations">email your reservation details</a>
+and the Celebration Classic committee will be in touch with a confirmation as soon as possible.
+{% endif %}
+</p>
 {% endif %}
 
 {% if tournament.golf_price_late or capabilities.can_add_registrations %}

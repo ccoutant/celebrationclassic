@@ -211,6 +211,7 @@ class ManageTournament(webapp2.RequestHandler):
 		t.limit_dinners = int(self.request.get("limit_dinners"))
 		t.golf_sold_out = (self.request.get("golf_sold_out") == "y")
 		t.dinner_sold_out = (self.request.get("dinner_sold_out") == "y")
+		t.wait_list_email = self.request.get("wait_list_email")
 		t.dinner_choices = self.request.get("dinner_choices")
 		t.go_discount_codes = self.request.get("go_discount_codes")
 		t.red_course_rating = float(self.request.get("red_course_rating"))

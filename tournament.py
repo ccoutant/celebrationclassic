@@ -21,6 +21,7 @@ class Tournament(ndb.Model):
 	limit_dinners = ndb.IntegerProperty(default = 0)
 	golf_sold_out = ndb.BooleanProperty(default = False)
 	dinner_sold_out = ndb.BooleanProperty(default = False)
+	wait_list_email = ndb.StringProperty(default = "")
 	dinner_choices = ndb.StringProperty(default = "Beef,Chicken,Fish,Vegetarian")
 	go_discount_codes = ndb.StringProperty(default = "")
 	red_course_rating = ndb.FloatProperty(default = 72.0)
