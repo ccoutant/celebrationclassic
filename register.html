@@ -25,10 +25,6 @@ window.addEventListener('load', function() {
 
 {{ page.content|markdown }}
 
-{% for m in messages %}
-<p class="message">{{ m|escape }}</p>
-{% endfor %}
-
 {% if in_progress %}
 <div class="inprogress">
 <p>You have an existing registration for {{ in_progress.first_name }} {{ in_progress.last_name }}.
@@ -40,15 +36,19 @@ or fill out the form below to make an additional registration.
 {% endif %}
 
 {% if golf_sold_out or dinner_sold_out %}
-<p>{% if golf_sold_out and dinner_sold_out %}Online reservations are currently unavailable.
+<p class="message">{% if golf_sold_out and dinner_sold_out %}Online reservations are currently unavailable.
 {% elif golf_sold_out %}Online reservations for the golf tournament are currently unavailable.
 {% elif dinner_sold_out %}Online reservations for the dinner are currently unavailable.
-{% endif %}{% if tournament.wait_list_email %}Please
-<a href="mailto:{{ tournament.wait_list_email }}?subject=Celebration%20Classic%Reservations">email your reservation details</a>
+{% endif %}{% if tournament.wait_list_email %}Please email your reservation details to
+<a href="mailto:{{ tournament.wait_list_email }}?subject=Celebration%20Classic%20Reservations">{{ tournament.wait_list_email }}</a>
 and the Celebration Classic committee will be in touch with a confirmation as soon as possible.
 {% endif %}
 </p>
 {% endif %}
+
+{% for m in messages %}
+<p class="message">{{ m|escape }}</p>
+{% endfor %}
 
 {% if tournament.golf_price_late or capabilities.can_add_registrations %}
 

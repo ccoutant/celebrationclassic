@@ -1,5 +1,7 @@
 p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 
+p.message a { color: red; text-decoration: underline; }
+
 p.important { font-weight: bold; }
 
 .inprogress { margin: 2em 1em; border: 1px solid black; padding: 1em; }

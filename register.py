@@ -393,37 +393,15 @@ class Register(webapp2.RequestHandler):
 		dinner_wait = False
 		if not caps.can_add_registrations:
 			if s.num_golfers > orig_num_golfers:
-				if t.golf_sold_out:
+				if t.golf_sold_out or (counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers):
 					s.num_golfers = orig_num_golfers
 					golf_wait = True
-					messages.append('Sorry, the golf tournament is sold out.')
-				elif counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
-					open_slots = t.limit_golfers - counters.golfer_count
-					s.num_golfers = orig_num_golfers
-					golf_wait = True
-					if open_slots <= 0:
-						messages.append('Sorry, the golf tournament is sold out.')
-					elif open_slots == 1:
-						messages.append('Sorry, the golf tournament only has room for 1 more golfer.')
-					else:
-						messages.append('Sorry, the golf tournament only has room for %d more golfers.' % open_slots)
 			if s.num_dinners > orig_num_dinners:
-				if t.dinner_sold_out:
+				if t.dinner_sold_out or (counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners):
 					s.num_dinners = orig_num_dinners
 					dinner_wait = True
-					messages.append('Sorry, the dinner is sold out.')
-				elif counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
-					open_slots = t.limit_dinners - counters.dinner_count
-					s.num_dinners = orig_num_dinners
-					dinner_wait = True
-					if open_slots <= 0:
-						messages.append('Sorry, the dinner is sold out.')
-					elif open_slots == 1:
-						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
-					else:
-						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
-		if messages or self.request.get('apply_discount'):
+		if messages or golf_wait or dinner_wait or self.request.get('apply_discount'):
 			show_registration_form(self.response, t, s, messages, caps, debug = dev_server, golf_wait = golf_wait, dinner_wait = dinner_wait)
 			return
 
