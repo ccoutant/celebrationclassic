@@ -359,19 +359,22 @@ class ViewGolfer(object):
 		self.sponsor_id = s.sponsor_id
 		self.sponsor_name = s.first_name + " " + s.last_name
 		self.golfer = g
+		team = None
+		if g.team:
+			team = g.team.get()
 		if g.first_name or g.last_name:
 			self.golfer_name = g.first_name + " " + g.last_name
 		else:
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
-		self.team_name = g.team.name if g.team else ''
+		self.team_name = team.name if team else ''
 		if g.tees:
 			self.tees = g.tees
 		else:
 			flight = 1
-			if g.team:
-				flight = g.team.flight
+			if team:
+				flight = team.flight
 			self.tees = get_tees(flight, g.gender)
 		handicap_index = g.get_handicap_index()
 		if g.has_index:
@@ -802,17 +805,18 @@ class JsonBuilder:
 			for g in ndb.get_multi(s.golfer_keys[:s.num_golfers]):
 				g_id = g.key.id()
 				golfer_num = len(self.golfers) + 1
-				t = None
+				team = None
 				team_num = 0
-				try:
-					t = g.team
-				except:
-					logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.sponsor_id))
-					g.team = None
-					g.put()
+				if g.team:
+					try:
+						team = g.team.get()
+					except:
+						logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.sponsor_id))
+						g.team = None
+						g.put()
 				vg = ViewGolfer(self.t, s, g, golfer_num)
-				if t:
-					t_id = t.key.id()
+				if team:
+					t_id = team.key.id()
 					team_num = self.teams_by_id[t_id]
 					if not g_id in self.teams_by_golfer_id_fwd:
 						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.sponsor_id, t.name))
