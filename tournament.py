@@ -84,8 +84,9 @@ def get_counters(t):
 	key = ndb.Key("Counters", "counters", parent = t.key)
 	counters = key.get()
 	if counters is None:
-		counters = Counters(parent = t.key, key_name = "counters")
-		counters.put()
+		counters = Counters(parent = t.key, id = "counters")
+		if t.key:
+			counters.put()
 	return counters
 
 @ndb.transactional
@@ -93,7 +94,7 @@ def update_counters(t, delta_golfers, delta_dinners):
 	key = ndb.Key("Counters", "counters", parent = t.key)
 	counters = key.get()
 	if counters is None:
-		counters = Counters(parent = t, key_name = "counters")
+		counters = Counters(parent = t, id = "counters")
 	counters.golfer_count += delta_golfers
 	counters.dinner_count += delta_dinners
 	counters.put()
