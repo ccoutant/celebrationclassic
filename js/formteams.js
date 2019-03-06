@@ -214,7 +214,8 @@ function add_group(group) {
 		group.group_elem = null;
 		return;
 	}
-	var group_div = group_divs[group.golfer_nums.length - 1];
+	var group_size = Math.min(4, group.golfer_nums.length);
+	var group_div = group_divs[group_size - 1];
 	var elem = make_group(group);
 	// Find next group in the same div.
 	var next = null;
