@@ -107,8 +107,8 @@ function recalculate() {
 		includes_span.innerHTML = includes;
 
 	// Adjust the selectors for number of golfers and dinner guests.
-	adjust_selector(golferbox, golfers_included);
-	adjust_selector(dinnerbox, dinners_included);
+	adjust_selector(golferbox, golfers_included, parseInt(golferbox.value));
+	adjust_selector(dinnerbox, dinners_included, parseInt(dinnerbox.value));
 
 	// Offer Angel sponsorship for foursomes.
 	var golfers = parseInt(golferbox.value);
@@ -164,14 +164,16 @@ function recalculate() {
 	netbox_c.value = add_commas(netdue);
 }
 
-function adjust_selector(e, n) {
-	if (n < 4)
-		n = 4;
+function adjust_selector(e, max, n) {
+	if (max < 4)
+		max = 4;
+	if (max < n)
+		max = n;
 	var options = e.getElementsByTagName("option");
 	var len = options.length;
-	for (var i = len - 1; i > n; i--)
+	for (var i = len - 1; i > max; i--)
 		e.removeChild(options[i]);
-	for (var i = options.length; i < n + 1; i++) {
+	for (var i = options.length; i < max + 1; i++) {
 		var o = document.createElement("option");
 		o.label = "" + i;
 		o.value = o.label;

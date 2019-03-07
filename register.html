@@ -229,6 +229,10 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <option label="10" value="10" {% ifequal sponsor.num_dinners 10 %} selected {% endifequal %}>10</option>
 <option label="11" value="11" {% ifequal sponsor.num_dinners 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_dinners 12 %} selected {% endifequal %}>12</option>
+<option label="13" value="13" {% ifequal sponsor.num_dinners 13 %} selected {% endifequal %}>13</option>
+<option label="14" value="14" {% ifequal sponsor.num_dinners 14 %} selected {% endifequal %}>14</option>
+<option label="15" value="15" {% ifequal sponsor.num_dinners 15 %} selected {% endifequal %}>15</option>
+<option label="16" value="16" {% ifequal sponsor.num_dinners 16 %} selected {% endifequal %}>16</option>
 </select>
 <label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} (non-golfers only){% if early_bird and tournament.dinner_price_early != tournament.dinner_price_late %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
 </div>
