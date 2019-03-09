@@ -36,13 +36,15 @@ or fill out the form below to make an additional registration.
 {% endif %}
 
 {% if golf_sold_out or dinner_sold_out %}
-<p class="message">{% if golf_sold_out and dinner_sold_out %}Online reservations are currently unavailable.
-{% elif golf_sold_out %}Online reservations for the golf tournament are currently unavailable.
-{% elif dinner_sold_out %}Online reservations for the dinner are currently unavailable.
-{% endif %}{% if tournament.wait_list_email %}Please email your reservation details to
+<p class="message">
+We are almost at capacity for the event.
+{% if golf_sold_out and dinner_sold_out %}If you plan to attend
+{% elif golf_sold_out %}If you plan to enter the golf tournament
+{% elif dinner_sold_out %}If you plan to attend the dinner only
+{% endif %}and have not yet reserved a spot, please email
 <a href="mailto:{{ tournament.wait_list_email }}?subject=Celebration%20Classic%20Reservations">{{ tournament.wait_list_email }}</a>
-and the Celebration Classic committee will be in touch with a confirmation as soon as possible.
-{% endif %}
+to be added as spaces become available.
+Reservations will be processed in the order in which they are received.
 </p>
 {% endif %}
 
