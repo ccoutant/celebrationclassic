@@ -1302,9 +1302,10 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 				cart = ''
 				flight = 1
 				if g.team:
-					team_name = g.team.name
-					starting_hole = g.team.starting_hole
-					flight = g.team.flight
+					team = g.team.get()
+					team_name = team.name
+					starting_hole = team.starting_hole
+					flight = team.flight
 				if g.cart:
 					cart = str(g.cart)
 				tees = get_tees(flight, g.gender)
