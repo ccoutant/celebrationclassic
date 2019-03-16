@@ -1109,16 +1109,16 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			golfers_by_key[g.key.id()] = g
 		teams = []
 		q = Team.query(ancestor = t.key).order(Team.name)
-		for t in q:
+		for team in q:
 			golfers_in_team = []
 			course_handicaps = []
-			for g_key in t.golfers:
+			for g_key in team.golfers:
 				g_id = g_key.id()
 				if not g_id in golfers_by_key:
-					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, t.name, t.key.id()))
+					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, team.name, team.key.id()))
 					continue
 				g = golfers_by_key[g_id]
-				tees = get_tees(t.flight, g.gender)
+				tees = get_tees(team.flight, g.gender)
 				handicap_index = g.get_handicap_index()
 				if handicap_index is not None:
 					course_handicap = calc_course_handicap(t, handicap_index, tees)
@@ -1134,15 +1134,15 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				}
 				golfers_in_team.append(golfer)
 			team_handicap = calculate_team_handicap(course_handicaps)
-			team = {
-				'key': t.key.id(),
-				'name': t.name,
-				'starting_hole': t.starting_hole,
-				'flight': t.flight,
+			newteam = {
+				'key': team.key.id(),
+				'name': team.name,
+				'starting_hole': team.starting_hole,
+				'flight': team.flight,
 				'golfers': golfers_in_team,
 				'team_handicap': team_handicap
 			}
-			teams.append(team)
+			teams.append(newteam)
 		if bywhat == 'bystart':
 			teams.sort(key = sort_by_starting_hole)
 		template_values = {
@@ -1239,7 +1239,7 @@ class ViewTributeAds(webapp2.RequestHandler):
 		self.response.out.write(render_to_string('viewtributeads.html', template_values))
 
 def csv_encode(val):
-	val = re.sub(r'"', '""', str(val or ''))
+	val = re.sub(r'"', '""', unicode(val or ''))
 	return '"%s"' % val
 
 class DownloadRegistrationsCSV(webapp2.RequestHandler):
