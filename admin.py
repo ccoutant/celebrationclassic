@@ -163,6 +163,8 @@ class ManageTournament(webapp2.RequestHandler):
 			show_login_page(self.response.out, self.request.uri)
 			return
 		t = tournament.get_tournament(self.request.get("t"))
+		if t.dinner_early_bird_deadline is None:
+			t.dinner_early_bird_deadline = t.early_bird_deadline
 		counters = tournament.get_counters(t)
 		template_values = {
 			'capabilities': caps,
@@ -195,6 +197,10 @@ class ManageTournament(webapp2.RequestHandler):
 		early_bird_day = int(self.request.get("early_bird_day"))
 		early_bird_year = int(self.request.get("early_bird_year"))
 		t.early_bird_deadline = datetime.date(early_bird_year, early_bird_month, early_bird_day)
+		dinner_early_bird_month = int(self.request.get("dinner_early_bird_month"))
+		dinner_early_bird_day = int(self.request.get("dinner_early_bird_day"))
+		dinner_early_bird_year = int(self.request.get("dinner_early_bird_year"))
+		t.dinner_early_bird_deadline = datetime.date(dinner_early_bird_year, dinner_early_bird_month, dinner_early_bird_day)
 		deadline_month = int(self.request.get("deadline_month"))
 		deadline_day = int(self.request.get("deadline_day"))
 		deadline_year = int(self.request.get("deadline_year"))

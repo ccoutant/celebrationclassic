@@ -37,10 +37,14 @@ def show_registration_form(response, t, s, messages, caps,
 	# last until 1 am PDT.)
 	today = datetime.datetime.now() - datetime.timedelta(hours=8)
 	early_bird = today.date() <= t.early_bird_deadline
+	dinner_early_bird = today.date() <= t.dinner_early_bird_deadline
 	registration_closed = today.date() > t.deadline
 	early_bird_deadline = "%s %d, %d" % (t.early_bird_deadline.strftime("%B"),
 										 t.early_bird_deadline.day,
 										 t.early_bird_deadline.year)
+	dinner_early_bird_deadline = "%s %d, %d" % (t.dinner_early_bird_deadline.strftime("%B"),
+												t.dinner_early_bird_deadline.day,
+												t.dinner_early_bird_deadline.year)
 	deadline = "%s %d, %d" % (t.deadline.strftime("%B"),
 							  t.deadline.day,
 							  t.deadline.year)
@@ -75,8 +79,10 @@ def show_registration_form(response, t, s, messages, caps,
 		'credits': s.payment_made + s.discount,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'early_bird': early_bird,
+		'dinner_early_bird': dinner_early_bird,
 		'registration_closed': registration_closed,
 		'early_bird_deadline': early_bird_deadline,
+		'dinner_early_bird_deadline': dinner_early_bird_deadline,
 		'deadline': deadline,
 		'doubleeagle': doubleeagle,
 		'holeinone': holeinone,
@@ -221,9 +227,10 @@ class Register(webapp2.RequestHandler):
 		# last until 1 am PDT.)
 		today = datetime.datetime.now() - datetime.timedelta(hours=8)
 		early_bird = today.date() <= t.early_bird_deadline
+		dinner_early_bird = today.date() <= t.dinner_early_bird_deadline
 		registration_closed = today.date() > t.deadline
 		golf_price = t.golf_price_early if early_bird else t.golf_price_late
-		dinner_price = t.dinner_price_early if early_bird else t.dinner_price_late
+		dinner_price = t.dinner_price_early if dinner_early_bird else t.dinner_price_late
 		caps = capabilities.get_current_user_caps()
 		orig_num_golfers = 0
 		orig_num_dinners = 0

@@ -85,10 +85,18 @@ gen_date_picker("dinner", {{ tournament.dinner_date.month }}, {{ tournament.dinn
 </td>
 </tr>
 <tr>
-<td align="left">Early Bird Deadline</td>
+<td align="left">Golf Early Bird Deadline</td>
 <td align="left">
 <script type="text/javascript" language="javascript">
 gen_date_picker("early_bird", {{ tournament.early_bird_deadline.month }}, {{ tournament.early_bird_deadline.day }}, {{ tournament.early_bird_deadline.year }});
+</script>
+</td>
+</tr>
+<tr>
+<td align="left">Dinner Early Bird Deadline</td>
+<td align="left">
+<script type="text/javascript" language="javascript">
+gen_date_picker("dinner_early_bird", {{ tournament.dinner_early_bird_deadline.month }}, {{ tournament.dinner_early_bird_deadline.day }}, {{ tournament.dinner_early_bird_deadline.year }});
 </script>
 </td>
 </tr>

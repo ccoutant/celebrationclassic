@@ -10,7 +10,8 @@ class Tournament(ndb.Model):
 	accepting_registrations = ndb.BooleanProperty(default = False)
 	golf_date = ndb.DateProperty()
 	dinner_date = ndb.DateProperty()
-	early_bird_deadline = ndb.DateProperty()
+	early_bird_deadline = ndb.DateProperty() # For Golf
+	dinner_early_bird_deadline = ndb.DateProperty() # For dinner-only
 	deadline = ndb.DateProperty()
 	tribute_deadline = ndb.DateProperty()
 	golf_price_early = ndb.IntegerProperty(default = 0)
@@ -40,6 +41,7 @@ def new_tournament(name):
 				   golf_date = tdate,
 				   dinner_date = tdate,
 				   early_bird_deadline = tdate - datetime.timedelta(42),
+				   dinner_early_bird_deadline = tdate - datetime.timedelta(42),
 				   deadline = tdate - datetime.timedelta(14),
 				   tribute_deadline = tdate - datetime.timedelta(28),
 				   golf_price_early = 400,

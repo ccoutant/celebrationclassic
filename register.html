@@ -113,7 +113,10 @@ Reservations will be processed in the order in which they are received.
 </div>
 
 <input type="hidden" name="id" value="{{ sponsor.sponsor_id }}">
+<input type="hidden" id="golf_sold_out" name="golf_sold_out" value="{% if golf_sold_out %}1{% else %}0{% endif %}">
+<input type="hidden" id="dinner_sold_out" name="dinner_sold_out" value="{% if dinner_sold_out %}1{% else %}0{% endif %}">
 <input type="hidden" id="early_bird" name="early_bird" value="{% if early_bird %}1{% else %}0{% endif %}">
+<input type="hidden" id="dinner_early_bird" name="dinner_early_bird" value="{% if dinner_early_bird %}1{% else %}0{% endif %}">
 <input type="hidden" id="golf_price_early" name="golf_price_early" value="{{ tournament.golf_price_early }}">
 <input type="hidden" id="golf_price_late" name="golf_price_late" value="{{ tournament.golf_price_late }}">
 <input type="hidden" id="dinner_price_early" name="dinner_price_early" value="{{ tournament.dinner_price_early }}">
@@ -236,7 +239,7 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <option label="15" value="15" {% ifequal sponsor.num_dinners 15 %} selected {% endifequal %}>15</option>
 <option label="16" value="16" {% ifequal sponsor.num_dinners 16 %} selected {% endifequal %}>16</option>
 </select>
-<label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} (non-golfers only){% if early_bird and tournament.dinner_price_early != tournament.dinner_price_late %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
+<label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} (non-golfers only){% if dinner_early_bird and tournament.dinner_price_early != tournament.dinner_price_late %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ dinner_early_bird_deadline }})</i>{% endif %}</label>
 </div>
 </div>
 

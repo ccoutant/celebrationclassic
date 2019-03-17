@@ -35,13 +35,16 @@ function recalculate() {
 	var netbox = document.getElementById("entry_net_payment_due");
 	var netbox_c = document.getElementById("entry_net_payment_due_c");
 
-	var early_bird = parseInt(document.getElementById("early_bird").value);
+	var golf_sold_out = parseInt(document.getElementById("golf_sold_out").value);
+	var dinner_sold_out = parseInt(document.getElementById("dinner_sold_out").value);
+	var golf_early_bird = parseInt(document.getElementById("early_bird").value);
+	var dinner_early_bird = parseInt(document.getElementById("dinner_early_bird").value);
 	var golf_price_early = document.getElementById("golf_price_early").value;
 	var golf_price_late = document.getElementById("golf_price_late").value;
 	var dinner_price_early = document.getElementById("dinner_price_early").value;
 	var dinner_price_late = document.getElementById("dinner_price_late").value;
-	var golf_price = early_bird ? golf_price_early : golf_price_late;
-	var dinner_price = early_bird ? dinner_price_early : dinner_price_late;
+	var golf_price = golf_early_bird ? golf_price_early : golf_price_late;
+	var dinner_price = dinner_early_bird ? dinner_price_early : dinner_price_late;
 
 	// Show or hide the sponsorship checkboxes.
 	if (show_sponsorships_box.checked)
@@ -107,8 +110,8 @@ function recalculate() {
 		includes_span.innerHTML = includes;
 
 	// Adjust the selectors for number of golfers and dinner guests.
-	adjust_selector(golferbox, golfers_included, parseInt(golferbox.value));
-	adjust_selector(dinnerbox, dinners_included, parseInt(dinnerbox.value));
+	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), golf_sold_out);
+	adjust_selector(dinnerbox, Math.max(dinners_included, parseInt(dinnerbox.value)), dinner_sold_out);
 
 	// Offer Angel sponsorship for foursomes.
 	var golfers = parseInt(golferbox.value);
@@ -164,11 +167,9 @@ function recalculate() {
 	netbox_c.value = add_commas(netdue);
 }
 
-function adjust_selector(e, max, n) {
-	if (max < 4)
+function adjust_selector(e, max, sold_out) {
+	if (max < 4 && sold_out == 0)
 		max = 4;
-	if (max < n)
-		max = n;
 	var options = e.getElementsByTagName("option");
 	var len = options.length;
 	for (var i = len - 1; i > max; i--)
