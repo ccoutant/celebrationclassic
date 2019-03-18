@@ -1118,7 +1118,9 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		for team in q:
 			golfers_in_team = []
 			course_handicaps = []
+			sequence = 0
 			for g_key in team.golfers:
+				sequence += 1
 				g_id = g_key.id()
 				if not g_id in golfers_by_key:
 					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, team.name, team.key.id()))
@@ -1131,9 +1133,16 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				else:
 					course_handicap = 'n/a'
 				course_handicaps.append(course_handicap)
+				# self.guest_name = "(%s #%d)" % (s.last_name, sequence)
+				if g.first_name or g.last_name:
+					fname = g.first_name
+					lname = g.last_name
+				else:
+					fname = "(%s #%d)" % (team.name, sequence)
+					lname = ""
 				golfer = {
-					'first_name': g.first_name,
-					'last_name': g.last_name,
+					'first_name': fname,
+					'last_name': lname,
 					'cart': g.cart,
 					'tees': tees,
 					'course_handicap': course_handicap
