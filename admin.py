@@ -1849,7 +1849,7 @@ p { text-align: center; }
 		self.response.out.write('</tr>')
 		for entry in entries:
 			self.response.out.write('<tr valign="top">')
-			self.response.out.write(entry.timestamp.replace(tzinfo=tz.utc).astimezone(tz.pacific).strftime('<td class="nw">%y-%b-%d %H:%M:%S</td>'))
+			self.response.out.write(entry.timestamp.replace(tzinfo=tz.utc).astimezone(tz.pacific).strftime('<td class="nw">%Y-%b-%d %H:%M:%S</td>'))
 			if entry.ipaddr:
 				loc = 'title="%s"' % (entry.ipaddr + ' / ' + entry.location)
 			else:
