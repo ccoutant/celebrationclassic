@@ -1398,6 +1398,34 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 		self.response.out.write('\n'.join(csv))
 		self.response.out.write('\n')
 
+class DownloadTributeAdsCSV(webapp2.RequestHandler):
+	def get(self):
+		t = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		q = TributeAd.query(ancestor = t.key)
+		q = q.order(TributeAd.timestamp)
+		ads = q.fetch(limit = None)
+		ad_sizes = [ '', 'One Line', 'Business Card', '1/4 Page', '1/2 Page', 'Full Page', 'Full Page Color' ]
+		csv = []
+		csv.append(','.join(['ID', 'first_name', 'last_name',
+							 'address', 'city', 'state', 'zip', 'email', 'phone',
+							 'ad_size', 'text',
+							 'payment_due', 'payment_paid', 'payment_type', 'trans_code']))
+		for ad in ads:
+			csv.append(','.join([csv_encode(x)
+								 for x in [ad.key.id(), ad.first_name, ad.last_name, ad.address,
+										   ad.city, ad.state, ad.zip, ad.email, ad.phone,
+										   ad_sizes[ad.ad_size], ad.printed_names,
+										   ad.payment_due, ad.payment_made,
+										   ad.payment_type, ad.transaction_code]]))
+		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+		self.response.headers['Content-Disposition'] = 'attachment;filename=tributeads.csv'
+		self.response.out.write('\n'.join(csv))
+		self.response.out.write('\n')
+
 # Reminder E-mails
 
 incomplete_email_template = """
@@ -2028,6 +2056,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
 							   ('/admin/csv/golfers', DownloadGolfersCSV),
 							   ('/admin/csv/dinners', DownloadDinnersCSV),
+							   ('/admin/csv/tributeads', DownloadTributeAdsCSV),
 							   ('/admin/handicap', ViewGolfersByName),
 							   ('/admin/mail/(.*)', SendEmail),
 							   ('/admin/edit', EditPageHandler),
