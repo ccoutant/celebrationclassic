@@ -35,6 +35,7 @@ function recalculate() {
 	var netbox = document.getElementById("entry_net_payment_due");
 	var netbox_c = document.getElementById("entry_net_payment_due_c");
 
+	var admin_user = parseInt(document.getElementById("admin_user").value);
 	var golf_sold_out = parseInt(document.getElementById("golf_sold_out").value);
 	var dinner_sold_out = parseInt(document.getElementById("dinner_sold_out").value);
 	var golf_early_bird = parseInt(document.getElementById("early_bird").value);
@@ -110,8 +111,8 @@ function recalculate() {
 		includes_span.innerHTML = includes;
 
 	// Adjust the selectors for number of golfers and dinner guests.
-	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), golf_sold_out);
-	adjust_selector(dinnerbox, Math.max(dinners_included, parseInt(dinnerbox.value)), dinner_sold_out);
+	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), golf_sold_out && !admin_user);
+	adjust_selector(dinnerbox, Math.max(dinners_included, parseInt(dinnerbox.value)), dinner_sold_out && !admin_user);
 
 	// Offer Angel sponsorship for foursomes.
 	var golfers = parseInt(golferbox.value);
@@ -168,7 +169,7 @@ function recalculate() {
 }
 
 function adjust_selector(e, max, sold_out) {
-	if (max < 4 && sold_out == 0)
+	if (max < 4 && !sold_out)
 		max = 4;
 	var options = e.getElementsByTagName("option");
 	var len = options.length;
