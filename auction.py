@@ -43,7 +43,7 @@ class ServeImage(webapp2.RequestHandler):
 	def get(self, id):
 		t = tournament.get_tournament()
 		item = auctionitem.AuctionItem.get_by_id(long(id), parent = t.key)
-		if item.image:
+		if item and item.image:
 			self.response.headers['Content-Type'] = 'image/jpeg'
 			self.response.headers['Cache-Control'] = 'public, max-age=86400;'
 			self.response.out.write(item.image)
