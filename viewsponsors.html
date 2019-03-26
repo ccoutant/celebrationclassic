@@ -77,6 +77,9 @@ function toggle_display(i) {
 		<th align="left">Sponsorship</th>
 		<th align="right"># Golfers</th>
 		<th align="right">Total Dinners*</th>
+{% if incomplete == 'unpaid' %}
+		<th align="left">Date</th>
+{% endif %}
 		<th align="left">Payment</th>
 	</tr>
 </thead>
@@ -112,6 +115,9 @@ function toggle_display(i) {
 		</td>
 		<td align="right">{{ s.num_golfers }}</td>
 		<td align="right">{{ s.adjusted_dinners }}</td>
+{% if incomplete == 'unpaid' %}
+		<td align="left">{{ s.timestamp|date:"m/d/y"}}</th>
+{% endif %}
 		<td nowrap>
 			<p>Total: ${{ s.payment_due }}
 			{% if capabilities.can_add_registrations and s.confirmed %}
@@ -155,7 +161,8 @@ function toggle_display(i) {
 		<td></td>
 		<td></td>
 		<td></td>
-		<td colspan="3">(*Dinner count includes golfers attending the dinner.)</td>
+		<td colspan="{% if incomplete == 'unpaid' %}4{% else %}3{% endif %}">(*Dinner count includes golfers attending the dinner.)</td>
+
 	</tr>
 </tfoot>
 </table>
