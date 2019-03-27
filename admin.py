@@ -1102,10 +1102,6 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			show_login_page(self.response.out, self.request.uri)
 			return
 		readonly = True if self.request.get('readonly') else False
-		projection_fields = (
-			'first_name', 'last_name', 'gender', 'cart', 'tees',
-			'has_index', 'handicap_index', 'average_score'
-		)
 		q = Golfer.query()
 		q = q.filter(Golfer.tournament == t.key)
 		q = q.filter(Golfer.active == True)
