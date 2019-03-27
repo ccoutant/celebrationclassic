@@ -83,8 +83,8 @@
 		<td align="right">{% if g.golfer.has_index %}{{ g.handicap_index_str }}{% elif g.golfer.average_score %}{{ g.computed_index }}{% endif %}</td>
 		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
-		<td align="left">{% if g.golfer.team %}{{ g.golfer.team.name }}{% endif %}</td>
-		<td align="center">{% if g.golfer.team %}{{ g.golfer.team.starting_hole }}{% endif %}</td>
+		<td align="left">{{ g.team_name }}</td>
+		<td align="center">{{ g.starting_hole }}</td>
 		<td align="center">{% if g.golfer.cart != 0 %}{{ g.golfer.cart }}{% endif %}</td>
 		<td align="center">{{ g.golfer.shirt_size }}</td>
 		<td align="left">{% ifequal g.golfer.sequence 1 %}<a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a>{% endifequal %}</td>

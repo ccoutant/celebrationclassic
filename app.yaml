@@ -35,6 +35,11 @@ handlers:
   script: admin.app
   login: required
 
+- url: /ghin-lookup/.*
+  secure: always
+  script: ghin-lookup.app
+  login: required
+
 - url: /auction
   secure: always
   script: auction.app

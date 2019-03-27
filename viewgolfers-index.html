@@ -16,7 +16,20 @@
 #body td p.details { margin-left: 1em; font-size: 80%; color: #555; }
 #body tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
 .buttons { text-align: center; }
+div.popup { position: absolute; font-size: 80%; left: 0; top: 0; z-index: 99; padding: 5px; border: 1px solid black; background-color: #fff; }
+div.popup p { text-align: center; margin: 1em 3em; }
+div.popup .closebox { position: absolute; left: 10px; top: 5px; width: 1em; height: 1em; cursor: pointer; }
+#container div.popup table { border-bottom: none; margin-bottom: 0; }
+#container div.popup table thead tr { border-bottom: none; }
+#container div.popup table th { text-align: left; }
+#container div.popup a { cursor: pointer; }
 </style>
+<script src="/js/ghinlookup.js" type="text/javascript" language="javascript"></script>
+<script type="text/javascript" language="javascript">
+window.addEventListener('load', function() {
+	initialize();
+});
+</script>
 {% endblock %}
 
 {% block subnav %}
@@ -40,9 +53,9 @@
 
 <form action="/admin/view/golfers/handicap" method="post" accept-charset="utf-8">
 <input type="hidden" name="prev_page_offset" value="{{ prev_page_offset }}">
-<input type="hidden" name="this_page_offset" value="{{ this_page_offset }}">
+<input type="hidden" id="this_page_offset" name="this_page_offset" value="{{ this_page_offset }}">
 <input type="hidden" name="next_page_offset" value="{{ next_page_offset }}">
-<input type="hidden" name="count" value="{{ count }}">
+<input type="hidden" id="count" name="count" value="{{ count }}">
 
 {% if golfers %}
 
@@ -77,8 +90,8 @@
 			{% if g.golfer.phone %}<p>{{ g.golfer.phone }}</p>{% endif %}
 		</td>
 		<td align="center">{% if g.golfer.index_info_modified %}<input type="checkbox" name="modified_{{ g.count }}" value="*" checked>{% endif %}</td>
-		<td align="right"><input type="text" size="8" name="ghin_{{ g.count }}" value="{{ g.golfer.ghin_number }}"></td>
-		<td align="right"><input type="text" size="8" name="index_{{ g.count }}" value="{{ g.handicap_index_str }}"></td>
+		<td align="right"><input type="text" size="8" id="ghin_{{ g.count }}" name="ghin_{{ g.count }}" value="{{ g.golfer.ghin_number }}"></td>
+		<td align="right"><span id="button_{{ g.count }}"></span> <input type="text" size="8" id="index_{{ g.count }}" name="index_{{ g.count }}" value="{{ g.handicap_index_str }}"></td>
 		<td align="right"><input type="text" size="8" name="avg_score_{{ g.count }}" value="{{ g.golfer.average_score }}"></td>
 		<td align="right">{% if g.golfer.has_index %}{{ g.handicap_index_str }}{% elif g.golfer.average_score %}{{ g.computed_index }}{% endif %}</td>
 		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
