@@ -1110,10 +1110,8 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 		q = q.filter(Golfer.tournament == t.key)
 		q = q.filter(Golfer.active == True)
 		q = q.order(Golfer.sort_name)
-		golfers = q.fetch(limit = None, projection = projection_fields)
-		golfers_by_key = {}
-		for g in golfers:
-			golfers_by_key[g.key.id()] = g
+		golfer_keys = set(q.fetch(limit = None, keys_only = True))
+		used_keys = set()
 		teams = []
 		q = Team.query(ancestor = t.key).order(Team.name)
 		for team in q:
@@ -1123,10 +1121,13 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 			for g_key in team.golfers:
 				sequence += 1
 				g_id = g_key.id()
-				if not g_id in golfers_by_key:
-					logging.warning("Golfer %d, referenced by team %s (%d) does not exist" % (g_id, team.name, team.key.id()))
+				if not g_key in golfer_keys:
+					logging.warning("Golfer %d, referenced by team %s (%d), does not exist" % (g_key.id(), team.name, team.key.id()))
 					continue
-				g = golfers_by_key[g_id]
+				if g_key in used_keys:
+					logging.warning("Golfer %d, referenced by team %s (%d), is in another team" % (g_key.id(), team.name, team.key.id()))
+				used_keys.add(g_key)
+				g = g_key.get()
 				tees = get_tees(team.flight, g.gender)
 				handicap_index = g.get_handicap_index()
 				if handicap_index is not None:
@@ -1159,12 +1160,27 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				'team_handicap': team_handicap
 			}
 			teams.append(newteam)
+		unassigned_golfers = []
+		for g_key in golfer_keys - used_keys:
+			g = g_key.get()
+			if g.first_name or g.last_name:
+				fname = g.first_name
+				lname = g.last_name
+			else:
+				fname = "(%s #%d)" % (team.name, g.sequence)
+				lname = ""
+			golfer = {
+				'first_name': fname,
+				'last_name': lname,
+			}
+			unassigned_golfers.append(golfer)
 		if bywhat == 'bystart':
 			teams.sort(key = sort_by_starting_hole)
 		template_values = {
 			'bywhat': bywhat,
 			'teams': teams,
 			'num_teams': len(teams),
+			'unassigned_golfers': unassigned_golfers,
 			'readonly': readonly,
 			'capabilities': caps
 			}
