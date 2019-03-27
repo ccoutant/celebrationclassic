@@ -374,7 +374,8 @@ class ViewGolfer(object):
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
 		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
-		self.team_name = team.name if team else ''
+		self.team_name = team.name if team else '-'
+		self.starting_hole = team.starting_hole if team else ''
 		if g.tees:
 			self.tees = g.tees
 		else:
