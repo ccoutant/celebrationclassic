@@ -4,7 +4,7 @@
 
 {% block head %}
 <style type="text/css">
-#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body table { border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin: 0 auto 2em; }
 #body thead tr { border-bottom: 2px solid #c4e5c4; }
 #body tbody tr.sponsor { border-top: 1px solid #c4e5c4; }
 #body tbody tr.golfer:hover { background-color: #e7fbe7; }
@@ -49,7 +49,7 @@ window.addEventListener('load', function() {
 {% endblock %}
 
 {% block content %}
-<h2>Golfers</h2>
+<h2>Handicapping</h2>
 
 <form action="/admin/view/golfers/handicap" method="post" accept-charset="utf-8">
 <input type="hidden" name="prev_page_offset" value="{{ prev_page_offset }}">
@@ -67,11 +67,12 @@ window.addEventListener('load', function() {
 		<th align="center">Gender</th>
 		<th align="left">Email/Phone</th>
 		<th align="center">Modified</th>
-		<th align="right">GHIN #</th>
-		<th align="right">Index</th>
-		<th align="right">Avg.<br>Score</th>
-		<th align="right">Tourn.<br>Index</th>
-		<th align="right">Course<br>Handicap</th>
+		<th align="center">GHIN #</th>
+		<th></th>
+		<th align="center">Index</th>
+		<th align="center">Avg.<br>Score</th>
+		<th align="center">Tourn.<br>Index</th>
+		<th align="center">Course<br>Handicap</th>
 		<th align="center">Tees</th>
 		<th align="left">Contact</th>
 	</tr>
@@ -90,11 +91,12 @@ window.addEventListener('load', function() {
 			{% if g.golfer.phone %}<p>{{ g.golfer.phone }}</p>{% endif %}
 		</td>
 		<td align="center">{% if g.golfer.index_info_modified %}<input type="checkbox" name="modified_{{ g.count }}" value="*" checked>{% endif %}</td>
-		<td align="right"><input type="text" size="8" id="ghin_{{ g.count }}" name="ghin_{{ g.count }}" value="{{ g.golfer.ghin_number }}"></td>
-		<td align="right"><span id="button_{{ g.count }}"></span> <input type="text" size="8" id="index_{{ g.count }}" name="index_{{ g.count }}" value="{{ g.handicap_index_str }}"></td>
-		<td align="right"><input type="text" size="8" name="avg_score_{{ g.count }}" value="{{ g.golfer.average_score }}"></td>
-		<td align="right">{% if g.golfer.has_index %}{{ g.handicap_index_str }}{% elif g.golfer.average_score %}{{ g.computed_index }}{% endif %}</td>
-		<td align="right">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
+		<td align="left"><input type="text" size="8" id="ghin_{{ g.count }}" name="ghin_{{ g.count }}" value="{{ g.golfer.ghin_number }}"></td>
+		<td align="center" id="button_{{ g.count }}"></td>
+		<td align="left"><input type="text" size="8" id="index_{{ g.count }}" name="index_{{ g.count }}" value="{{ g.handicap_index_str }}"></td>
+		<td align="left"><input type="text" size="8" name="avg_score_{{ g.count }}" value="{{ g.golfer.average_score }}"></td>
+		<td align="center">{% if g.golfer.has_index %}{{ g.handicap_index_str }}{% elif g.golfer.average_score %}{{ g.computed_index }}{% endif %}</td>
+		<td align="center">{% if g.golfer.has_index or g.golfer.average_score %}{{ g.course_handicap }}{% endif %}</td>
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
 		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
 	</tr>

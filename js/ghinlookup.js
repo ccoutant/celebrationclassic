@@ -21,6 +21,7 @@ function insert_lookup_button(i) {
 	if (button_cell.firstChild != null)
 		return;
 	var button = document.createElement('button');
+	button.title = "Lookup index by GHIN number";
 	button.appendChild(document.createTextNode('\u21d2'));
 	button_cell.appendChild(button);
 	button.onclick = lookup_button_handler(i);
@@ -108,6 +109,7 @@ function show_popup(i, json) {
 		tr.appendChild(td);
 		td = document.createElement('td');
 		var a = document.createElement('a');
+		a.title = "Use this index";
 		a.appendChild(document.createTextNode(row[1]));
 		a.onclick = index_click_handler(i, row[1], container, popup);
 		td.appendChild(a);
