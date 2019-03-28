@@ -618,7 +618,6 @@ class ViewGolfers(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewgolfers.html', template_values)
-		# memcache.add('%s/admin/view/golfers' % t.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewGolfersByName(webapp2.RequestHandler):
@@ -738,7 +737,6 @@ class UpdateHandicap(webapp2.RequestHandler):
 			golfers_to_update.append(g)
 		if golfers_to_update:
 			ndb.put_multi(golfers_to_update)
-		# memcache.delete('%s/admin/view/golfers' % t.name)
 		if self.request.get('prevpage'):
 			self.redirect('/admin/view/golfers/handicap?start=%d' % prev_page_offset)
 		elif self.request.get('nextpage'):
@@ -1062,7 +1060,6 @@ class Pairing(webapp2.RequestHandler):
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
-		memcache.delete('%s/admin/view/golfers' % t.name)
 		template_values = {
 			'messages': [],
 			'groups_json': updater.groups_json(),
@@ -1247,7 +1244,6 @@ class ViewDinners(webapp2.RequestHandler):
 			'capabilities': caps
 			}
 		html = render_to_string('viewguests.html', template_values)
-		# memcache.add('%s/admin/view/dinners' % t.name, html, 60*60*24)
 		self.response.out.write(html)
 
 class ViewTributeAds(webapp2.RequestHandler):
