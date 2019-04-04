@@ -18,6 +18,8 @@ class Tournament(ndb.Model):
 	golf_price_late = ndb.IntegerProperty(default = 0)
 	dinner_price_early = ndb.IntegerProperty(default = 0)
 	dinner_price_late = ndb.IntegerProperty(default = 0)
+	golf_only_price_early = ndb.IntegerProperty(default = 0)
+	golf_only_price_late = ndb.IntegerProperty(default = 0)
 	limit_golfers = ndb.IntegerProperty(default = 0)
 	limit_dinners = ndb.IntegerProperty(default = 0)
 	golf_sold_out = ndb.BooleanProperty(default = False)

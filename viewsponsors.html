@@ -113,7 +113,7 @@ function toggle_display(i) {
 			<p class="details">Print names as: {% if s.anonymous %}(Anonymous){% else %}{{ s.printed_names }}{% endif %}</p>
 			{% endif %}
 		</td>
-		<td align="right">{{ s.num_golfers }}</td>
+		<td align="right">{{ s.total_golfers }}</td>
 		<td align="right">{{ s.adjusted_dinners }}</td>
 {% if incomplete == 'unpaid' %}
 		<td align="left">{{ s.timestamp|date:"m/d/y"}}</th>

@@ -72,7 +72,7 @@ email <a href="mailto:help@celebrationclassic.org">help@celebrationclassic.org</
 <div class="form-entry form-number">
 <div class="form-input">
 <label for="entry_num_golfers">Golfers</label>
-<input type="text" name="num_golfers" value="{{ sponsor.num_golfers }}" id="entry_num_golfers" readonly>
+<input type="text" name="num_golfers" value="{{ total_golfers }}" id="entry_num_golfers" readonly>
 <label class="right" for="entry_num_dinners">Additional Dinners</label>
 <input type="text" name="num_dinners" value="{{ sponsor.num_dinners }}" id="entry_num_dinners" readonly>
 </div>
@@ -201,8 +201,10 @@ $<input type="text" name="net_payment_due" value="{{ net_payment_due|intcomma }}
 <div class="form-input">
 <label for="entry_golfer_dinner{{ golfer.sequence }}">Dinner choice</label>
 <select name="golfer_dinner{{ golfer.sequence }}" id="entry_golfer_dinner{{ golfer.sequence }}">
+{% if golfer_dinners %}
 <option value="">Select one...</option>
 {% for c in dinner_choices %}<option value="{{ c }}" {% ifequal golfer.dinner_choice c %}selected{% endifequal %}>{{ c }}</option>{% endfor %}
+{% endif %}
 <option value="none" {% ifequal golfer.dinner_choice "none" %}selected{% endifequal %}>No Dinner</option>
 </select>
 </div>

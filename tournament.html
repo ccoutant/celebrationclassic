@@ -117,20 +117,19 @@ gen_date_picker("tribute_deadline", {{ tournament.tribute_deadline.month|default
 </td>
 </tr>
 <tr>
-<td align="left">Early Bird Golfer Price</td>
-<td align="left"><input type="number" size="5" name="golf_price_early" value="{{ tournament.golf_price_early }}"></td>
+<td align="left">Golf + Dinner Price</td>
+<td align="left">Early Bird <input type="number" size="5" name="golf_price_early" value="{{ tournament.golf_price_early }}">
+Late <input type="number" size="5" name="golf_price_late" value="{{ tournament.golf_price_late }}"></td>
 </tr>
 <tr>
-<td align="left">Early Bird Dinner Price</td>
-<td align="left"><input type="number" size="5" name="dinner_price_early" value="{{ tournament.dinner_price_early }}"></td>
+<td align="left">Golf-Only Price</td>
+<td align="left">Early Bird <input type="number" size="5" name="golf_only_price_early" value="{{ tournament.golf_only_price_early }}">
+Late <input type="number" size="5" name="golf_only_price_late" value="{{ tournament.golf_only_price_late }}"></td>
 </tr>
 <tr>
-<td align="left">Late Golfer Price</td>
-<td align="left"><input type="number" size="5" name="golf_price_late" value="{{ tournament.golf_price_late }}"></td>
-</tr>
-<tr>
-<td align="left">Late Dinner Price</td>
-<td align="left"><input type="number" size="5" name="dinner_price_late" value="{{ tournament.dinner_price_late }}"></td>
+<td align="left">Dinner-Only Price</td>
+<td align="left">Early Bird <input type="number" size="5" name="dinner_price_early" value="{{ tournament.dinner_price_early }}">
+Late <input type="number" size="5" name="dinner_price_late" value="{{ tournament.dinner_price_late }}"></td>
 </tr>
 <tr>
 <td align="left">GO Discount Codes</td>

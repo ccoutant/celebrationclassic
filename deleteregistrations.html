@@ -64,8 +64,8 @@
 			<p class="details">Additional donation: ${{ s.additional_donation }}</p>
 			{% endif %}
 		</td>
-		<td align="right">{{ s.num_golfers }}</td>
-		<td align="right">{{ s.num_dinners }}</td>
+		<td align="right">{{ s.num_golfers|add:s.num_golfers_no_dinner }}</td>
+		<td align="right">{{ s.num_dinners|add:s.num_golfers }}</td>
 		<td>
 			{% if s.payment_made %}
 			<p>Paid: ${{ s.payment_made }}</p>

@@ -116,9 +116,12 @@ def show_continuation_form(response, t, s, messages, caps, debug = False):
 	has_completed_handicaps = True
 	has_selected_sizes = True
 	has_paid = (s.payment_made + s.discount >= s.payment_due)
-	if s.num_golfers:
-		golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
-		for i in range(1, s.num_golfers + 1):
+	total_golfers = s.num_golfers
+	if s.num_golfers_no_dinner:
+		total_golfers += s.num_golfers_no_dinner
+	if total_golfers:
+		golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
+		for i in range(1, total_golfers + 1):
 			if i <= len(golfers):
 				golfer = golfers[i - 1]
 				if not golfer.first_name or not golfer.last_name or not golfer.gender:
@@ -168,6 +171,8 @@ def show_continuation_form(response, t, s, messages, caps, debug = False):
 		'sponsor': s,
 		'net_payment_due': max(0, s.payment_due - s.payment_made - s.discount),
 		'golfers': golfers,
+		'total_golfers': total_golfers,
+		'golfer_dinners': s.num_golfers > 0,
 		'dinner_guests': dinner_guests,
 		'has_registered': has_registered,
 		'has_completed_names': has_completed_names,
@@ -230,16 +235,21 @@ class Register(webapp2.RequestHandler):
 		dinner_early_bird = today.date() <= t.dinner_early_bird_deadline
 		registration_closed = today.date() > t.deadline
 		golf_price = t.golf_price_early if early_bird else t.golf_price_late
+		golf_only_price = t.golf_only_price_early if early_bird else t.golf_only_price_late
 		dinner_price = t.dinner_price_early if dinner_early_bird else t.dinner_price_late
 		caps = capabilities.get_current_user_caps()
 		orig_num_golfers = 0
+		orig_num_golfers_no_dinner = 0
 		orig_num_dinners = 0
 		id = int(self.request.get('id'))
 		if id:
 			q = Sponsor.query(ancestor = t.key).filter(Sponsor.sponsor_id == id)
 			s = q.get()
+			if s.num_golfers_no_dinner is None:
+				s.num_golfers_no_dinner = 0
 			if s.confirmed:
 				orig_num_golfers = s.num_golfers
+				orig_num_golfers_no_dinner = s.num_golfers_no_dinner
 				orig_num_dinners = s.num_dinners
 		else:
 			s = Sponsor(parent = t.key)
@@ -261,17 +271,20 @@ class Register(webapp2.RequestHandler):
 		s.printed_names = self.request.get('printed_names')
 		s.sponsorships = []
 		s.num_golfers = int(self.request.get('num_golfers'))
+		if self.request.get('num_golfers_no_dinner'):
+			s.num_golfers_no_dinner = int(self.request.get('num_golfers_no_dinner'))
 		s.num_dinners = int(self.request.get('num_dinners'))
 		s.payment_due = 0
 
 		# If the number of golfers or dinners have changed,
 		# mark new ones active and old ones inactive.
+		total_golfers = s.num_golfers + s.num_golfers_no_dinner
 		for k in s.golfer_keys:
 			g = k.get()
-			if g.active and g.sequence > s.num_golfers:
+			if g.active and g.sequence > total_golfers:
 				g.active = False
 				g.put()
-			elif not g.active and g.sequence <= s.num_golfers:
+			elif not g.active and g.sequence <= total_golfers:
 				g.active = True
 				g.put()
 		for k in s.dinner_keys:
@@ -283,7 +296,7 @@ class Register(webapp2.RequestHandler):
 				g.active = True
 				g.put()
 
-		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
+		if registration_closed and (s.num_golfers > orig_num_golfers or s.num_golfers_no_dinner > orig_num_golfers_no_dinner or s.num_dinners > orig_num_dinners) and not caps.can_add_registrations:
 			messages.append('Sorry, registration is closed.')
 			show_registration_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
@@ -356,12 +369,15 @@ class Register(webapp2.RequestHandler):
 		golfers_included += go_golfers
 		if s.num_golfers > golfers_included:
 			s.payment_due += golf_price * (s.num_golfers - golfers_included)
-		else:
-			dinners_included += golfers_included - s.num_golfers
+		golfers_included = max(0, golfers_included - s.num_golfers)
+		if s.num_golfers_no_dinner > golfers_included:
+			s.payment_due += golf_only_price * (s.num_golfers_no_dinner - golfers_included)
+		golfers_included = max(0, golfers_included - s.num_golfers_no_dinner)
+		dinners_included += golfers_included
 		if s.num_dinners > dinners_included:
 			s.payment_due += dinner_price * (s.num_dinners - dinners_included)
 		s.payment_due += s.additional_donation
-		if s.num_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0:
+		if total_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
 		if s.payment_due != form_payment_due and not discount_applied:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
@@ -399,9 +415,10 @@ class Register(webapp2.RequestHandler):
 		golf_wait = False
 		dinner_wait = False
 		if not caps.can_add_registrations:
-			if s.num_golfers > orig_num_golfers:
-				if t.golf_sold_out or (counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers):
+			if s.num_golfers > orig_num_golfers or s.num_golfers_no_dinner > orig_num_golfers_no_dinner:
+				if t.golf_sold_out or (counters.golfer_count + total_golfers - orig_num_golfers - orig_num_golfers_no_dinner > t.limit_golfers):
 					s.num_golfers = orig_num_golfers
+					s.num_golfers_no_dinner = orig_num_golfers_no_dinner
 					golf_wait = True
 			if s.num_dinners > orig_num_dinners:
 				if t.dinner_sold_out or (counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners):
@@ -422,13 +439,13 @@ class Register(webapp2.RequestHandler):
 					s.sponsor_id = trial_id
 					break
 				logging.info('ID collision for %d; retrying...' % trial_id)
-		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.sponsor_id, s.num_golfers, s.num_dinners))
+		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.sponsor_id, total_golfers, s.num_dinners))
 		s.put()
 		if s.confirmed:
-			tournament.update_counters(t, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
+			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner, s.num_dinners - orig_num_dinners)
 		auditing.audit(t, "Registration Step 1",
 					   sponsor_id = s.sponsor_id,
-					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, s.num_golfers, s.num_dinners),
+					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, total_golfers, s.num_dinners),
 					   request = self.request)
 		memcache.delete('%s/admin/view/golfers' % t.name)
 		memcache.delete('%s/admin/view/dinners' % t.name)
@@ -457,30 +474,36 @@ class Continue(webapp2.RequestHandler):
 			show_registration_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
 
+		if s.num_golfers_no_dinner is None:
+			s.num_golfers_no_dinner = 0
 		orig_num_golfers = 0
+		orig_num_golfers_no_dinner = 0
 		orig_num_dinners = 0
 		if s.confirmed:
 			orig_num_golfers = s.num_golfers
+			orig_num_golfers_no_dinner = s.num_golfers_no_dinner
 			orig_num_dinners = s.num_dinners
 
 		golfers = ndb.get_multi(s.golfer_keys)
 		golfers_to_delete = []
-		if len(golfers) < s.num_golfers:
+		total_golfers = s.num_golfers + s.num_golfers_no_dinner
+		if len(golfers) < total_golfers:
 			# Initialize new golfer instances.
-			for i in range(len(golfers), s.num_golfers):
+			for i in range(len(golfers), total_golfers):
 				golfers.append(Golfer(tournament = t.key, sponsor = s.key, sequence = i + 1, active = True))
-		elif len(golfers) > s.num_golfers:
+		elif len(golfers) > total_golfers:
 			# Mark excess golfer instances as not active, so we can filter
 			# them out when querying all golfers. Delete any that have no
 			# information worth saving.
 			extras_have_names = False
-			for i in range(s.num_golfers, len(golfers)):
+			for i in range(total_golfers, len(golfers)):
 				golfers[i].active = False
 				if golfers[i].first_name or golfers[i].last_name:
 					extras_have_names = True
 			if not extras_have_names:
-				golfers_to_delete += [g.key for g in golfers[s.num_golfers:]]
-				golfers = golfers[:s.num_golfers]
+				golfers_to_delete += [g.key for g in golfers[total_golfers:]]
+				golfers = golfers[:total_golfers]
+		golfer_dinners = 0
 		for golfer in golfers:
 			if not golfer.active:
 				break
@@ -530,8 +553,13 @@ class Continue(webapp2.RequestHandler):
 			golfer.ghin_number = ghin_number
 			golfer.shirt_size = self.request.get('shirtsize%d' % i)
 			golfer.dinner_choice = self.request.get('golfer_dinner%d' % i)
+			if golfer.dinner_choice != "none":
+				golfer_dinners += 1
 		ndb.put_multi(golfers)
 		s.golfer_keys = [ g.key for g in golfers ]
+
+		if golfer_dinners > s.num_golfers:
+			messages.append('Please select "No Dinner" for golfers who will not be attending dinner.')
 
 		dinner_guests = ndb.get_multi(s.dinner_keys)
 		dinners_to_delete = []
@@ -565,8 +593,8 @@ class Continue(webapp2.RequestHandler):
 		s.dinner_seating = self.request.get('dinner_seating')
 
 		if (not caps.can_add_registrations) and (not self.request.get('back')):
-			if s.num_golfers > orig_num_golfers:
-				if counters.golfer_count + s.num_golfers - orig_num_golfers > t.limit_golfers:
+			if s.num_golfers > orig_num_golfers or s.num_golfers_no_dinner > orig_num_golfers_no_dinner:
+				if counters.golfer_count + total_golfers - orig_num_golfers - orig_num_golfers_no_dinner > t.limit_golfers:
 					open_slots = t.limit_golfers - counters.golfer_count
 					if open_slots <= 0:
 						messages.append('Sorry, the golf tournament is sold out.')
@@ -585,6 +613,7 @@ class Continue(webapp2.RequestHandler):
 						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
 
 		if messages:
+			s.put()
 			show_continuation_form(self.response, t, s, messages, caps, debug = dev_server)
 			return
 
@@ -602,7 +631,7 @@ class Continue(webapp2.RequestHandler):
 			self.response.set_cookie('sponsorid', str(s.sponsor_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))
 
 		if s.confirmed:
-			tournament.update_counters(t, s.num_golfers - orig_num_golfers, s.num_dinners - orig_num_dinners)
+			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner, s.num_dinners - orig_num_dinners)
 		auditing.audit(t, "Registration Step 2",
 					   sponsor_id = s.sponsor_id,
 					   data = s.first_name + " " + s.last_name,
@@ -663,7 +692,7 @@ class Continue(webapp2.RequestHandler):
 					 ('contactname', s.first_name + " " + s.last_name),
 					 ('contactemailaddress', s.email),
 					 ('sponsorshiplevel', ','.join(sponsorship_names)),
-					 ('numberofgolfers', s.num_golfers),
+					 ('numberofgolfers', total_golfers),
 					 ('numberofdinnerguests', s.num_dinners),
 					 ('amount_20_20_amt', net_payment_due),
 					 ('idnumberhidden', s.sponsor_id),

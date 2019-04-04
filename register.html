@@ -120,6 +120,8 @@ Reservations will be processed in the order in which they are received.
 <input type="hidden" id="dinner_early_bird" name="dinner_early_bird" value="{% if dinner_early_bird %}1{% else %}0{% endif %}">
 <input type="hidden" id="golf_price_early" name="golf_price_early" value="{{ tournament.golf_price_early }}">
 <input type="hidden" id="golf_price_late" name="golf_price_late" value="{{ tournament.golf_price_late }}">
+<input type="hidden" id="golf_only_price_early" name="golf_only_price_early" value="{{ tournament.golf_only_price_early }}">
+<input type="hidden" id="golf_only_price_late" name="golf_only_price_late" value="{{ tournament.golf_only_price_late }}">
 <input type="hidden" id="dinner_price_early" name="dinner_price_early" value="{{ tournament.dinner_price_early }}">
 <input type="hidden" id="dinner_price_late" name="dinner_price_late" value="{{ tournament.dinner_price_late }}">
 
@@ -198,7 +200,7 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 
 <div class="form-entry">
 <div class="form-input">
-<label for="entry_num_golfers">Golfers</label>
+<label for="entry_num_golfers">Golf + Dinner</label>
 <select id="entry_num_golfers" name="num_golfers">
 <option label="0" value="0" {% ifequal sponsor.num_golfers 0 %} selected {% endifequal %}>0</option>
 <option label="1" value="1" {% ifequal sponsor.num_golfers 1 %} selected {% endifequal %}>1</option>
@@ -214,9 +216,33 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <option label="11" value="11" {% ifequal sponsor.num_golfers 11 %} selected {% endifequal %}>11</option>
 <option label="12" value="12" {% ifequal sponsor.num_golfers 12 %} selected {% endifequal %}>12</option>
 </select>
-<label class="right">&emsp;${{ tournament.golf_price_late }} (includes dinner){% if early_bird and tournament.golf_price_early != tournament.golf_price_late %}<br><i>Early registration ${{ tournament.golf_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
+<label class="right">&emsp;${{ tournament.golf_price_late }} ea.{% if early_bird and tournament.golf_price_early != tournament.golf_price_late %}<br><i>Early registration ${{ tournament.golf_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
 </div>
 </div>
+
+{% if tournament.golf_only_price_late %}
+<div class="form-entry">
+<div class="form-input">
+<label for="entry_num_golfers_no_dinner">Golf-Only</label>
+<select id="entry_num_golfers_no_dinner" name="num_golfers_no_dinner">
+<option label="0" value="0" {% ifequal sponsor.num_golfers_no_dinner 0 %} selected {% endifequal %}>0</option>
+<option label="1" value="1" {% ifequal sponsor.num_golfers_no_dinner 1 %} selected {% endifequal %}>1</option>
+<option label="2" value="2" {% ifequal sponsor.num_golfers_no_dinner 2 %} selected {% endifequal %}>2</option>
+<option label="3" value="3" {% ifequal sponsor.num_golfers_no_dinner 3 %} selected {% endifequal %}>3</option>
+<option label="4" value="4" {% ifequal sponsor.num_golfers_no_dinner 4 %} selected {% endifequal %}>4</option>
+<option label="5" value="5" {% ifequal sponsor.num_golfers_no_dinner 5 %} selected {% endifequal %}>5</option>
+<option label="6" value="6" {% ifequal sponsor.num_golfers_no_dinner 6 %} selected {% endifequal %}>6</option>
+<option label="7" value="7" {% ifequal sponsor.num_golfers_no_dinner 7 %} selected {% endifequal %}>7</option>
+<option label="8" value="8" {% ifequal sponsor.num_golfers_no_dinner 8 %} selected {% endifequal %}>8</option>
+<option label="9" value="9" {% ifequal sponsor.num_golfers_no_dinner 9 %} selected {% endifequal %}>9</option>
+<option label="10" value="10" {% ifequal sponsor.num_golfers_no_dinner 10 %} selected {% endifequal %}>10</option>
+<option label="11" value="11" {% ifequal sponsor.num_golfers_no_dinner 11 %} selected {% endifequal %}>11</option>
+<option label="12" value="12" {% ifequal sponsor.num_golfers_no_dinner 12 %} selected {% endifequal %}>12</option>
+</select>
+<label class="right">&emsp;${{ tournament.golf_only_price_late }} ea.{% if early_bird and tournament.golf_only_price_early != tournament.golf_only_price_late %}<br><i>Early registration ${{ tournament.golf_only_price_early }} (through {{ early_bird_deadline }})</i>{% endif %}</label>
+</div>
+</div>
+{% endif %}
 
 <div class="form-entry">
 <div class="form-input">
@@ -240,7 +266,7 @@ Double Eagle, Hole-in-One, Eagle, or Birdie sponsor for this event.
 <option label="15" value="15" {% ifequal sponsor.num_dinners 15 %} selected {% endifequal %}>15</option>
 <option label="16" value="16" {% ifequal sponsor.num_dinners 16 %} selected {% endifequal %}>16</option>
 </select>
-<label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} (non-golfers only){% if dinner_early_bird and tournament.dinner_price_early != tournament.dinner_price_late %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ dinner_early_bird_deadline }})</i>{% endif %}</label>
+<label class="right" for="entry_num_dinners">&emsp;${{ tournament.dinner_price_late }} ea.{% if dinner_early_bird and tournament.dinner_price_early != tournament.dinner_price_late %}<br><i>Early registration ${{ tournament.dinner_price_early }} (through {{ dinner_early_bird_deadline }})</i>{% endif %}</label>
 </div>
 </div>
 

@@ -146,7 +146,7 @@ def update_counters(t):
 	num_golfers = 0
 	num_dinners = 0
 	for s in q:
-		num_golfers += s.num_golfers
+		num_golfers += s.num_golfers + s.num_golfers_no_dinner
 		num_dinners += s.num_dinners
 	counters.golfer_count = num_golfers
 	counters.dinner_count = num_dinners
@@ -211,6 +211,8 @@ class ManageTournament(webapp2.RequestHandler):
 		t.tribute_deadline = datetime.date(tribute_deadline_year, tribute_deadline_month, tribute_deadline_day)
 		t.golf_price_early = int(self.request.get("golf_price_early"))
 		t.golf_price_late = int(self.request.get("golf_price_late"))
+		t.golf_only_price_early = int(self.request.get("golf_only_price_early"))
+		t.golf_only_price_late = int(self.request.get("golf_only_price_late"))
 		t.dinner_price_early = int(self.request.get("dinner_price_early"))
 		t.dinner_price_late = int(self.request.get("dinner_price_late"))
 		t.limit_golfers = int(self.request.get("limit_golfers"))
@@ -373,7 +375,7 @@ class ViewGolfer(object):
 		else:
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
 		self.count = count
-		self.pairing = s.pairing if g.sequence == s.num_golfers else '' # TODO: remove this
+		self.pairing = s.pairing if g.sequence == s.num_golfers + s.num_golfers_no_dinner else '' # TODO: remove this
 		self.team_name = team.name if team else '-'
 		self.starting_hole = team.starting_hole if team else ''
 		if g.tees:
@@ -425,18 +427,20 @@ class ViewRegistrations(webapp2.RequestHandler):
 		dinner_count = 0
 		for s in sponsors:
 			no_dinners = 0
-			if s.num_golfers:
-				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
 					if g.dinner_choice == 'none':
 						no_dinners += 1
-			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
+			s.total_golfers = total_golfers
+			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
 			s.net_due = max(0, s.net_due)
-			golfer_count += s.num_golfers
-			dinner_count += s.num_golfers - no_dinners + s.num_dinners
+			golfer_count += total_golfers
+			dinner_count += total_golfers - no_dinners + s.num_dinners
 		template_values = {
 			'sponsors': sponsors,
 			'sponsor_count': len(sponsors),
@@ -462,21 +466,23 @@ class ViewIncomplete(webapp2.RequestHandler):
 			golfers_complete = 0
 			ndinners = 0
 			no_dinners = 0
-			if s.num_golfers:
-				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
 					if g.first_name and g.last_name and g.gender and (g.ghin_number or g.average_score) and g.shirt_size:
 						golfers_complete += 1
 					if g.dinner_choice:
 						ndinners += 1
-					if g.dinner_choice == 'No Dinner':
+					if g.dinner_choice == 'none':
 						no_dinners += 1
 			if s.num_dinners:
 				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
 				for g in guests:
 					if g.first_name and g.last_name and g.dinner_choice:
 						ndinners += 1
-			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
+			s.total_golfers = total_golfers
+			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -506,12 +512,14 @@ class ViewUnpaid(webapp2.RequestHandler):
 		sponsors = []
 		for s in q:
 			no_dinners = 0
-			if s.num_golfers:
-				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
-					if g.dinner_choice == 'No Dinner':
+					if g.dinner_choice == 'none':
 						no_dinners += 1
-			s.adjusted_dinners = s.num_golfers - no_dinners + s.num_dinners
+			s.total_golfers = total_golfers
+			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -561,6 +569,7 @@ class ViewUnconfirmed(webapp2.RequestHandler):
 		q = q.order(Sponsor.timestamp)
 		sponsors = q.fetch(100)
 		for s in sponsors:
+			s.total_golfers = s.num_golfers + s.num_golfers_no_dinner
 			s.adjusted_dinners = s.num_golfers + s.num_dinners
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
@@ -592,13 +601,14 @@ class ViewGolfers(webapp2.RequestHandler):
 		q = q.filter(Sponsor.confirmed == True)
 		q = q.order(Sponsor.sort_name)
 		for s in q:
-			if s.num_golfers == 0:
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers == 0:
 				continue
-			golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 			for g in golfers:
 				all_golfers.append(ViewGolfer(t, s, g, counter))
 				counter += 1
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
+			for i in range(len(golfers) + 1, total_golfers + 1):
 				g = Golfer(tournament = t.key, sponsor = s.key, sequence = i,
 						   sort_name = '', first_name = '', last_name = '', gender = '',
 						   company = '', address = '', city = '', phone = '', email = '',
@@ -804,10 +814,11 @@ class JsonBuilder:
 		self.teams_by_golfer_id_rev = {}
 		q = Sponsor.query(ancestor = self.t.key).filter(Sponsor.confirmed == True).order(Sponsor.sort_name)
 		for s in q:
-			if s.num_golfers == 0:
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers == 0:
 				continue
 			group_golfer_nums = []
-			for g in ndb.get_multi(s.golfer_keys[:s.num_golfers]):
+			for g in ndb.get_multi(s.golfer_keys[:total_golfers]):
 				g_id = g.key.id()
 				golfer_num = len(self.golfers) + 1
 				team = None
@@ -1215,13 +1226,14 @@ class ViewDinners(webapp2.RequestHandler):
 		q = q.filter(Sponsor.confirmed == True)
 		q = q.order(Sponsor.sort_name)
 		for s in q:
-			if s.num_golfers:
-				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
-					if g.dinner_choice != 'No Dinner':
+					if g.dinner_choice != 'none':
 						all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence, counter))
 						counter += 1
-				for i in range(len(golfers) + 1, s.num_golfers + 1):
+				for i in range(len(golfers) + 1, total_golfers + 1):
 					all_dinners.append(ViewDinner(s, '', '', '', i, counter))
 					counter += 1
 			if s.num_dinners:
@@ -1290,7 +1302,8 @@ class DownloadRegistrationsCSV(webapp2.RequestHandler):
 								 for x in [s.sponsor_id, s.first_name, s.last_name, s.company, s.address,
 										   s.city, s.state, s.zip, s.email, s.phone,
 										   ','.join(sponsorships),
-										   s.num_golfers, s.num_golfers + s.num_dinners,
+										   s.num_golfers + s.num_golfers_no_dinner,
+										   s.num_golfers + s.num_dinners,
 										   s.payment_due, s.payment_made,
 										   s.payment_type, s.transaction_code]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
@@ -1317,9 +1330,10 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 							 'contact_first_name', 'contact_last_name']))
 		counter = 1
 		for s in q:
-			if s.num_golfers == 0:
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers == 0:
 				continue
-			golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 			for g in golfers:
 				team_name = ''
 				starting_hole = ''
@@ -1356,7 +1370,7 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 											   g.average_score, tournament_index, course_handicap, tees_str,
 											   g.shirt_size, team_name, starting_hole, cart,
 											   s.first_name, s.last_name]]))
-			for i in range(len(golfers) + 1, s.num_golfers + 1):
+			for i in range(len(golfers) + 1, total_golfers + 1):
 				csv.append(','.join([csv_encode(x)
 									 for x in ['n/a', 'n/a', '', '',
 											   '', '', '', '',
@@ -1383,14 +1397,15 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 		csv.append(','.join(['first_name', 'last_name', 'dinner_choice', 'seating_pref',
 							 'contact_first_name', 'contact_last_name']))
 		for s in q:
-			if s.num_golfers:
-				golfers = ndb.get_multi(s.golfer_keys[:s.num_golfers])
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers:
+				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
-					if g.dinner_choice != 'No Dinner':
+					if g.dinner_choice != 'none':
 						csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
 																	 g.dinner_choice, s.dinner_seating,
 																	 s.first_name, s.last_name]]))
-				for i in range(len(golfers) + 1, s.num_golfers + 1):
+				for i in range(len(golfers) + 1, total_golfers + 1):
 					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
 																 s.first_name, s.last_name]]))
 			if s.num_dinners:
@@ -1846,7 +1861,7 @@ class DeleteHandler(webapp2.RequestHandler):
 				ndb.delete_multi(s.dinner_keys)
 				auditing.audit(t, "Deleted Registration", sponsor_id = int(id), request = self.request)
 				if s.confirmed:
-					tournament.update_counters(t, -s.num_golfers, -s.num_dinners)
+					tournament.update_counters(t, -(s.num_golfers + s.num_golfers_no_dinner), -s.num_dinners)
 				s.key.delete()
 		self.redirect('/admin/delete-registrations')
 
@@ -1931,11 +1946,12 @@ class UpgradeHandler(webapp2.RequestHandler):
 		q = Sponsor.query(ancestor = t.key).order(Sponsor.timestamp)
 		sponsors = q.fetch(offset = start, limit = 20)
 		for s in sponsors:
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
 			golfers = Golfer.query().filter(Golfer.sponsor == s.key).order(Golfer.sequence).fetch(limit = None, keys_only = True)
 			golfers_to_delete = set(golfers) - set(s.golfer_keys)
 			all_dinners = DinnerGuest.query().filter(DinnerGuest.sponsor == s.key).order(DinnerGuest.sequence).fetch(limit = None, keys_only = True)
 			dinners_to_delete = set(all_dinners) - set(s.dinner_keys)
-			logging.debug("sponsor id: %d, %d golfers, %d dinners" % (s.sponsor_id, s.num_golfers, s.num_dinners))
+			logging.debug("sponsor id: %d, %d golfers, %d dinners" % (s.sponsor_id, total_golfers, s.num_dinners))
 			logging.debug("golfers to delete: " + ",".join(str(k.id()) for k in golfers_to_delete))
 			logging.debug("dinners to delete: " + ",".join(str(k.id()) for k in dinners_to_delete))
 			if golfers_to_delete and commit:
@@ -1950,11 +1966,11 @@ class UpgradeHandler(webapp2.RequestHandler):
 					logging.debug("golfer %d has wrong sequence, %d should be %d" % (k.id(), g.sequence, seq))
 					g.sequence = seq
 					mod = True
-				if seq > s.num_golfers and g.active:
+				if seq > total_golfers and g.active:
 					logging.debug("golfer %d (#%d) should not be active" % (k.id(), seq))
 					g.active = False
 					mod = True
-				elif seq <= s.num_golfers and not g.active:
+				elif seq <= total_golfers and not g.active:
 					logging.debug("golfer %d (#%d) should be active" % (k.id(), seq))
 					g.active = True
 					mod = True
@@ -1997,8 +2013,9 @@ class FindOrphansHandler(webapp2.RequestHandler):
 		extra_dinners = []
 		for k in sponsor_keys:
 			s = k.get()
-			if s.num_golfers < len(s.golfer_keys):
-				extra_golfers += s.golfer_keys[s.num_golfers:]
+			total_golfers = s.num_golfers + s.num_golfers_no_dinner
+			if total_golfers < len(s.golfer_keys):
+				extra_golfers += s.golfer_keys[total_golfers:]
 				logging.debug("Sponsor %d contains extra golfers" % s.sponsor_id)
 			if s.num_dinners < len(s.dinner_keys):
 				extra_dinners += s.dinner_keys[s.num_dinners:]

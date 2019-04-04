@@ -6,7 +6,7 @@
 
 {% block head %}
 <style type="text/css">
-#body table { width: 100%; border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin-bottom: 2em; }
+#body table { border: none; border-collapse: collapse; border-bottom: 2px solid #c4e5c4; margin: 0 auto 2em; }
 #body thead tr { border: none; border-bottom: 2px solid #c4e5c4; }
 #body tbody tr { border: none; border-bottom: 1px solid #c4e5c4; }
 #body tbody tr:hover { background-color: #e7fbe7; }
@@ -27,6 +27,7 @@
 <table>
 <thead>
 	<tr valign="bottom">
+		<th align="left"></th>
 		<th align="left">ID</th>
 		<th align="left">Contact</th>
 		<th align="left">Email</th>
@@ -37,14 +38,14 @@
 <tbody>
 {% for s in sponsors %}
 	<tr valign="baseline">
-		<td><input type="checkbox" name="selected_items" value="{{ s.sponsor_id }}">
-		<a href="/register?id={{ s.sponsor_id }}">{{ s.sponsor_id }}</a></td>
+		<td><input type="checkbox" name="selected_items" value="{{ s.sponsor_id }}"></td>
+		<td><a href="/register?id={{ s.sponsor_id }}">{{ s.sponsor_id }}</a></td>
 		<td>{{ s.first_name }} {{ s.last_name }}</td>
 		<td>
 			{% if s.email %}<p><a href="mailto:{{ s.email }}">{{ s.email }}</a></p>{% endif %}
 		</td>
-		<td align="right">{{ s.num_golfers }}</td>
-		<td align="right">{{ s.num_dinners }}</td>
+		<td align="right">{{ s.num_golfers|add:s.num_golfers_no_dinner }}</td>
+		<td align="right">{{ s.num_dinners|add:s.num_golfers }}</td>
 	</tr>
 {% endfor %}
 </tbody>

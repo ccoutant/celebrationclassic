@@ -16,8 +16,9 @@ class Sponsor(ndb.Model):
 	anonymous = ndb.BooleanProperty(default = False)
 	printed_names = ndb.StringProperty(default = '')
 	sponsorships = ndb.KeyProperty(repeated = True)
-	num_golfers = ndb.IntegerProperty(default = 0)
-	num_dinners = ndb.IntegerProperty(default = 0)
+	num_golfers = ndb.IntegerProperty(default = 0)				# Golf + Dinner
+	num_golfers_no_dinner = ndb.IntegerProperty(default = 0)	# Golf only
+	num_dinners = ndb.IntegerProperty(default = 0)				# Dinner only
 	additional_donation = ndb.IntegerProperty(default = 0)
 	payment_due = ndb.IntegerProperty(default = 0)
 	discount = ndb.IntegerProperty(default = 0)

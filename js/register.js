@@ -21,6 +21,7 @@ function recalculate() {
 	var angelbox = angel.getElementsByTagName("input")[0];
 	var otherbox = document.getElementById("entry_other");
 	var golferbox = document.getElementById("entry_num_golfers");
+	var golferonlybox = document.getElementById("entry_num_golfers_no_dinner");
 	var use_go_discount_code_box = document.getElementById("entry_use_go_discount_code");
 	var go_golferbox = document.getElementById("entry_go_golfers");
 	var dinnerbox = document.getElementById("entry_num_dinners");
@@ -42,9 +43,12 @@ function recalculate() {
 	var dinner_early_bird = parseInt(document.getElementById("dinner_early_bird").value);
 	var golf_price_early = document.getElementById("golf_price_early").value;
 	var golf_price_late = document.getElementById("golf_price_late").value;
+	var golf_only_price_early = document.getElementById("golf_only_price_early").value;
+	var golf_only_price_late = document.getElementById("golf_only_price_late").value;
 	var dinner_price_early = document.getElementById("dinner_price_early").value;
 	var dinner_price_late = document.getElementById("dinner_price_late").value;
 	var golf_price = golf_early_bird ? golf_price_early : golf_price_late;
+	var golf_only_price = golf_early_bird ? golf_only_price_early : golf_only_price_late;
 	var dinner_price = dinner_early_bird ? dinner_price_early : dinner_price_late;
 
 	// Show or hide the sponsorship checkboxes.
@@ -112,11 +116,17 @@ function recalculate() {
 
 	// Adjust the selectors for number of golfers and dinner guests.
 	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), golf_sold_out && !admin_user);
+	if (golferonlybox)
+		adjust_selector(golferonlybox, Math.max(golfers_included, parseInt(golferonlybox.value)), golf_sold_out && !admin_user);
 	adjust_selector(dinnerbox, Math.max(dinners_included, parseInt(dinnerbox.value)), dinner_sold_out && !admin_user);
 
 	// Offer Angel sponsorship for foursomes.
 	var golfers = parseInt(golferbox.value);
-	if (golfers_included == 0 && golfers >= 4)
+	var golfers_no_dinner = 0;
+	if (golferonlybox)
+		golfers_no_dinner = parseInt(golferonlybox.value);
+	var total_golfers = golfers + golfers_no_dinner;
+	if (golfers_included == 0 && total_golfers >= 4)
 		angel.style.display = "block";
 	else {
 		angel.style.display = "none";
@@ -147,17 +157,16 @@ function recalculate() {
 	golfers_included += go_golfers;
 
 	// Calculate price for additional golfers and dinners.
-	golfers -= golfers_included;
-	if (golfers < 0) {
-		// Transfer unused golfer allowance to dinner allowance.
-		dinners_included -= golfers;
-		golfers = 0;
-		}
-	total += golfers * golf_price;
-	var dinners = parseInt(dinnerbox.value) - dinners_included;
-	if (dinners < 0)
-		dinners = 0;
-	total += dinners * dinner_price;
+	if (golfers > golfers_included)
+		total += golf_price * (golfers - golfers_included);
+	golfers_included = Math.max(0, golfers_included - golfers);
+	if (golfers_no_dinner > golfers_included)
+		total += golf_only_price * (golfers_no_dinner - golfers_included);
+	golfers_included = Math.max(0, golfers_included - golfers_no_dinner);
+	dinners_included += golfers_included;
+	var dinners = parseInt(dinnerbox.value);
+	if (dinners > dinners_included)
+		total += dinner_price * (dinners - dinners_included);
 
 	totalbox.value = total;
 	totalbox_c.value = add_commas(total);
@@ -218,6 +227,9 @@ function install_recalculate_hooks() {
 	printednamesbox.onkeypress = ignore_enter;
 	var selectbox = document.getElementById("entry_num_golfers");
 	selectbox.onchange = recalculate;
+	selectbox = document.getElementById("entry_num_golfers_no_dinner");
+	if (selectbox)
+		selectbox.onchange = recalculate;
 	selectbox = document.getElementById("entry_num_dinners");
 	selectbox.onchange = recalculate;
 	var show_go_campaign_box = document.getElementById("checkbox_show_go_campaign");
