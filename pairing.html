@@ -15,24 +15,31 @@ p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
 .group p.pairing, .team p.pairing { margin: 0; font-style: italic; }
 .group span.id, .team span.id { font-weight: normal; }
 .group ul, .team ul { list-style: none; margin: 0; padding: 0; }
-.group ul li, .team ul li { margin: 0 0 0 2em; padding: 0; }
+.group ul li, .team ul li { margin: 0 0 0 2em; padding: 0; white-space: nowrap; }
 .group span.golfername, .team span.golfername { display: inline-block; width: 10em; }
 .team span.placeholder { display: inline-block; width: 10em; border-bottom: 1px solid #A8CBA6; }
 .group span.handicap, .team span.handicap { display: inline-block; width: 3em; text-align: right; }
-.team span.cart { margin-left: 1em; }
+.team span.cart { padding-left: 1em; }
 .team span.cart label { font-size: 80%; }
+.editbutton { padding: 0 0.5em; cursor: pointer; color: #157d15; }
+.editbuttonhidden { padding: 0 0.5em; visibility: hidden; }
+div.editpopup { position: absolute; font-size: 80%; left: 0; top: 0; z-index: 99; padding: 5px; border: 1px solid black; background-color: #fff; }
+div.editpopup p { margin: 1em; }
+div.editpopup .closebox { position: absolute; left: 10px; top: 5px; width: 1em; height: 1em; cursor: pointer; }
 </style>
 <script src="/js/formteams.js" type="text/javascript" language="javascript"></script>
 <script type="text/javascript" language="javascript">
 var groups = {{ groups_json|safe }};
 var teams = {{ teams_json|safe }};
 var golfers = {{ golfers_json|safe }};
+var substitutes = {{ substitutes_json|safe }};
 var groups_selected = [];
 var teams_selected = [];
 var unassigned_golfers_selected = [];
 var assigned_golfers_selected = [];
 var group_divs;
 var team_div;
+var current_popup;
 window.addEventListener('load', function() {
 	initialize();
 });
@@ -89,6 +96,7 @@ window.addEventListener('load', function() {
 <div class="gutter">
 <form id="form" action="/admin/view/golfers/pairing" method="post" accept-charset="utf-8">
 <input type="hidden" id="golfers_json" name="golfers_json" value="">
+<input type="hidden" id="substitutes_json" name="substitutes_json" value="">
 <input type="hidden" id="groups_json" name="groups_json" value="">
 <input type="hidden" id="teams_json" name="teams_json" value="">
 <div><input type="button" name="newteam" value="New Team &rarr;" onclick="return do_newteam();"></div>

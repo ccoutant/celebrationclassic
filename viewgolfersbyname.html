@@ -85,7 +85,7 @@
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
 		<td align="left">{{ g.team_name }}</td>
 		<td align="center">{{ g.starting_hole }}</td>
-		<td align="center">{% if g.golfer.cart != 0 %}{{ g.golfer.cart }}{% endif %}</td>
+		<td align="center">{% if g.cart != 0 %}{{ g.cart }}{% endif %}</td>
 		<td align="center">{{ g.golfer.shirt_size }}</td>
 		<td align="left"><a href="/register?id={{ g.sponsor_id }}">{{ g.sponsor_name }}</a></td>
 	</tr>

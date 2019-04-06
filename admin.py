@@ -23,7 +23,7 @@ import detailpage
 import uploadedfile
 import tz
 import auditing
-from sponsor import Sponsor, Team, Golfer, DinnerGuest, TributeAd
+from sponsor import Sponsor, Team, Golfer, Substitute, DinnerGuest, TributeAd, get_handicap_index
 
 server_software = os.environ.get('SERVER_SOFTWARE')
 dev_server = True if server_software and server_software.startswith("Development") else False
@@ -364,29 +364,44 @@ def calc_course_handicap(tournament, handicap_index, tees):
 
 class ViewGolfer(object):
 	def __init__(self, t, s, g, count):
-		self.sponsor_id = s.sponsor_id
-		self.sponsor_name = s.first_name + " " + s.last_name
-		self.golfer = g
+		self.golfer_key = g.key.urlsafe()
+		if s:
+			self.sponsor_id = s.sponsor_id
+			self.sponsor_name = s.first_name + " " + s.last_name
+		if g.substitute:
+			g1 = g.substitute.get()
+			self.has_substitute = True
+		else:
+			g1 = g
+			self.has_substitute = False
+		self.golfer = g1
+		self.sequence = g.sequence
 		team = None
 		if g.team:
 			team = g.team.get()
-		if g.first_name or g.last_name:
-			self.golfer_name = g.first_name + " " + g.last_name
-		else:
+		if g1.first_name or g1.last_name:
+			self.golfer_name = g1.first_name + " " + g1.last_name
+			if self.has_substitute:
+				self.golfer_name = "*" + self.golfer_name
+		elif s:
 			self.golfer_name = "(%s #%d)" % (s.last_name, g.sequence)
+		else:
+			self.golfer_name = "(TBD)"
 		self.count = count
-		self.pairing = s.pairing if g.sequence == s.num_golfers + s.num_golfers_no_dinner else '' # TODO: remove this
+		if s:
+			self.pairing = s.pairing if g.sequence == s.num_golfers + s.num_golfers_no_dinner else '' # TODO: remove this
 		self.team_name = team.name if team else '-'
 		self.starting_hole = team.starting_hole if team else ''
-		if g.tees:
-			self.tees = g.tees
+		self.cart = g.cart
+		if g1.tees:
+			self.tees = g1.tees
 		else:
 			flight = 1
 			if team:
 				flight = team.flight
-			self.tees = get_tees(flight, g.gender)
-		handicap_index = g.get_handicap_index()
-		if g.has_index:
+			self.tees = get_tees(flight, g1.gender)
+		handicap_index = get_handicap_index(g1)
+		if g1.has_index:
 			self.handicap_index_str = "%.1f" % handicap_index
 			self.computed_index = ''
 			self.course_handicap = calc_course_handicap(t, handicap_index, self.tees)
@@ -397,7 +412,7 @@ class ViewGolfer(object):
 		else:
 			self.handicap_index_str = ''
 			self.computed_index = ''
-			self.course_handicap = 0
+			self.course_handicap = 'n/a'
 
 class ViewDinner(object):
 	def __init__(self, s, first_name, last_name, choice, sequence, table_num, count):
@@ -815,6 +830,7 @@ class JsonBuilder:
 		When there is disagreement, we use this mapping as the "truth".
 		"""
 		self.golfers = []
+		self.substitutes = []
 		self.groups = []
 		self.teams_by_golfer_id_rev = {}
 		q = Sponsor.query(ancestor = self.t.key).filter(Sponsor.confirmed == True).order(Sponsor.sort_name)
@@ -832,19 +848,18 @@ class JsonBuilder:
 					try:
 						team = g.team.get()
 					except:
-						logging.warning("Dangling reference from golfer %s %s (sponsor id %d) to deleted team" % (g.first_name, g.last_name, s.sponsor_id))
+						logging.warning("Dangling reference from golfer %d (sponsor id %d) to deleted team" % (g_id, s.sponsor_id))
 						g.team = None
 						g.put()
-				vg = ViewGolfer(self.t, s, g, golfer_num)
 				if team:
 					t_id = team.key.id()
 					team_num = self.teams_by_id[t_id]
 					if not g_id in self.teams_by_golfer_id_fwd:
-						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (vg.golfer_name, s.sponsor_id, t.name))
+						logging.warning("Golfer %d (sponsor id %d) refers to team \"%s\", but no team contains golfer" % (g_id, s.sponsor_id, t.name))
 					elif self.teams_by_golfer_id_fwd[g_id] != team_num:
 						other_team_num = self.teams_by_golfer_id_fwd[g_id]
 						other_team = self.teams[other_team_num - 1]
-						logging.warning("Golfer %s (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (vg.golfer_name, s.sponsor_id, t.name, other_team['name']))
+						logging.warning("Golfer %d (sponsor id %d) refers to team \"%s\", but is contained by team \"%s\"" % (g_id, s.sponsor_id, t.name, other_team['name']))
 				else:
 					t_id = -1
 				self.teams_by_golfer_id_rev[g_id] = team_num
@@ -852,16 +867,44 @@ class JsonBuilder:
 					team_num = self.teams_by_golfer_id_fwd[g_id]
 				else:
 					team_num = 0
+				if g.substitute:
+					g_sub = g.substitute.get()
+					hdcp_index = get_handicap_index(g_sub)
+					if hdcp_index is not None:
+						hdcp_index = "%.1f" % hdcp_index
+					else:
+						hdcp_index = "-"
+					substitute = {
+						'key': g.substitute.id(),
+						'first_name': g_sub.first_name,
+						'last_name': g_sub.last_name,
+						'gender': g_sub.gender,
+						'ghin': g_sub.ghin_number,
+						'avg': g_sub.average_score,
+						'index': hdcp_index
+					}
+					self.substitutes.append(substitute)
+					substitute_index = len(self.substitutes)
+				else:
+					substitute_index = 0
+				hdcp_index = get_handicap_index(g)
+				if hdcp_index is not None:
+					hdcp_index = "%.1f" % hdcp_index
+				else:
+					hdcp_index = "-"
 				h = hashlib.md5()
-				h.update("%d:%d" % (t_id, g.cart))
+				h.update(','.join(str(x) for x in [t_id, g.cart]))
 				golfer = {
 					'golfer_num': golfer_num,
 					'group_num': len(self.groups) + 1,
 					'team_num': team_num,
 					'key': g_id,
-					'golfer_name': vg.golfer_name,
-					'course_handicap': vg.course_handicap,
+					'first_name': g.first_name,
+					'last_name': g.last_name,
+					'gender': g.gender,
+					'index': hdcp_index,
 					'cart': g.cart,
+					'substitute': substitute_index,
 					'md5': h.hexdigest()
 				}
 				if team_num:
@@ -901,10 +944,14 @@ class JsonBuilder:
 	def golfers_json(self):
 		return json.dumps(self.golfers)
 
+	def substitutes_json(self):
+		return json.dumps(self.substitutes)
+
 class TeamsUpdater:
-	def __init__(self, t, golfers_json, groups_json, teams_json):
+	def __init__(self, t, golfers_json, substitutes_json, groups_json, teams_json):
 		self.t = t
 		self.golfers = json.loads(golfers_json)
+		self.substitutes = json.loads(substitutes_json)
 		self.groups = json.loads(groups_json)
 		self.teams = json.loads(teams_json)
 
@@ -939,7 +986,7 @@ class TeamsUpdater:
 			else:
 				t_id = -1
 			h = hashlib.md5()
-			h.update("%d:%d" % (t_id, g['cart']))
+			h.update(','.join(str(x) for x in [t_id, g['cart']]))
 			modified = h.hexdigest() != g['md5']
 			# logging.debug("Update golfers pass 1: team %d golfer %d (%s)" % (g['team_num'], g_id, "modified" if modified else "not modified"))
 			if modified or g_id in self.golfers_by_id:
@@ -958,6 +1005,47 @@ class TeamsUpdater:
 					golfer.team = None
 				golfer.cart = g['cart']
 				self.golfers_by_id[g_id] = (golfer, modified)
+
+	def update_substitutes(self):
+		for g in self.golfers:
+			g_id = g['key']
+			if g_id in self.golfers_by_id:
+				(golfer, _) = self.golfers_by_id[g_id]
+			else:
+				golfer = Golfer.get_by_id(g_id)
+			if g['substitute'] > 0:
+				sub = self.substitutes[g['substitute'] - 1]
+				sub_id = sub['key']
+				if sub_id:
+					if golfer.substitute is None or golfer.substitute.id() != sub_id:
+						logging.warning("Golfer %d substitute does not match Substitute %d" % (g_id, sub_id))
+					substitute = Substitute.get_by_id(sub_id)
+				else:
+					substitute = Substitute()
+				substitute.first_name = sub['first_name']
+				substitute.last_name = sub['last_name']
+				substitute.gender = sub['gender']
+				substitute.ghin_number = sub['ghin']
+				if sub['index']:
+					try:
+						substitute.handicap_index = float(sub['index'])
+						substitute.has_index = True
+					except ValueError:
+						substitute.handicap_index = 0.0
+						substitute.has_index = False
+				else:
+					substitute.handicap_index = 0.0
+					substitute.has_index = False
+				substitute.average_score = sub['avg']
+				substitute.put()
+				golfer.substitute = substitute.key
+				golfer.sort_name = substitute.last_name.lower() + ',' + substitute.first_name.lower()
+				self.golfers_by_id[g_id] = (golfer, True)
+			elif golfer.substitute:
+				golfer.substitute.delete()
+				golfer.substitute = None
+				golfer.sort_name = golfer.last_name.lower() + ',' + golfer.first_name.lower()
+				self.golfers_by_id[g_id] = (golfer, True)
 
 	def update_teams_pass2(self):
 		new_team_num = 1
@@ -1032,6 +1120,9 @@ class TeamsUpdater:
 	def golfers_json(self):
 		return json.dumps(self.golfers)
 
+	def substitutes_json(self):
+		return json.dumps(self.substitutes)
+
 class Pairing(webapp2.RequestHandler):
 	def get(self):
 		t = tournament.get_tournament()
@@ -1045,6 +1136,7 @@ class Pairing(webapp2.RequestHandler):
 			'groups_json': json_builder.groups_json(),
 			'teams_json': json_builder.teams_json(),
 			'golfers_json': json_builder.golfers_json(),
+			'substitutes_json': json_builder.substitutes_json(),
 			'capabilities': caps
 			}
 		html = render_to_string('pairing.html', template_values)
@@ -1066,13 +1158,17 @@ class Pairing(webapp2.RequestHandler):
 			return
 		golfers_json = self.request.get('golfers_json')
 		groups_json = self.request.get('groups_json')
+		substitutes_json = self.request.get('substitutes_json')
 		teams_json = self.request.get('teams_json')
-		# logging.debug("golfers: " + golfers_json)
-		# logging.debug("groups: " + groups_json)
-		# logging.debug("teams: " + teams_json)
-		updater = TeamsUpdater(t, golfers_json, groups_json, teams_json)
+		if dev_server:
+			logging.debug("golfers: " + golfers_json)
+			logging.debug("substitutes: " + substitutes_json)
+			logging.debug("groups: " + groups_json)
+			logging.debug("teams: " + teams_json)
+		updater = TeamsUpdater(t, golfers_json, substitutes_json, groups_json, teams_json)
 		updater.update_teams_pass1()
 		updater.update_golfers_pass1()
+		updater.update_substitutes()
 		updater.update_teams_pass2()
 		updater.update_golfers_pass2()
 		updater.update_json()
@@ -1081,6 +1177,7 @@ class Pairing(webapp2.RequestHandler):
 			'groups_json': updater.groups_json(),
 			'teams_json': updater.teams_json(),
 			'golfers_json': updater.golfers_json(),
+			'substitutes_json': updater.substitutes_json(),
 			'capabilities': caps
 			}
 		html = render_to_string('pairing.html', template_values)
@@ -1136,28 +1233,9 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 					logging.warning("Golfer %d, referenced by team %s (%d), is in another team" % (g_key.id(), team.name, team.key.id()))
 				used_keys.add(g_key)
 				g = g_key.get()
-				tees = get_tees(team.flight, g.gender)
-				handicap_index = g.get_handicap_index()
-				if handicap_index is not None:
-					course_handicap = calc_course_handicap(t, handicap_index, tees)
-				else:
-					course_handicap = 'n/a'
-				course_handicaps.append(course_handicap)
-				# self.guest_name = "(%s #%d)" % (s.last_name, sequence)
-				if g.first_name or g.last_name:
-					fname = g.first_name
-					lname = g.last_name
-				else:
-					fname = "(%s #%d)" % (team.name, sequence)
-					lname = ""
-				golfer = {
-					'first_name': fname,
-					'last_name': lname,
-					'cart': g.cart,
-					'tees': tees,
-					'course_handicap': course_handicap
-				}
-				golfers_in_team.append(golfer)
+				vg = ViewGolfer(t, None, g, None)
+				course_handicaps.append(vg.course_handicap)
+				golfers_in_team.append(vg)
 			team_handicap = calculate_team_handicap(course_handicaps)
 			newteam = {
 				'key': team.key.id(),
@@ -1413,47 +1491,28 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 							 'avg_score', 'tournament_index', 'course_handicap', 'tees',
 							 'shirt_size', 'team', 'starting_hole', 'cart',
 							 'contact_first_name', 'contact_last_name']))
-		counter = 1
 		for s in q:
 			total_golfers = s.num_golfers + s.num_golfers_no_dinner
 			if total_golfers == 0:
 				continue
 			golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 			for g in golfers:
-				team_name = ''
-				starting_hole = ''
+				vg = ViewGolfer(t, s, g, None)
+				g1 = vg.golfer
 				cart = ''
-				flight = 1
-				if g.team:
-					team = g.team.get()
-					team_name = team.name
-					starting_hole = team.starting_hole
-					flight = team.flight
 				if g.cart:
 					cart = str(g.cart)
-				tees = get_tees(flight, g.gender)
-				tees_str = ["Red", "White", "Blue"][tees - 1]
-				handicap_index = g.get_handicap_index()
-				if g.has_index:
-					handicap_index_str = "%.1f" % handicap_index
-					tournament_index = handicap_index_str
-				elif handicap_index is not None:
-					handicap_index_str = ''
-					tournament_index = "%.1f" % handicap_index
+				tees_str = ["Red", "White", "Blue"][vg.tees - 1]
+				if g1.has_index:
+					tournament_index = vg.handicap_index_str
 				else:
-					handicap_index_str = ''
-					tournament_index = ''
-				if handicap_index is not None:
-					course_handicap = str(calc_course_handicap(t, handicap_index, tees))
-				else:
-					course_handicap = ''
-				counter += 1
+					tournament_index = vg.computed_index
 				csv.append(','.join([csv_encode(x)
-									 for x in [g.first_name, g.last_name, g.gender, g.company,
-											   g.address, g.city, g.state, g.zip,
-											   g.email, g.phone, g.ghin_number, handicap_index_str,
-											   g.average_score, tournament_index, course_handicap, tees_str,
-											   g.shirt_size, team_name, starting_hole, cart,
+									 for x in [g1.first_name, g1.last_name, g1.gender, g1.company,
+											   g1.address, g1.city, g1.state, g1.zip,
+											   g1.email, g1.phone, g1.ghin_number, vg.handicap_index_str,
+											   g1.average_score, tournament_index, vg.course_handicap, tees_str,
+											   g1.shirt_size, vg.team_name, vg.starting_hole, vg.cart,
 											   s.first_name, s.last_name]]))
 			for i in range(len(golfers) + 1, total_golfers + 1):
 				csv.append(','.join([csv_encode(x)

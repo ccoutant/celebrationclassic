@@ -9,7 +9,7 @@
 #body tbody tr.team { border-top: 2px solid #c4e5c4; }
 #body tbody tr:hover { background-color: #e7fbe7; }
 #body th { color: #6061ab; padding: 0.5em; font-size: 80%; }
-#body td { padding: 0.25em; }
+#body td { position: relative; padding: 0.25em; }
 #body tr.team td { padding-top: 0.5em; }
 #body tr.team td.teamname { font-weight: bold; }
 #body td.firstcol { padding-left: 2em; }
@@ -18,6 +18,7 @@
 #body tr.pairing p { font-size: 80%; font-style: italic; color: #555; }
 .note { font-style: italic; text-align: center; }
 .buttons { text-align: center; }
+.indented { padding-left: 20pt; }
 </style>
 {% endblock %}
 
@@ -51,7 +52,7 @@
 <table>
 <thead>
 	<tr valign="bottom">
-		<th align="left">Team<br>&emsp;&emsp;&ensp;Golfer</th>
+		<th align="left">Team<br><span class="indented">Golfer</span></th>
 		<th align="center">Starting Hole<br>Cart</th>
 		<th align="center">Tees</th>
 		<th align="right">Course<br>Handicap</th>
@@ -114,7 +115,7 @@
 	</tr>
 {% for g in t.golfers %}
 	<tr class="golfer" valign="baseline">
-		<td>&emsp;&emsp;{{ g.first_name }} {{ g.last_name }}</td>
+		<td><span class="indented">{{ g.golfer_name }}</span></td>
 		<td align="center">{{ g.cart }}</td>
 		<td align="center">{% if g.tees == 1 %}Red{% elif g.tees == 2 %}White{% elif g.tees == 3 %}Blue{% endif %}</td>
 		<td align="right">{{ g.course_handicap }}</td>
@@ -132,7 +133,7 @@
 	</tr>
 {% for g in unassigned_golfers %}
 	<tr class="golfer" valign="baseline">
-		<td>&emsp;&emsp;{{ g.first_name }} {{ g.last_name }}</td>
+		<td><span class="indented">{{ g.first_name }} {{ g.last_name }}</span></td>
 		<td align="center"></td>
 		<td align="center"></td>
 		<td align="right">n/a</td>

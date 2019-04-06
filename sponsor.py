@@ -71,14 +71,34 @@ class Golfer(ndb.Model):
 	cart = ndb.IntegerProperty(default = 0)
 	tees = ndb.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
 	index_info_modified = ndb.BooleanProperty(default = False)
+	substitute = ndb.KeyProperty()
 
-	def get_handicap_index(self):
-		if self.has_index:
-			return self.handicap_index
-		try:
-			return float(self.average_score) * 0.8253 - 61.15
-		except:
-			return None
+def get_handicap_index(golfer):
+	if golfer.has_index:
+		return golfer.handicap_index
+	try:
+		return float(golfer.average_score) * 0.8253 - 61.15
+	except:
+		return None
+
+class Substitute(ndb.Model):
+	first_name = ndb.StringProperty(default = '')
+	last_name = ndb.StringProperty(default = '')
+	gender = ndb.StringProperty(default = '')
+	company = ndb.StringProperty(default = '')
+	address = ndb.StringProperty(default = '')
+	city = ndb.StringProperty(default = '')
+	state = ndb.StringProperty(default = '')
+	zip = ndb.StringProperty(default = '')
+	phone = ndb.StringProperty(default = '')
+	email = ndb.StringProperty(default = '')
+	average_score = ndb.StringProperty(default = '')
+	ghin_number = ndb.StringProperty(default = '')
+	has_index = ndb.BooleanProperty(default = False)
+	handicap_index = ndb.FloatProperty(default = 0.0)
+	shirt_size = ndb.StringProperty(default = '')
+	tees = ndb.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
+	index_info_modified = ndb.BooleanProperty(default = False)
 
 class DinnerGuest(ndb.Model):
 	tournament = ndb.KeyProperty()
