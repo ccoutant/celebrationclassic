@@ -88,7 +88,7 @@ window.addEventListener('load', function() {
 <p class="message">{{ m|escape }}</p>
 {% endfor %}
 
-{% if past_deadline %}
+{% if past_deadline and not capabilities.can_add_registrations %}
 <p class="message">Sorry, the deadline for submitting tribute ads has passed.</p>
 {% else %}
 
