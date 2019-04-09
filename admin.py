@@ -138,7 +138,7 @@ class ManageUsers(webapp2.RequestHandler):
 		memcache.flush_all()
 		self.redirect('/admin/users')
 
-def update_counters(t):
+def reinitialize_counters(t):
 	counters = tournament.get_counters(t)
 	q = Sponsor.query(ancestor = t.key)
 	q = q.filter(Sponsor.confirmed == True)
@@ -147,7 +147,7 @@ def update_counters(t):
 	num_dinners = 0
 	for s in q:
 		num_golfers += s.num_golfers + s.num_golfers_no_dinner
-		num_dinners += s.num_dinners
+		num_dinners += s.num_golfers + s.num_dinners
 	counters.golfer_count = num_golfers
 	counters.dinner_count = num_dinners
 	counters.put()
@@ -181,7 +181,7 @@ class ManageTournament(webapp2.RequestHandler):
 			return
 		t = tournament.get_tournament(self.request.get("original_name"))
 		if self.request.get("num_golfers") == "" or self.request.get("num_dinners") == "":
-			update_counters(t)
+			reinitialize_counters(t)
 		t.name = self.request.get("new_name")
 		t.published = (self.request.get("published") == "y")
 		t.accepting_registrations = (self.request.get("accepting") == "y")
@@ -435,6 +435,7 @@ class ViewRegistrations(webapp2.RequestHandler):
 						no_dinners += 1
 			s.total_golfers = total_golfers
 			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
+			s.flag_dinners = True if no_dinners != s.num_golfers_no_dinner else False
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -483,6 +484,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 						ndinners += 1
 			s.total_golfers = total_golfers
 			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
+			s.flag_dinners = True if no_dinners != s.num_golfers_no_dinner else False
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -520,6 +522,7 @@ class ViewUnpaid(webapp2.RequestHandler):
 						no_dinners += 1
 			s.total_golfers = total_golfers
 			s.adjusted_dinners = total_golfers - no_dinners + s.num_dinners
+			s.flag_dinners = True if no_dinners != s.num_golfers_no_dinner else False
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -571,6 +574,7 @@ class ViewUnconfirmed(webapp2.RequestHandler):
 		for s in sponsors:
 			s.total_golfers = s.num_golfers + s.num_golfers_no_dinner
 			s.adjusted_dinners = s.num_golfers + s.num_dinners
+			s.flag_dinners = True if no_dinners != s.num_golfers_no_dinner else False
 			s.net_due = s.payment_due - s.payment_made
 			if s.discount:
 				s.net_due -= s.discount
@@ -1860,7 +1864,7 @@ class DeleteHandler(webapp2.RequestHandler):
 				ndb.delete_multi(s.dinner_keys)
 				auditing.audit(t, "Deleted Registration", sponsor_id = int(id), request = self.request)
 				if s.confirmed:
-					tournament.update_counters(t, -(s.num_golfers + s.num_golfers_no_dinner), -s.num_dinners)
+					tournament.update_counters(t, -(s.num_golfers + s.num_golfers_no_dinner), -(s.num_golfers + s.num_dinners))
 				s.key.delete()
 		self.redirect('/admin/delete-registrations')
 

@@ -377,7 +377,7 @@ class Register(webapp2.RequestHandler):
 		if s.num_dinners > dinners_included:
 			s.payment_due += dinner_price * (s.num_dinners - dinners_included)
 		s.payment_due += s.additional_donation
-		if total_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0:
+		if total_golfers <= 0 and s.num_dinners <= 0 and s.payment_due <= 0 and not caps.can_add_registrations:
 			messages.append('You have not chosen any sponsorships, golfers, or dinners.')
 		if s.payment_due != form_payment_due and not discount_applied:
 			messages.append('There was an error processing the form: payment due does not match selected sponsorships and number of golfers and dinners.')
@@ -415,13 +415,14 @@ class Register(webapp2.RequestHandler):
 		golf_wait = False
 		dinner_wait = False
 		if not caps.can_add_registrations:
-			if s.num_golfers > orig_num_golfers or s.num_golfers_no_dinner > orig_num_golfers_no_dinner:
+			if total_golfers > orig_num_golfers + orig_num_golfers_no_dinner:
 				if t.golf_sold_out or (counters.golfer_count + total_golfers - orig_num_golfers - orig_num_golfers_no_dinner > t.limit_golfers):
 					s.num_golfers = orig_num_golfers
 					s.num_golfers_no_dinner = orig_num_golfers_no_dinner
 					golf_wait = True
-			if s.num_dinners > orig_num_dinners:
-				if t.dinner_sold_out or (counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners):
+			if s.num_golfers + s.num_dinners > orig_num_golfers + orig_num_dinners:
+				if t.dinner_sold_out or (counters.dinner_count + s.num_golfers + s.num_dinners - orig_num_golfers - orig_num_dinners > t.limit_dinners):
+					s.num_golfers = orig_num_golfers
 					s.num_dinners = orig_num_dinners
 					dinner_wait = True
 
@@ -439,13 +440,14 @@ class Register(webapp2.RequestHandler):
 					s.sponsor_id = trial_id
 					break
 				logging.info('ID collision for %d; retrying...' % trial_id)
-		logging.info('Registration Step 1 for ID %d (%d golfers, %d dinners)' % (s.sponsor_id, total_golfers, s.num_dinners))
+		logging.info('Registration Step 1 for ID %d (%d golfers + %d dinners)' % (s.sponsor_id, total_golfers, s.num_golfers + s.num_dinners))
 		s.put()
 		if s.confirmed:
-			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner, s.num_dinners - orig_num_dinners)
+			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner,
+										  s.num_golfers + s.num_dinners - orig_num_golfers - orig_num_dinners)
 		auditing.audit(t, "Registration Step 1",
 					   sponsor_id = s.sponsor_id,
-					   data = "%s %s (%d golfers, %d dinners)" % (s.first_name, s.last_name, total_golfers, s.num_dinners),
+					   data = "%s %s (%d golfers + %d dinners)" % (s.first_name, s.last_name, total_golfers, s.num_golfers + s.num_dinners),
 					   request = self.request)
 		memcache.delete('%s/admin/view/golfers' % t.name)
 		memcache.delete('%s/admin/view/dinners' % t.name)
@@ -593,7 +595,7 @@ class Continue(webapp2.RequestHandler):
 		s.dinner_seating = self.request.get('dinner_seating')
 
 		if (not caps.can_add_registrations) and (not self.request.get('back')):
-			if s.num_golfers > orig_num_golfers or s.num_golfers_no_dinner > orig_num_golfers_no_dinner:
+			if total_golfers > orig_num_golfers + orig_num_golfers_no_dinner:
 				if counters.golfer_count + total_golfers - orig_num_golfers - orig_num_golfers_no_dinner > t.limit_golfers:
 					open_slots = t.limit_golfers - counters.golfer_count
 					if open_slots <= 0:
@@ -602,15 +604,15 @@ class Continue(webapp2.RequestHandler):
 						messages.append('Sorry, the tournament only has room for 1 more golfer.')
 					else:
 						messages.append('Sorry, the tournament only has room for %d more golfers.' % open_slots)
-			if s.num_dinners > orig_num_dinners:
-				if counters.dinner_count + s.num_dinners - orig_num_dinners > t.limit_dinners:
+			if s.num_golfers + s.num_dinners > orig_num_golfers + orig_num_dinners:
+				if counters.dinner_count + s.num_golfers + s.num_dinners - orig_num_golfers - orig_num_dinners > t.limit_dinners:
 					open_slots = t.limit_dinners - counters.dinner_count
 					if open_slots <= 0:
 						messages.append('Sorry, the dinner is sold out.')
 					elif open_slots == 1:
-						messages.append('Sorry, there is only room for 1 more dinner-only reservation.')
+						messages.append('Sorry, there is only room for 1 more dinner reservation.')
 					else:
-						messages.append('Sorry, there is only room for %d more dinner-only reservations.' % open_slots)
+						messages.append('Sorry, there is only room for %d more dinner reservations.' % open_slots)
 
 		if messages:
 			s.put()
@@ -631,7 +633,8 @@ class Continue(webapp2.RequestHandler):
 			self.response.set_cookie('sponsorid', str(s.sponsor_id), expires=datetime.datetime.combine(t.golf_date, datetime.time(23,59)))
 
 		if s.confirmed:
-			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner, s.num_dinners - orig_num_dinners)
+			tournament.update_counters(t, total_golfers - orig_num_golfers - orig_num_golfers_no_dinner,
+										  s.num_golfers + s.num_dinners - orig_num_golfers - orig_num_dinners)
 		auditing.audit(t, "Registration Step 2",
 					   sponsor_id = s.sponsor_id,
 					   data = s.first_name + " " + s.last_name,
@@ -693,7 +696,7 @@ class Continue(webapp2.RequestHandler):
 					 ('contactemailaddress', s.email),
 					 ('sponsorshiplevel', ','.join(sponsorship_names)),
 					 ('numberofgolfers', total_golfers),
-					 ('numberofdinnerguests', s.num_dinners),
+					 ('numberofdinnerguests', s.num_golfers + s.num_dinners),
 					 ('amount_20_20_amt', net_payment_due),
 					 ('idnumberhidden', s.sponsor_id),
 					 ('fname', s.first_name),

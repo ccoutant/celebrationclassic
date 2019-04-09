@@ -115,7 +115,7 @@ function recalculate() {
 		includes_span.innerHTML = includes;
 
 	// Adjust the selectors for number of golfers and dinner guests.
-	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), golf_sold_out && !admin_user);
+	adjust_selector(golferbox, Math.max(golfers_included, parseInt(golferbox.value)), (golf_sold_out || dinner_sold_out) && !admin_user);
 	if (golferonlybox)
 		adjust_selector(golferonlybox, Math.max(golfers_included, parseInt(golferonlybox.value)), golf_sold_out && !admin_user);
 	adjust_selector(dinnerbox, Math.max(dinners_included, parseInt(dinnerbox.value)), dinner_sold_out && !admin_user);
