@@ -22,6 +22,18 @@ indexes:
   - name: sequence
 
 - kind: AuditEntry
+  properties:
+  - name: sponsor_id
+  - name: timestamp
+    direction: desc
+
+- kind: AuditEntry
+  properties:
+  - name: tribute_id
+  - name: timestamp
+    direction: desc
+
+- kind: AuditEntry
   ancestor: yes
   properties:
   - name: timestamp

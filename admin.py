@@ -1871,8 +1871,16 @@ class AuditHandler(webapp2.RequestHandler):
 			show_login_page(self.response.out, '/admin/delete-registrations')
 			return
 		start = int(self.request.get('start') or 0)
-		q = auditing.get_audit_entries().order(-auditing.AuditEntry.timestamp)
-		entries = q.fetch(offset = start, limit = 20)
+		q = auditing.get_audit_entries()
+		limit = 20
+		if self.request.get('sponsor_id'):
+			q = q.filter(auditing.AuditEntry.sponsor_id == int(self.request.get('sponsor_id')))
+			limit = None
+		elif self.request.get('tribute_id'):
+			q = q.filter(auditing.AuditEntry.tribute_id == int(self.request.get('tribute_id')))
+			limit = None
+		q = q.order(-auditing.AuditEntry.timestamp)
+		entries = q.fetch(offset = start, limit = limit)
 		self.response.out.write("""<!DOCTYPE html>
 <html>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -1910,16 +1918,17 @@ p { text-align: center; }
 			self.response.out.write('<td>%s</td>' % entry.tournament)
 			self.response.out.write('<td class="nw">%s</td>' % entry.desc)
 			if entry.sponsor_id:
-				self.response.out.write('<td>%d</td>' % entry.sponsor_id)
+				self.response.out.write('<td><a href="/admin/audit?sponsor_id=%d">%d</a></td>' % (entry.sponsor_id, entry.sponsor_id))
 			elif entry.tribute_id:
-				self.response.out.write('<td>%d</td>' % entry.tribute_id)
+				self.response.out.write('<td><a href="/admin/audit?tribute_id=%d">%d</a></td>' % (entry.tribute_id, entry.tribute_id))
 			else:
 				self.response.out.write('<td></td>')
 			self.response.out.write('<td>%s</td>' % (entry.data or ''))
 			self.response.out.write('</tr>')
 			start += 1
 		self.response.out.write('</table>')
-		self.response.out.write('<p><a href="/admin/audit?start=%d">Older &rarr;</a></p>' % start)
+		if limit:
+			self.response.out.write('<p><a href="/admin/audit?start=%d">Older &rarr;</a></p>' % start)
 		self.response.out.write('</body></html>')
 
 class UpgradeHandler(webapp2.RequestHandler):
