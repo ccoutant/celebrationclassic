@@ -126,7 +126,7 @@ function recalculate() {
 	if (golferonlybox)
 		golfers_no_dinner = parseInt(golferonlybox.value);
 	var total_golfers = golfers + golfers_no_dinner;
-	if (golfers_included == 0 && total_golfers >= 4)
+	if (angelbox.checked || (golfers_included == 0 && total_golfers >= 4))
 		angel.style.display = "block";
 	else {
 		angel.style.display = "none";
