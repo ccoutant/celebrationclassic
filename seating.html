@@ -1,0 +1,100 @@
+{% extends "wide.html" %}
+
+{% block title %}Dinner Seating{% endblock %}
+
+{% block head %}
+<style type="text/css">
+h2 { text-align: center; background-image: none; border-bottom: none; }
+p.message { font-weight: bold; color: red; margin: 0 0 0.5em 0; }
+.column { float: left; margin: 0 5%; padding: 1em 0; width: 35%; }
+.gutter { float: left; padding: 3em 0 0 0; width: 10%; }
+.gutter div { margin: 1em 0; text-align: center; }
+.help { margin: 2em 0; font-size: 60%; text-align: left; color: #888; }
+.group, .table { margin: 1em 0; border: 1px solid #c4e5c4; padding: 0.5em; background-color: #e7fbe7; }
+.group p.contact, .table p.contact { margin: 0; font-weight: bold; }
+.group p.prefs, .table p.prefs { margin: 0; font-style: italic; }
+.group span.id, .table span.id { font-weight: normal; }
+.group ul, .table ul { list-style: none; margin: 0; padding: 0; }
+.group ul li, .table ul li { margin: 0 0 0 2em; padding: 0; }
+.group span.golfername, .table span.golfername { display: inline-block; width: 10em; }
+.table span.placeholder { display: inline-block; width: 10em; border-bottom: 1px solid #A8CBA6; }
+.group span.handicap, .table span.handicap { display: inline-block; width: 3em; text-align: right; }
+.table span.cart { margin-left: 1em; }
+.table span.cart label { font-size: 80%; }
+</style>
+<script src="/js/seating.js" type="text/javascript" language="javascript"></script>
+<script type="text/javascript" language="javascript">
+var guests = {{ guests_json|safe }};
+var groups = {{ groups_json|safe }};
+var tables = [];
+var groups_selected = [];
+var tables_selected = [];
+var unassigned_guests_selected = [];
+var assigned_guests_selected = [];
+var group_div;
+var table_div;
+window.addEventListener('load', function() {
+	initialize();
+});
+</script>
+{% endblock %}
+
+{% block subnav %}
+<ul class="viewnav">
+	<li><a href="/admin/view/registrations">All Registrations</a></li>
+	<li><a href="/admin/view/golfers">Golfers by Sponsor</a></li>
+	<li><a href="/admin/view/golfers/byname">Golfers by Name</a></li>
+	<li><a href="/admin/view/golfers/byteam">Golfers by Team</a></li>
+	<li><a href="/admin/view/golfers/bystart">Golfers by Start</a></li>
+	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
+	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
+	<li><a href="/admin/view/dinners">Dinners</a></li>
+	<li class="selected"><a href="/admin/view/seating">Assign Seating</a></li>
+	<li><a href="/admin/view/unpaid">Unpaid</a></li>
+	<li><a href="/admin/view/incomplete">Incomplete</a></li>
+	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+{% for m in messages %}
+<p class="message">{{ m|escape }}</p>
+{% endfor %}
+
+<div class="column" id="unassigned">
+
+<h2>Unassigned Guests</h2>
+
+<div id="groups">
+</div>
+
+</div> <!-- unassigned -->
+
+<div class="gutter">
+<form id="form" action="/admin/view/seating" method="post" accept-charset="utf-8">
+<input type="hidden" id="guests_json" name="guests_json" value="">
+<div><input type="button" name="newtable" value="New Table &rarr;" onclick="return do_newtable();"></div>
+<div><input type="button" name="move" value="Move &rarr;" onclick="return do_move();"></div>
+<div><input type="button" name="remove" value="&larr; Remove" onclick="return do_remove();"></div>
+<div><input type="button" id="save_button" name="save" value="Save Assignments" onclick="return do_save();"></div>
+</form>
+<p class="help">To form a new table, select one or more unassigned guests from the left column,
+then click &ldquo;New Table.&rdquo;</p>
+<p class="help">To add guests to an existing table, select the guests from the left column,
+select a table from the right column, then click &ldquo;Move.&rdquo;</p>
+<p class="help">To remove guests from a table, select the guests from the right column,
+then click &ldquo;Remove.&rdquo; The guests will be returned to the
+unassigned column.</p>
+<p class="help">To save the seating assignments permanently, click &ldquo;Save Assignments.&rdquo;</p>
+</div>
+
+<div class="column">
+
+<h2>Tables</h2>
+
+<div id="tables">
+</div>
+
+</div> <!-- tables -->
+
+{% endblock %}

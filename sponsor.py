@@ -66,6 +66,7 @@ class Golfer(ndb.Model):
 	handicap_index = ndb.FloatProperty(default = 0.0)
 	shirt_size = ndb.StringProperty(default = '')
 	dinner_choice = ndb.StringProperty(default = '')
+	table_num = ndb.IntegerProperty(default = 0)
 	team = ndb.KeyProperty()
 	cart = ndb.IntegerProperty(default = 0)
 	tees = ndb.IntegerProperty(default = 0) # 1 = Red, 2 = White, 3 = Blue
@@ -87,6 +88,7 @@ class DinnerGuest(ndb.Model):
 	first_name = ndb.StringProperty(default = '')
 	last_name = ndb.StringProperty(default = '')
 	dinner_choice = ndb.StringProperty(default = '')
+	table_num = ndb.IntegerProperty(default = 0)
 
 class TributeAd(ndb.Model):
 	first_name = ndb.StringProperty(default = '')

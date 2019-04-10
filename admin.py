@@ -400,7 +400,7 @@ class ViewGolfer(object):
 			self.course_handicap = 0
 
 class ViewDinner(object):
-	def __init__(self, s, first_name, last_name, choice, sequence, count):
+	def __init__(self, s, first_name, last_name, choice, sequence, table_num, count):
 		self.sponsor_id = s.sponsor_id
 		self.sponsor_name = s.first_name + " " + s.last_name
 		if first_name or last_name:
@@ -410,6 +410,7 @@ class ViewDinner(object):
 		self.dinner_choice = choice
 		self.sequence = sequence
 		self.count = count
+		self.table_num = str(table_num) if table_num > 0 else ""
 		self.seating = s.dinner_seating if sequence == s.num_golfers + s.num_dinners else ''
 
 class ViewRegistrations(webapp2.RequestHandler):
@@ -1234,18 +1235,18 @@ class ViewDinners(webapp2.RequestHandler):
 				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
 					if g.dinner_choice != 'none':
-						all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence, counter))
+						all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence, g.table_num, counter))
 						counter += 1
 				for i in range(len(golfers) + 1, total_golfers + 1):
-					all_dinners.append(ViewDinner(s, '', '', '', i, counter))
+					all_dinners.append(ViewDinner(s, '', '', '', i, 0, counter))
 					counter += 1
 			if s.num_dinners:
 				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
 				for g in guests:
-					all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence + s.num_golfers, counter))
+					all_dinners.append(ViewDinner(s, g.first_name, g.last_name, g.dinner_choice, g.sequence + s.num_golfers, g.table_num, counter))
 					counter += 1
 				for i in range(len(guests) + 1, s.num_dinners + 1):
-					all_dinners.append(ViewDinner(s, '', '', '', i + s.num_golfers, counter))
+					all_dinners.append(ViewDinner(s, '', '', '', i + s.num_golfers, 0, counter))
 					counter += 1
 		dinner_choices = { }
 		for d in all_dinners:
@@ -1260,6 +1261,87 @@ class ViewDinners(webapp2.RequestHandler):
 			}
 		html = render_to_string('viewguests.html', template_values)
 		self.response.out.write(html)
+
+class AssignSeating(webapp2.RequestHandler):
+	def get(self):
+		t = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		groups = []
+		guests = []
+		q = Sponsor.query(ancestor = t.key).filter(Sponsor.confirmed == True).order(Sponsor.sort_name)
+		for s in q:
+			if s.num_golfers + s.num_dinners == 0:
+				continue
+			group_num = len(groups) + 1
+			new_group = {
+				'id': str(s.sponsor_id),
+				'group_num': group_num,
+				'first_name': s.first_name,
+				'last_name': s.last_name,
+				'seating_prefs': s.dinner_seating
+			}
+			groups.append(new_group)
+			for g in ndb.get_multi(s.golfer_keys[:s.num_golfers + s.num_golfers_no_dinner]):
+				if g.dinner_choice == "none":
+					continue
+				g_id = g.key.id()
+				guest_num = len(guests) + 1
+				new_guest = {
+					'key': g_id,
+					'is_golfer': True,
+					'guest_num': guest_num,
+					'group_num': group_num,
+					'table_num': g.table_num,
+					'orig_table_num': g.table_num,
+					'guest_name': g.first_name + " " + g.last_name
+				}
+				guests.append(new_guest)
+			for g in ndb.get_multi(s.dinner_keys[:s.num_dinners]):
+				g_id = g.key.id()
+				guest_num = len(guests) + 1
+				new_guest = {
+					'key': g_id,
+					'is_golfer': False,
+					'guest_num': guest_num,
+					'group_num': group_num,
+					'table_num': g.table_num,
+					'orig_table_num': g.table_num,
+					'guest_name': g.first_name + " " + g.last_name
+				}
+				guests.append(new_guest)
+		template_values = {
+			'messages': [],
+			'groups_json': json.dumps(groups),
+			'guests_json': json.dumps(guests),
+			'capabilities': caps
+			}
+		html = render_to_string('seating.html', template_values)
+		self.response.out.write(html)
+
+	def post(self):
+		t = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, '/admin/view/seating')
+			return
+		guests_json = self.request.get('guests_json')
+		guests = json.loads(guests_json)
+		guests_to_update = []
+		for g in guests:
+			if g['table_num'] != g['orig_table_num']:
+				g_id = g['key']
+				if g['is_golfer']:
+					guest = Golfer.get_by_id(g_id)
+				else:
+					guest = DinnerGuest.get_by_id(g_id)
+				guest.table_num = g['table_num']
+				guests_to_update.append(guest)
+		if guests_to_update:
+			ndb.put_multi(guests_to_update)
+		self.redirect('/admin/view/seating')
 
 class ViewTributeAds(webapp2.RequestHandler):
 	def get(self):
@@ -1397,7 +1479,7 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 		q = q.filter(Sponsor.confirmed == True)
 		q = q.order(Sponsor.timestamp)
 		csv = []
-		csv.append(','.join(['first_name', 'last_name', 'dinner_choice', 'seating_pref',
+		csv.append(','.join(['first_name', 'last_name', 'dinner_choice', 'seating_pref', 'table_num',
 							 'contact_first_name', 'contact_last_name']))
 		for s in q:
 			total_golfers = s.num_golfers + s.num_golfers_no_dinner
@@ -1406,7 +1488,7 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 				for g in golfers:
 					if g.dinner_choice != 'none':
 						csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
-																	 g.dinner_choice, s.dinner_seating,
+																	 g.dinner_choice, s.dinner_seating, g.table_num,
 																	 s.first_name, s.last_name]]))
 				for i in range(len(golfers) + 1, total_golfers + 1):
 					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
@@ -1415,10 +1497,10 @@ class DownloadDinnersCSV(webapp2.RequestHandler):
 				guests = ndb.get_multi(s.dinner_keys[:s.num_dinners])
 				for g in guests:
 					csv.append(','.join([csv_encode(x) for x in [g.first_name, g.last_name,
-																 g.dinner_choice, s.dinner_seating,
+																 g.dinner_choice, s.dinner_seating, g.table_num,
 																 s.first_name, s.last_name]]))
 				for i in range(len(guests) + 1, s.num_dinners + 1):
-					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating,
+					csv.append(','.join([csv_encode(x) for x in ['n/a', 'n/a', '', s.dinner_seating, 0,
 																 s.first_name, s.last_name]]))
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 		self.response.headers['Content-Disposition'] = 'attachment;filename=dinners.csv'
@@ -2090,6 +2172,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/golfers/handicap', UpdateHandicap),
 							   ('/admin/view/golfers/pairing', Pairing),
 							   ('/admin/view/dinners', ViewDinners),
+							   ('/admin/view/seating', AssignSeating),
 							   ('/admin/view/tribute', ViewTributeAds),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
 							   ('/admin/csv/golfers', DownloadGolfersCSV),

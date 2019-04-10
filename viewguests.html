@@ -28,6 +28,7 @@
 	<li><a href="/admin/view/golfers/handicap">Handicap</a></li>
 	<li><a href="/admin/view/golfers/pairing">Pairing</a></li>
 	<li class="selected"><a href="/admin/view/dinners">Dinners</a></li>
+	<li><a href="/admin/view/seating">Assign Seating</a></li>
 	<li><a href="/admin/view/unpaid">Unpaid</a></li>
 	<li><a href="/admin/view/incomplete">Incomplete</a></li>
 	<li><a href="/admin/view/unconfirmed">Unconfirmed</a></li>
@@ -44,6 +45,7 @@
 	<tr valign="bottom">
 		<th align="left">Contact<br>&emsp;&emsp;Golfer/Dinner Guest</th>
 		<th align="left">Dinner Choice</th>
+		<th align="right">Table</th>
 	</tr>
 </thead>
 <tbody>
@@ -56,10 +58,11 @@
 	<tr class="guest" valign="baseline">
 		<td class="firstcol">{{ d.count }}.&ensp;{{ d.guest_name }}</td>
 		<td>{{ d.dinner_choice }}</td>
+		<td align="right">{{ d.table_num }}</td>
 	</tr>
 	{% if d.seating %}
 	<tr class="seating" valign="baseline">
-		<td class="firstcol" colspan="2"><p>Seating preference: {{ d.seating }}</p></td>
+		<td class="firstcol" colspan="3"><p>Seating preference: {{ d.seating }}</p></td>
 	</tr>
 	{% endif %}
 {% endfor %}
