@@ -233,7 +233,7 @@ function make_table(table) {
 	div.appendChild(contact);
 
 	var subboxes = []
-	var ul = document.createElement("ul");
+	var ul = document.createElement("ol");
 	for (var i = 0; i < table.guest_nums.length; i++) {
 		var guest_num = table.guest_nums[i];
 		var guest = guests[guest_num - 1];
