@@ -437,7 +437,10 @@ class ViewRegistrations(webapp2.RequestHandler):
 			return
 		q = Sponsor.query(ancestor = t.key)
 		q = q.filter(Sponsor.confirmed == True)
-		q = q.order(Sponsor.sort_name)
+		if self.request.get('sort') == 'date':
+			q = q.order(Sponsor.timestamp)
+		else:
+			q = q.order(Sponsor.sort_name)
 		sponsors = q.fetch(limit = None)
 		golfer_count = 0
 		dinner_count = 0
