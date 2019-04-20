@@ -1249,6 +1249,8 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				'team_handicap': team_handicap
 			}
 			teams.append(newteam)
+		if bywhat == 'bystart':
+			teams.sort(key = sort_by_starting_hole)
 		unassigned_golfers = []
 		for g_key in golfer_keys - used_keys:
 			g = g_key.get()
@@ -1263,8 +1265,6 @@ class ViewGolfersByTeam(webapp2.RequestHandler):
 				'last_name': lname,
 			}
 			unassigned_golfers.append(golfer)
-		if bywhat == 'bystart':
-			teams.sort(key = sort_by_starting_hole)
 		template_values = {
 			'bywhat': bywhat,
 			'teams': teams,
@@ -1525,6 +1525,89 @@ class DownloadGolfersCSV(webapp2.RequestHandler):
 											   '', '', '', '',
 											   '', '', '', '',
 											   s.first_name, s.last_name]]))
+		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+		self.response.headers['Content-Disposition'] = 'attachment;filename=golfers.csv'
+		self.response.out.write('\n'.join(csv))
+		self.response.out.write('\n')
+
+class DownloadGolfersByTeamCSV(webapp2.RequestHandler):
+	def get(self):
+		t = tournament.get_tournament()
+		caps = capabilities.get_current_user_caps()
+		if caps is None or not caps.can_view_registrations:
+			show_login_page(self.response.out, self.request.uri)
+			return
+		q = Golfer.query()
+		q = q.filter(Golfer.tournament == t.key)
+		q = q.filter(Golfer.active == True)
+		q = q.order(Golfer.sort_name)
+		golfer_keys = set(q.fetch(limit = None, keys_only = True))
+		used_keys = set()
+		teams = []
+		q = Team.query(ancestor = t.key).order(Team.name)
+		for team in q:
+			golfers_in_team = []
+			course_handicaps = []
+			sequence = 0
+			for g_key in team.golfers:
+				sequence += 1
+				g_id = g_key.id()
+				if not g_key in golfer_keys:
+					logging.warning("Golfer %d, referenced by team %s (%d), does not exist" % (g_key.id(), team.name, team.key.id()))
+					continue
+				if g_key in used_keys:
+					logging.warning("Golfer %d, referenced by team %s (%d), is in another team" % (g_key.id(), team.name, team.key.id()))
+				used_keys.add(g_key)
+				g = g_key.get()
+				vg = ViewGolfer(t, None, g, None)
+				course_handicaps.append(vg.course_handicap)
+				golfers_in_team.append(vg)
+			team_handicap = calculate_team_handicap(course_handicaps)
+			golfers_in_team.sort(key = lambda vg: vg.cart)
+			newteam = {
+				'golfers': golfers_in_team,
+				'starting_hole': team.starting_hole,
+				'team_handicap': team_handicap
+			}
+			teams.append(newteam)
+		teams.sort(key = sort_by_starting_hole)
+
+		csv = []
+		csv.append(','.join(['first_name', 'last_name', 'gender', 'company',
+							 'address', 'city', 'state', 'zip',
+							 'email', 'phone', 'ghin_number', 'index',
+							 'avg_score', 'tournament_index', 'course_handicap', 'tees',
+							 'shirt_size', 'team', 'team_handicap', 'starting_hole', 'cart']))
+		for team in teams:
+			for vg in team['golfers']:
+				g1 = vg.golfer
+				cart = ''
+				if g.cart:
+					cart = str(g.cart)
+				tees_str = ["Red", "White", "Blue"][vg.tees - 1]
+				if g1.has_index:
+					tournament_index = vg.handicap_index_str
+				else:
+					tournament_index = vg.computed_index
+				csv.append(','.join([csv_encode(x)
+									 for x in [g1.first_name, g1.last_name, g1.gender, g1.company,
+											   g1.address, g1.city, g1.state, g1.zip,
+											   g1.email, g1.phone, g1.ghin_number, vg.handicap_index_str,
+											   g1.average_score, tournament_index, vg.course_handicap, tees_str,
+											   g1.shirt_size, vg.team_name, team['team_handicap'],
+											   vg.starting_hole, vg.cart]]))
+
+		for g_key in golfer_keys - used_keys:
+			g = g_key.get()
+			vg = ViewGolfer(t, None, g, None)
+			csv.append(','.join([csv_encode(x)
+								 for x in [g1.first_name, g1.last_name, g1.gender, g1.company,
+										   g1.address, g1.city, g1.state, g1.zip,
+										   g1.email, g1.phone, g1.ghin_number, vg.handicap_index_str,
+										   g1.average_score, tournament_index, vg.course_handicap, tees_str,
+										   g1.shirt_size, vg.team_name, '',
+										   vg.starting_hole, vg.cart]]))
+
 		self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
 		self.response.headers['Content-Disposition'] = 'attachment;filename=golfers.csv'
 		self.response.out.write('\n'.join(csv))
@@ -2238,6 +2321,7 @@ app = webapp2.WSGIApplication([('/admin/sponsorships', Sponsorships),
 							   ('/admin/view/tribute', ViewTributeAds),
 							   ('/admin/csv/registrations', DownloadRegistrationsCSV),
 							   ('/admin/csv/golfers', DownloadGolfersCSV),
+							   ('/admin/csv/golfersbyteam', DownloadGolfersByTeamCSV),
 							   ('/admin/csv/dinners', DownloadDinnersCSV),
 							   ('/admin/csv/tributeads', DownloadTributeAdsCSV),
 							   ('/admin/mail/(.*)', SendEmail),
