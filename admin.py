@@ -1189,9 +1189,10 @@ class Pairing(webapp2.RequestHandler):
 
 def calculate_team_handicap(golfer_handicaps):
 	try:
-		handicaps = sorted([int(h) for h in golfer_handicaps])
+		handicaps = [int(h) for h in golfer_handicaps]
 	except:
 		return "n/a"
+	handicaps.sort(reverse = True)
 	weights = [0.50, 0.25, 0.15, 0.10]
 	sum = 0.0
 	sum_of_weights = 0.0
