@@ -1193,13 +1193,14 @@ def calculate_team_handicap(golfer_handicaps):
 	except:
 		return "n/a"
 	handicaps.sort()
-	weights = [0.40, 0.20, 0.15, 0.10]
+	weights = [0.50, 0.25, 0.15, 0.10]
+	scale = 1.0
 	sum = 0.0
 	sum_of_weights = 0.0
 	for i in range(0, min(4, len(handicaps))):
 		sum += handicaps[i] * weights[i]
 		sum_of_weights += weights[i]
-	return int(round(sum / sum_of_weights))
+	return int(round(sum * scale / sum_of_weights))
 
 def sort_by_starting_hole(team):
 	h = team['starting_hole']
