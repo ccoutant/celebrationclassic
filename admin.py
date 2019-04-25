@@ -490,7 +490,7 @@ class ViewIncomplete(webapp2.RequestHandler):
 			if total_golfers:
 				golfers = ndb.get_multi(s.golfer_keys[:total_golfers])
 				for g in golfers:
-					if g.first_name and g.last_name and g.gender and (g.ghin_number or g.average_score) and g.shirt_size:
+					if g.first_name and g.last_name and g.gender and (g.ghin_number or g.has_index or g.average_score):
 						golfers_complete += 1
 					if g.dinner_choice:
 						ndinners += 1

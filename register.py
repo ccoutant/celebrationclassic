@@ -126,7 +126,7 @@ def show_continuation_form(response, t, s, messages, caps, debug = False):
 				golfer = golfers[i - 1]
 				if not golfer.first_name or not golfer.last_name or not golfer.gender:
 					has_completed_names = False
-				if golfer.ghin_number == '' and golfer.average_score == '':
+				if golfer.ghin_number == '' and golfer.average_score == '' and not golfer.has_index:
 					has_completed_handicaps = False
 				if not golfer.shirt_size:
 					has_selected_sizes = False
