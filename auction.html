@@ -20,8 +20,6 @@
 {% block content %}
 <h2>Live Auction</h2>
 
-{% if live_auction_items %}
-
 <div class="intro">{{ live_intro|markdown }}</div>
 
 <table id="liveauctionitems" class="auctionitems">
@@ -43,16 +41,9 @@
 </tbody>
 </table>
 
-{% else %}
-
-<p>Coming soon: a preview of some of the items that will be available at the live auction
-on {{ dinner_date }}.</p>
-
-{% endif %}
+{% if silent_auction_items %}
 
 <h2>Silent Auction</h2>
-
-{% if silent_auction_items %}
 
 <div class="intro">{{ silent_intro|markdown }}</div>
 
@@ -74,11 +65,6 @@ on {{ dinner_date }}.</p>
 {% endfor %}
 </tbody>
 </table>
-
-{% else %}
-
-<p>Coming soon: a preview of some of the items that will be available at the silent auction
-on {{ dinner_date }}.</p>
 
 {% endif %}
 {% endblock %}
