@@ -1885,11 +1885,11 @@ class UploadAuctionItem(webapp2.RequestHandler):
 		uploads = self.request.POST.getall('file')
 		try:
 			if dev_server:
-				item.image = uploads[0].file.getvalue()
+				item.image = uploads[0].file.read()
 				item.image_width = 200
 				item.image_height = 100
 			else:
-				img = images.Image(uploads[0].file.getvalue())
+				img = images.Image(uploads[0].file.read())
 				img.resize(width = 200)
 				item.image = img.execute_transforms(output_encoding = images.JPEG)
 				item.image_width = img.width
@@ -1931,7 +1931,7 @@ class UploadFile(webapp2.RequestHandler):
 		uploads = self.request.POST.getall('file')
 		try:
 			filename = uploads[0].filename
-			contents = uploads[0].file.getvalue()
+			contents = uploads[0].file.read()
 			uploads[0].file.close()
 			logging.debug("upload file %s, size %d" % (filename, len(contents)))
 			if self.request.get('upload-photo'):
